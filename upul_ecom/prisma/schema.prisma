@@ -65,7 +65,7 @@ model Product {
   colors String[]
 
   sizeType String           @default("Standard")
-  variants ProductVariant[] //"Standard Normal"
+  variants ProductVariant[] 
   stock    Int              @default(0)
 
   categoryId String   @db.ObjectId
@@ -73,7 +73,7 @@ model Product {
 
   isNewArrival  Boolean      @default(true)
   discountType  DiscountType @default(NONE)
-  discountValue Float        @default(0) // "10" (for %) or "500" (for LKR)
+  discountValue Float        @default(0) 
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -160,10 +160,10 @@ type WishlistItem {
 }
 
 enum OrderStatus {
-  PENDING     // 1. Placed, waiting for manual call
-  CONFIRMED   // 2. Call done, approved
-  PROCESSING  // 3. Packing
-  SHIPPED     // 4. Handed to Domex (Tracking ID added)
+  PENDING     
+  CONFIRMED   
+  PROCESSING  
+  SHIPPED     
   DELIVERED
   CANCELLED
   RETURNED
@@ -173,20 +173,15 @@ enum OrderStatus {
 model Order {
   id            String    @id @default(auto()) @map("_id") @db.ObjectId
   
-  // 1. Readable ID for Phone Calls (e.g., "ORD-93820")
   orderNumber   String    @unique 
   
-  // 2. Secret Token for Guest URLs (e.g., UUID)
   guestToken    String?   @unique 
   
-  // 3. Link to User (if logged in)
   userId        String?   @db.ObjectId
   user          users?    @relation(fields: [userId], references: [id])
   
-  // 4. Domex Integration
   trackingNumber String?  
 
-  // Snapshots (Data locked at time of purchase)
   email         String
   shippingAddress Json   
   billingAddress  Json?   
@@ -215,8 +210,8 @@ model EmailLog {
   
   recipientEmail  String
   subject         String
-  html            String?   // Store HTML for retry capability
-  emailType       String    // confirmation, processing, shipped, etc.
+  html            String?   
+  emailType       String   
   orderNumber     String?
   
   status          EmailStatus @default(processing)
@@ -242,25 +237,20 @@ model Coupon {
   id             String     @id @default(auto()) @map("_id") @db.ObjectId
   code           String     @unique
   type           CouponType
-  value          Float      // e.g., 10 (for 10%) or 500 (for 500 LKR)
+  value          Float      
   
-  // Constraints
   minOrderAmount Float?     @default(0)
-  maxDiscount    Float?     // Cap for percentage discounts (e.g., max 2000 off)
+  maxDiscount    Float?     
   expiresAt      DateTime?
   isActive       Boolean    @default(true)
   
-  // Usage Limits
-  maxUses        Int?       // Global limit (e.g., first 100 people)
+  maxUses        Int?       
   usedCount      Int        @default(0)
   
-  // User Restrictions
-  limitPerUser   Int?       @default(1) // How many times a single user can use it
-  isPublic       Boolean    @default(true) // If false, maybe only specific emails allowed (logic below)
+  limitPerUser   Int?       @default(1) 
+  isPublic       Boolean    @default(true) 
   
-  // Track who used it to enforce limitPerUser
-  // specificUserIds String[]   // Optional: If you wanted to whitelist specific users
-  usedByUserIds  String[]   // Array of User IDs who have successfully used this coupon
+  usedByUserIds  String[]  
 
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
