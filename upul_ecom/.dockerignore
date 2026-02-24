@@ -1,0 +1,43 @@
+# Dependency directories
+node_modules/
+**/node_modules/
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+
+# Nx and IDE cache
+.nx/
+.cache/
+.vscode/
+.idea/
+.project
+.classpath
+.settings/
+
+# Environment and secrets
+.env
+*.env.local
+*.env.*.local
+.npmrc
+
+# Logs and temp files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+error.log
+tmp/
+temp/
+
+# Version control
+.git
+.gitignore
+.gitattributes
+.svn
+.hg
+
+# OS generated files
+.DS_Store
+Thumbs.db

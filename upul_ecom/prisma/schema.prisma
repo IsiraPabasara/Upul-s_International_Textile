@@ -1,0 +1,267 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+type Address {
+  id          String  @default(uuid())
+  firstname   String
+  lastname    String
+  addressLine String
+  apartment   String?
+  city        String
+  postalCode  String
+  phoneNumber String
+  isDefault   Boolean @default(false)
+}
+
+model users {
+  id          String  @id @default(auto()) @map("_id") @db.ObjectId
+  firstname   String
+  lastname    String
+  email       String  @unique
+  phonenumber String  @unique
+  password    String?
+  role        String        @default("user")
+  wishlist    Wishlist?
+  addresses    Address[]
+  cart        Cart?
+  orders      Order[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+type ProductImage {
+  fileId String
+  url    String
+}
+
+type ProductVariant {
+  size  String
+  stock Int
+}
+
+enum DiscountType {
+  NONE
+  PERCENTAGE
+  FIXED
+}
+
+model Product {
+  id           String  @id @default(auto()) @map("_id") @db.ObjectId
+  name         String
+  sku          String  @unique
+  description  String
+  price        Float
+  availability Boolean @default(true)
+  brand        String
+  visible      Boolean @default(true)
+
+  images ProductImage[]
+  colors String[]
+
+  sizeType String           @default("Standard")
+  variants ProductVariant[] //"Standard Normal"
+  stock    Int              @default(0)
+
+  categoryId String   @db.ObjectId
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  isNewArrival  Boolean      @default(true)
+  discountType  DiscountType @default(NONE)
+  discountValue Float        @default(0) // "10" (for %) or "500" (for LKR)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Category {
+  id        String     @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  sortOrder Int        @default(999)
+  parentId  String?    @db.ObjectId
+  parent    Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  slug      String     @unique
+  children  Category[] @relation("CategoryHierarchy")
+
+  products Product[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Brand {
+  id   String @id @default(auto()) @map("_id") @db.ObjectId
+  name String @unique
+  // Optional: logoUrl String? 
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SizeType {
+  id     String   @id @default(auto()) @map("_id") @db.ObjectId
+  name   String   @unique
+  values String[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Color {
+  id      String @id @default(auto()) @map("_id") @db.ObjectId
+  name    String @unique
+  hexCode String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Cart {
+  id     String     @id @default(auto()) @map("_id") @db.ObjectId
+  userId String     @unique @db.ObjectId
+  user   users      @relation(fields: [userId], references: [id])
+  items  CartItem[]
+
+  updatedAt DateTime @updatedAt
+}
+
+type CartItem {
+  productId String  @db.ObjectId
+  sku       String
+  name      String
+  price     Float
+  originalPrice Float?
+  image     String
+  quantity  Int
+  size      String?
+  color     String?
+}
+
+model Wishlist {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @unique @db.ObjectId
+  user      users    @relation(fields: [userId], references: [id])
+  
+  items     WishlistItem[]
+  updatedAt DateTime @updatedAt
+}
+
+type WishlistItem {
+  productId String   @db.ObjectId
+  name      String
+  price     Float
+  image     String
+  slug      String
+}
+
+enum OrderStatus {
+  PENDING     // 1. Placed, waiting for manual call
+  CONFIRMED   // 2. Call done, approved
+  PROCESSING  // 3. Packing
+  SHIPPED     // 4. Handed to Domex (Tracking ID added)
+  DELIVERED
+  CANCELLED
+  RETURNED
+  REFUNDED
+}
+
+model Order {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  
+  // 1. Readable ID for Phone Calls (e.g., "ORD-93820")
+  orderNumber   String    @unique 
+  
+  // 2. Secret Token for Guest URLs (e.g., UUID)
+  guestToken    String?   @unique 
+  
+  // 3. Link to User (if logged in)
+  userId        String?   @db.ObjectId
+  user          users?    @relation(fields: [userId], references: [id])
+  
+  // 4. Domex Integration
+  trackingNumber String?  
+
+  // Snapshots (Data locked at time of purchase)
+  email         String
+  shippingAddress Json   
+  billingAddress  Json?   
+  items         Json
+
+  couponCode     String?
+  discountAmount Float      @default(0)      
+  
+  totalAmount   Float
+  status        OrderStatus @default(PENDING)
+  paymentMethod String      @default("COD")
+
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+enum EmailStatus {
+  processing
+  sent
+  failed
+  permanently_failed
+}
+
+model EmailLog {
+  id              String    @id @default(auto()) @map("_id") @db.ObjectId
+  
+  recipientEmail  String
+  subject         String
+  html            String?   // Store HTML for retry capability
+  emailType       String    // confirmation, processing, shipped, etc.
+  orderNumber     String?
+  
+  status          EmailStatus @default(processing)
+  attemptNumber   Int         @default(0)
+  errorMessage    String?
+  failureReason   String?
+  
+  sentAt          DateTime?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  
+  @@index([recipientEmail])
+  @@index([status])
+  @@index([orderNumber])
+}
+
+enum CouponType {
+  PERCENTAGE
+  FIXED
+}
+
+model Coupon {
+  id             String     @id @default(auto()) @map("_id") @db.ObjectId
+  code           String     @unique
+  type           CouponType
+  value          Float      // e.g., 10 (for 10%) or 500 (for 500 LKR)
+  
+  // Constraints
+  minOrderAmount Float?     @default(0)
+  maxDiscount    Float?     // Cap for percentage discounts (e.g., max 2000 off)
+  expiresAt      DateTime?
+  isActive       Boolean    @default(true)
+  
+  // Usage Limits
+  maxUses        Int?       // Global limit (e.g., first 100 people)
+  usedCount      Int        @default(0)
+  
+  // User Restrictions
+  limitPerUser   Int?       @default(1) // How many times a single user can use it
+  isPublic       Boolean    @default(true) // If false, maybe only specific emails allowed (logic below)
+  
+  // Track who used it to enforce limitPerUser
+  // specificUserIds String[]   // Optional: If you wanted to whitelist specific users
+  usedByUserIds  String[]   // Array of User IDs who have successfully used this coupon
+
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+}

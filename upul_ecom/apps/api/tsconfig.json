@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "files": [],
+  "include": [
+    "../../packages/error-handler/**/*.ts"
+  ],
+  "references": [
+    {
+      "path": "./tsconfig.app.json"
+    }
+  ]
+}

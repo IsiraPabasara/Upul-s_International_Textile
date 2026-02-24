@@ -1,0 +1,19 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compileOnSave": false,
+  "files": [],
+  "references": [
+    {
+      "path": "./apps/api-e2e/tsconfig.json"
+    },
+    {
+      "path": "./apps/api/tsconfig.json"
+    },
+    {
+      "path": "./apps/user-ui/tsconfig.json"
+    },
+    {
+      "path": "./apps/admin-ui"
+    }
+  ]
+}
