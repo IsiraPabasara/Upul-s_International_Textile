@@ -15,9 +15,10 @@ const app = express();
 app.use(cors({ origin: true, credentials: true }));
 app.use(helmet());
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(morgan('dev'));
+
+//Apply rate limiting
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, 
@@ -28,6 +29,7 @@ const limiter = rateLimit({
 })
 
 app.use(limiter);
+
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 app.get("/docs-json", (req,res) => {
     res.json(swaggerDocument);
