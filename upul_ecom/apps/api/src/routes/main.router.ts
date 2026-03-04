@@ -1,9 +1,12 @@
 import express, { Router } from 'express';
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 
 const router: Router = express.Router();
 
 =======
+=======
+>>>>>>> Stashed changes
 import { authRouter } from '../auth-service/routes/auth.router';
 import productRoutes from '../product-service/product.routes';
 import categoryRoutes from '../category-service/category-routes'
