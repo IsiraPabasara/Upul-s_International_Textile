@@ -1,5 +1,6 @@
 import './global.css';
 import { Poppins, Roboto, Outfit, Cormorant_Garamond } from 'next/font/google';
+import Providers from './providers';
 
 export const metadata = {
   title: 'Welcome to user-ui',
@@ -47,7 +48,9 @@ export default function RootLayout({
           ${cormorantGaramond.variable}
         `}
       >
-        {children}
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   );
