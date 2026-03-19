@@ -1,4 +1,6 @@
 import axios from "axios";
+// import { useCart } from '@/app/hooks/useCart';
+// import { useWishlist } from '@/app/hooks/useWishlist';
 
 declare module "axios" {
     export interface AxiosRequestConfig {
@@ -15,6 +17,14 @@ let isRefreshing = false;
 let refreshSubscribers: (() => void)[] = [];
 
 const handleLogout = () => {
+    // useCart.getState().clearCart();
+    // useCart.persist.clearStorage();
+    // useWishlist.getState().clearWishlist();
+    // useWishlist.persist.clearStorage();
+    // if (typeof window !== 'undefined') {
+    //     localStorage.removeItem('eshop-cart-storage');
+    //     localStorage.removeItem('eshop-wishlist-storage');
+    // }
     if(window.location.pathname != "/login") {
         window.location.href = "/login";
     }

@@ -58,14 +58,15 @@ model Product {
   description  String
   price        Float
   availability Boolean @default(true)
-  brand        String
+  brand     String?   
+ country    String?
   visible      Boolean @default(true)
 
   images ProductImage[]
   colors String[]
 
   sizeType String           @default("Standard")
-  variants ProductVariant[] 
+  variants ProductVariant[] //"Standard Normal"
   stock    Int              @default(0)
 
   categoryId String   @db.ObjectId
@@ -73,10 +74,15 @@ model Product {
 
   isNewArrival  Boolean      @default(true)
   discountType  DiscountType @default(NONE)
-  discountValue Float        @default(0) 
+  discountValue Float        @default(0) // "10" (for %) or "500" (for LKR)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Country {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  name      String    @unique
 }
 
 model Category {
@@ -97,6 +103,9 @@ model Category {
 model Brand {
   id   String @id @default(auto()) @map("_id") @db.ObjectId
   name String @unique
+  logoUrl   String?   // Optional, in case a brand doesn't have a logo yet
+  logoFileId String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -158,10 +167,10 @@ type WishlistItem {
 }
 
 enum OrderStatus {
-  PENDING     
-  CONFIRMED   
-  PROCESSING  
-  SHIPPED     
+  PENDING     // 1. Placed, waiting for manual call
+  CONFIRMED   // 2. Call done, approved
+  PROCESSING  // 3. Packing
+  SHIPPED     // 4. Handed to Domex (Tracking ID added)
   DELIVERED
   CANCELLED
   RETURNED
@@ -171,15 +180,20 @@ enum OrderStatus {
 model Order {
   id            String    @id @default(auto()) @map("_id") @db.ObjectId
   
+  // 1. Readable ID for Phone Calls (e.g., "ORD-93820")
   orderNumber   String    @unique 
   
+  // 2. Secret Token for Guest URLs (e.g., UUID)
   guestToken    String?   @unique 
   
+  // 3. Link to User (if logged in)
   userId        String?   @db.ObjectId
   user          users?    @relation(fields: [userId], references: [id])
   
+  // 4. Domex Integration
   trackingNumber String?  
 
+  // Snapshots (Data locked at time of purchase)
   email         String
   shippingAddress Json   
   billingAddress  Json?   
@@ -194,6 +208,9 @@ model Order {
 
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
+
+  @@index([createdAt(sort: Desc), status])
+  @@index([userId, createdAt])
 }
 
 enum EmailStatus {
@@ -208,8 +225,8 @@ model EmailLog {
   
   recipientEmail  String
   subject         String
-  html            String?   
-  emailType       String   
+  html            String?   // Store HTML for retry capability
+  emailType       String    // confirmation, processing, shipped, etc.
   orderNumber     String?
   
   status          EmailStatus @default(processing)
@@ -235,21 +252,59 @@ model Coupon {
   id             String     @id @default(auto()) @map("_id") @db.ObjectId
   code           String     @unique
   type           CouponType
-  value          Float      
+  value          Float      // e.g., 10 (for 10%) or 500 (for 500 LKR)
   
+  // Constraints
   minOrderAmount Float?     @default(0)
-  maxDiscount    Float?     
+  maxDiscount    Float?     // Cap for percentage discounts (e.g., max 2000 off)
   expiresAt      DateTime?
   isActive       Boolean    @default(true)
   
-  maxUses        Int?       
+  // Usage Limits
+  maxUses        Int?       // Global limit (e.g., first 100 people)
   usedCount      Int        @default(0)
   
-  limitPerUser   Int?       @default(1) 
-  isPublic       Boolean    @default(true) 
+  // User Restrictions
+  limitPerUser   Int?       @default(1) // How many times a single user can use it
+  isPublic       Boolean    @default(true) // If false, maybe only specific emails allowed (logic below)
   
-  usedByUserIds  String[]  
+  // Track who used it to enforce limitPerUser
+  // specificUserIds String[]   // Optional: If you wanted to whitelist specific users
+  usedByUserIds  String[]   // Array of User IDs who have successfully used this coupon
 
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
+}
+
+model PaymentLog {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  orderId         String   
+  paymentId       String?  
+  statusCode      String? 
+  rawPayload      Json     
+  status          String   
+  createdAt       DateTime @default(now())
+}
+
+//Site Images Uploader
+
+enum SiteImageSection {
+  HERO_BANNER
+  CATEGORY_GRID
+  LOOKBOOK
+}
+
+model SiteImage {
+  id          String           @id @default(auto()) @map("_id") @db.ObjectId
+  title       String           
+  section     SiteImageSection 
+  imageUrl    String
+  fileId      String
+  position    Int              @default(0)
+  isActive    Boolean          @default(true)
+  
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([section, isActive])
 }
