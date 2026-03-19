@@ -121,6 +121,7 @@
     }
   },
   "dependencies": {
+    "@imagekit/nodejs": "^7.3.0",
     "@prisma/client": "6.19",
     "axios": "^1.6.0",
     "bcrypt": "^6.0.0",
