@@ -1,49 +1,50 @@
 'use client'
 import { useMutation } from '@tanstack/react-query';
-import { EyeIcon, EyeOff } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import React, { useRef, useState } from 'react'
-import {useForm} from 'react-hook-form';
+import React, { useRef, useState, useEffect } from 'react'
+import { useForm } from 'react-hook-form';
 import axios from 'axios'
+import toast from 'react-hot-toast';
 
 type FormData = {
     firstname: string;
     lastname: string;
     email: string;
-    phonenumber: string; // Stored as string to preserve leading zeros
+    phonenumber: string; 
     password: string;
 }
 
 const Signup = () => {
-
-    const [passwordVisible, setPasswordVisible] = useState(false)
-    const [serverError, setServerError] = useState<string | null>(null)
-    const [canResend, setCanResend] = useState(true);
+    const [passwordVisible, setPasswordVisible] = useState(false);
     const [showOtp, setShowOtp] = useState(false);
+    const [serverError, setServerError] = useState<string | null>(null);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
+    const [canResend, setCanResend] = useState(true);
     const [timer, setTimer] = useState(60);
     const [otp, setOtp] = useState(["", "", "", ""]);
-    const router = useRouter();
+    const [focusedIndex, setFocusedIndex] = useState<number | null>(null); // NEW: Track active box
     const [userData, setUserData] = useState<FormData | null>(null);
+    
+    const router = useRouter();
     const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+    const { register, handleSubmit, formState: { errors } } = useForm<FormData>();
 
-    const {register, handleSubmit, formState:{errors},} = useForm<FormData>(); 
-
-    const startResendTimer = () => {
-        const interval = setInterval(() => {
-            setTimer((prev) => {
-                if(prev <= 1) {
-                    clearInterval(interval);
-                    setCanResend(true);
-                    return 0;
-                }
-                return prev-1;
-            })
-        },1000)
-    }
+    useEffect(() => {
+        let interval: NodeJS.Timeout;
+        if (!canResend && timer > 0) {
+            interval = setInterval(() => {
+                setTimer((prev) => prev - 1);
+            }, 1000);
+        } else if (timer === 0) {
+            setCanResend(true);
+        }
+        return () => clearInterval(interval);
+    }, [canResend, timer]);
 
     const signupMutation = useMutation({
-        mutationFn: async(data: FormData) => {
+        mutationFn: async (data: FormData) => {
             const response = await axios.post(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/auth/register`, data);
             return response.data;
         },
@@ -52,202 +53,207 @@ const Signup = () => {
             setShowOtp(true);
             setCanResend(false);
             setTimer(60);
-            startResendTimer();
+            setServerError(null);
+            if (showOtp) {
+                setSuccessMessage("OTP has been resent successfully.");
+                setTimeout(() => setSuccessMessage(null), 5000);
+            }
         },
-        onError: (error: unknown) => {
-            if(axios.isAxiosError(error)) {
-                setServerError(error.response?.data?.message || "Something went wrong");
-            }
-            else {
-                setServerError("Something went wrong");
-            }
+        onError: (error: any) => {
+            setServerError(error.response?.data?.message || "Something went wrong.");
         }
-    })
+    });
 
-    const verifyOtpMutaioin = useMutation({
+    const verifyOtpMutation = useMutation({
         mutationFn: async () => {
-            if(!userData) return;
-            const  response = await axios.post(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/auth/verify-user`,
-                {
-                    ...userData,
-                    otp: otp.join(""),
-                }
-            );
+            if (!userData) return;
+            const response = await axios.post(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/auth/verify-user`, {
+                ...userData,
+                otp: otp.join(""),
+            });
             return response.data;
         },
         onSuccess: () => {
+            toast.success("Account verified successfully!");
             router.push("/login");
         },
-        onError: (error: unknown) => {
-            if(axios.isAxiosError(error)) {
-                setServerError(error.response?.data?.message || "Something went wrong");
-            }
-            else {
-                setServerError("Something went wrong");
-            }
+        onError: (error: any) => {
+            setServerError(error.response?.data?.message || "Invalid verification code.");
         }
-    })
-    
+    });
+
     const onSubmit = (data: FormData) => {
+        setServerError(null);
         signupMutation.mutate(data);
     };
 
-    const handleOtpChange = (index:number, value:string) => {
-        if(!/^[0-9]?$/.test(value)) return;
-        
+    const handleOtpChange = (index: number, value: string) => {
+        if (!/^[0-9]?$/.test(value)) return;
         const newOtp = [...otp];
         newOtp[index] = value;
         setOtp(newOtp);
-
-        if(value && index < inputRefs.current.length - 1 ) {
-            inputRefs.current[index + 1]?.focus();
-        }
-    }
-
-    const handleOtpKeyDown = (index:number, e:React.KeyboardEvent<HTMLInputElement>) => {
-        if(e.key === "Backspace" && !otp[index] && index > 0) {
-            inputRefs.current[index - 1]?.focus();
-        }
-    }
-
-    const resendOtp = () => {
-        if (!canResend || !userData) return;
-
-        setServerError(null);
-        setCanResend(false);
-        setTimer(60);
-        startResendTimer();
-
-        signupMutation.mutate(userData);
+        if (value && index < 3) inputRefs.current[index + 1]?.focus();
     };
 
+    const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === "Backspace" && !otp[index] && index > 0) {
+            inputRefs.current[index - 1]?.focus();
+        }
+    };
 
     return (
-        <div className='w-full py-10 min-h-[85vh] bg-[#f1f1f1]'>
-            
-            <div className='w-full flex justify-center'>
-                <div className='md:w-[480px] p-8 bg-white shadow rounded-lg'>
-                    <h3 className='text-3xl font-semibold text-center mb-2'>
-                        Signup
-                    </h3>
-                    <p className='text-center text-gray-500 mb-4'>
-                        Already have an account?{" "}
-                        <Link href="/login" className='text-blue-500'>Login</Link>
+        <div className='w-full min-h-[70vh] bg-white flex flex-col items-center justify-center font-sans py-20'>
+            <div className='w-full max-w-[450px] px-8'>
+                
+                <div className="mb-14 text-center">
+                    <h2 className='text-2xl tracking-[0.4em] uppercase mb-6 text-black font-semibold'>
+                        {showOtp ? "Verify" : "Signup"}
+                    </h2>
+                    <p className='text-[13px] text-black/60 tracking-wide font-medium'>
+                        {showOtp ? "Enter the code sent to your email:" : "Create your account below:"}
                     </p>
-                    
-                    
+                </div>
 
-                    {!showOtp ? (
-                        <form onSubmit={handleSubmit(onSubmit)}>
-                        {/* First Name */}
-                        <label className='block text-gray-700 mb-1'>First Name</label>
-                        <input type='text' placeholder='saminu'
-                            className='w-full p-2 border border-gray-300 outline-0 rounded-md mb-1'
-                            {...register("firstname", { required: "First name is required" })}
-                        />
-                        {errors.firstname && <p className='text-red-500 text-sm'>{errors.firstname.message}</p>}
-
-                        {/* Last Name */}
-                        <label className='block text-gray-700 mb-1'>Last Name</label>
-                        <input type='text' placeholder='hansaja'
-                            className='w-full p-2 border border-gray-300 outline-0 rounded-md mb-1'
-                            {...register("lastname", { required: "Last name is required" })}
-                        />
-                        {errors.lastname && <p className='text-red-500 text-sm'>{errors.lastname.message}</p>}
-
-                        {/* Email */}
-                        <label className='block text-gray-700 mb-1'>Email</label>
-                        <input type='email' placeholder='email@example.com'
-                            className='w-full p-2 border border-gray-300 outline-0 rounded-md mb-1'
-                            {...register("email", { 
-                                required: "Email is required",
-                                pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: "Invalid email" }
-                            })}
-                        />
-                        {errors.email && <p className='text-red-500 text-sm'>{errors.email.message}</p>}
-
-                        {/* Phone Number (10 Digits) */}
-                        <label className='block text-gray-700 mb-1'>Phone Number</label>
-                        <input type='text' placeholder='1234567890'
-                            className='w-full p-2 border border-gray-300 outline-0 rounded-md mb-1'
-                            {...register("phonenumber", { 
-                                required: "Phone number is required",
-                                pattern: {
-                                    value: /^\d{10}$/,
-                                    message: "Phone number must be exactly 10 digits"
-                                }
-                            })}
-                        />
-                        {errors.phonenumber && <p className='text-red-500 text-sm'>{errors.phonenumber.message}</p>}
-
-                        {/* Password */}
-                        <label className='block text-gray-700 mb-1'>Password</label>
-                        <div className="relative">
-                            <input
-                            type={passwordVisible ? "text" : "password"}
-                            placeholder='Min. 6 characters'
-                            className='w-full p-2 border border-gray-300 outline-0 rounded-md mb-1'
-                            {...register("password", { 
-                                required: "Password is required", 
-                                minLength: { value: 6, message: "Min 6 characters" } 
-                            })}
-                            />
-                            <button type='button' onClick={() => setPasswordVisible(!passwordVisible)} className='absolute inset-y-0 right-3 flex items-center text-gray-400'>
-                            {passwordVisible ? <EyeIcon size={20}/> : <EyeOff size={20}/>}
-                            </button>
+                {!showOtp ? (
+                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                        <div className='grid grid-cols-2 gap-4'>
+                            <div>
+                                <input type='text' placeholder='First Name'
+                                    className={`w-full p-4 border outline-none text-sm placeholder:text-black/40 transition-colors font-medium ${errors.firstname ? 'border-red-500' : 'border-black focus:border-black'}`}
+                                    {...register("firstname", { required: "Required" })}
+                                />
+                                {errors.firstname && <p className="text-red-500 text-[10px] mt-1 font-bold uppercase tracking-widest">{errors.firstname.message}</p>}
+                            </div>
+                            <div>
+                                <input type='text' placeholder='Last Name'
+                                    className={`w-full p-4 border outline-none text-sm placeholder:text-black/40 transition-colors font-medium ${errors.lastname ? 'border-red-500' : 'border-black focus:border-black'}`}
+                                    {...register("lastname", { required: "Required" })}
+                                />
+                                {errors.lastname && <p className="text-red-500 text-[10px] mt-1 font-bold uppercase tracking-widest">{errors.lastname.message}</p>}
+                            </div>
                         </div>
-                        {errors.password && <p className='text-red-500 text-sm'>{errors.password.message}</p>}
 
-                        <button type='submit' className='w-full text-lg cursor-pointer mt-4 bg-black text-white py-2 rounded-lg' disabled={signupMutation.isPending}>
-                            {signupMutation.isPending ? "Signing Up..." : "Sign Up"}
-                        </button>
-                        </form>
-                    ): (
                         <div>
-                            <h3 className='text-xl font-semibold text-center mb-4'>Enter OTP</h3>
-                            <div className='flex justify-center gap-6'>
-                                {otp.map((digit, index) => (
-                                    <input
+                            <input type='email' placeholder='E-mail'
+                                className={`w-full p-4 border outline-none text-sm placeholder:text-black/40 transition-colors font-medium ${errors.email ? 'border-red-500' : 'border-black focus:border-black'}`}
+                                {...register("email", { 
+                                    required: "Email required",
+                                    pattern: { value: /\S+@\S+\.\S+/, message: "Invalid format" }
+                                })}
+                            />
+                            {errors.email && <p className="text-red-500 text-[10px] mt-1 font-bold uppercase tracking-widest">{errors.email.message}</p>}
+                        </div>
+
+                        <div>
+                            <input type='text' placeholder='Phone Number'
+                                className={`w-full p-4 border outline-none text-sm placeholder:text-black/40 transition-colors font-medium ${errors.phonenumber ? 'border-red-500' : 'border-black focus:border-black'}`}
+                                {...register("phonenumber", { required: "Phone required" })}
+                            />
+                            {errors.phonenumber && <p className="text-red-500 text-[10px] mt-1 font-bold uppercase tracking-widest">{errors.phonenumber.message}</p>}
+                        </div>
+
+                        <div>
+                            <div className="relative">
+                                <input
+                                    type={passwordVisible ? "text" : "password"}
+                                    placeholder='Password'
+                                    className={`w-full p-4 border outline-none text-sm placeholder:text-black/40 transition-colors font-medium ${errors.password ? 'border-red-500' : 'border-black focus:border-black'}`}
+                                    {...register("password", { 
+                                        required: "Password required", 
+                                        minLength: { value: 6, message: "Min 6 characters" } 
+                                    })}
+                                />
+                                <button type='button' onClick={() => setPasswordVisible(!passwordVisible)} className='absolute right-4 top-1/2 -translate-y-1/2 text-black/40 hover:text-black transition-colors'>
+                                    {passwordVisible ? <EyeOff size={18} /> : <Eye size={18} />}
+                                </button>
+                            </div>
+                            {errors.password && <p className="text-red-500 text-[10px] mt-1 font-bold uppercase tracking-widest">{errors.password.message}</p>}
+                        </div>
+
+                        <button type='submit' disabled={signupMutation.isPending}
+                            className="relative w-full py-4 text-xs tracking-[0.3em] uppercase font-black text-white border-2 border-black overflow-hidden group transition-colors duration-500 bg-black hover:text-black disabled:opacity-70">
+                            <span className="absolute inset-0 bg-white transform -translate-x-full group-hover:translate-x-0 transition-transform duration-500 ease-out"></span>
+                            <span className="relative z-10">{signupMutation.isPending ? "Processing..." : "Sign Up"}</span>
+                        </button>
+
+                        <div className='mt-8 text-center'>
+                            <p className='text-[13px] text-black font-medium tracking-tight'>
+                                Already have an account? 
+                                <Link href="/login" className='text-black font-black uppercase text-[11px] tracking-widest border-b-2 border-black hover:text-black/50 hover:border-black/50 transition-all ml-2'>
+                                    Login
+                                </Link>
+                            </p>
+                        </div>
+                    </form>
+                ) : (
+                    <div className="text-center">
+                        <div className='flex justify-center gap-4 mb-10'>
+                            {otp.map((digit, index) => (
+                                <input
                                     key={index}
                                     type='text'
-                                    ref={(el) => {
-                                        if(el) inputRefs.current[index] = el;
-                                    }}
+                                    ref={(el) => { if (el) inputRefs.current[index] = el; }}
                                     maxLength={1}
-                                    className='w-12 h-12 text-center border border-gray-300 outline-none !rounded'
                                     value={digit}
-                                    onChange={(e) => handleOtpChange(index,e.target.value)}
+                                    onFocus={() => setFocusedIndex(index)}
+                                    onBlur={() => setFocusedIndex(null)}
+                                    className={`w-14 h-14 text-center border outline-none text-lg font-bold transition-all duration-200 
+                                        ${focusedIndex === index 
+                                            ? 'border-black border-2 scale-105 shadow-sm' 
+                                            : 'border-black/20 text-black/60'
+                                        } 
+                                        ${digit && focusedIndex !== index ? 'border-black/40' : ''}`}
+                                    onChange={(e) => handleOtpChange(index, e.target.value)}
                                     onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                                    >
-                                    </input>
-                                ))}
-                            </div>
-                            <button className='w-full mt-4 text-lg cursor-pointer bg-blue-500 text-white py-2 rounded-lg'
-                            disabled = {verifyOtpMutaioin.isPending}
-                            onClick={() => verifyOtpMutaioin.mutate()}
-                            >
-                                {verifyOtpMutaioin.isPending? "Verifying..." : "Verify OTP"}
-                            </button>
-                            <p className='text-center text-sm mt-4'>
-                                {canResend ? (
-                                    <button onClick={resendOtp} className=''>
-                                        Resend OTP
-                                    </button>
-                                ): (
-                                    `Resend OTP in ${timer}s`
-                                )}
-                            </p>
-                            {serverError && (
-                            <p className='text-red-500 text-sm'>
-                                {serverError}
-                            </p>
+                                />
+                            ))}
+                        </div>
+
+                        <button 
+                            onClick={() => { setServerError(null); verifyOtpMutation.mutate(); }} 
+                            disabled={verifyOtpMutation.isPending}
+                            className="relative w-full py-4 text-xs tracking-[0.3em] uppercase font-black text-white border-2 border-black overflow-hidden group transition-colors duration-500 bg-black hover:text-black"
+                        >
+                            <span className="absolute inset-0 bg-white transform -translate-x-full group-hover:translate-x-0 transition-transform duration-500 ease-out"></span>
+                            <span className="relative z-10">{verifyOtpMutation.isPending ? "Verifying..." : "Verify OTP"}</span>
+                        </button>
+
+                        <div className='mt-10 min-h-[24px]'>
+                            {canResend ? (
+                                <button onClick={() => signupMutation.mutate(userData!)} className='text-[11px] text-black font-bold uppercase tracking-widest underline underline-offset-4 decoration-black hover:text-black/50 transition-colors'>
+                                    Resend Code
+                                </button>
+                            ) : (
+                                <p className='text-[11px] text-black/40 uppercase tracking-widest font-bold'>
+                                    Resend in {timer}s
+                                </p>
                             )}
                         </div>
-                    )}
-                </div>
+                        
+                        <button onClick={() => setShowOtp(false)} className='mt-8 text-[11px] text-black font-bold uppercase tracking-widest hover:text-black/50 transition-colors underline underline-offset-4 decoration-black'>
+                            ← Back to Signup
+                        </button>
+                    </div>
+                )}
+
+                {(serverError || successMessage) && (
+                    <div className={`mt-6 p-3 border ${serverError ? 'border-red-500 bg-red-50' : 'border-green-500 bg-green-50'}`}>
+                        <p className={`${serverError ? 'text-red-600' : 'text-green-600'} text-[11px] text-center font-black uppercase tracking-widest`}>
+                            {serverError || successMessage}
+                        </p>
+                    </div>
+                )}
             </div>
+
+            <style jsx>{`
+                @media (max-width: 768px) {
+                    input {
+                        font-size: 16px !important;
+                    }
+                }
+            `}</style>
         </div>
     )
 }
 
-export default Signup
+export default Signup;
