@@ -72,6 +72,8 @@ model Product {
   categoryId String   @db.ObjectId
   category   Category @relation(fields: [categoryId], references: [id])
 
+  sizeChartUrl  String?
+
   isNewArrival  Boolean      @default(true)
   discountType  DiscountType @default(NONE)
   discountValue Float        @default(0) // "10" (for %) or "500" (for LKR)
@@ -287,9 +289,9 @@ model PaymentLog {
 }
 
 //Site Images Uploader
-
 enum SiteImageSection {
-  HERO_BANNER
+  HERO_BANNER_DESKTOP
+  HERO_BANNER_MOBILE
   CATEGORY_GRID
   LOOKBOOK
 }
@@ -307,4 +309,14 @@ model SiteImage {
   updatedAt   DateTime         @updatedAt
 
   @@index([section, isActive])
+}
+
+model SizeChart {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  name      String    @unique
+  imageUrl  String
+  fileId    String    // For ImageKit deletion later
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
