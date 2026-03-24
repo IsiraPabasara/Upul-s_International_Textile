@@ -183,6 +183,22 @@ export const updateProductBySku = async (
     if (!existingProduct)
       return res.status(404).json({ error: "Product not found" });
 
+    // 🟢 DELETE REMOVED IMAGES FROM IMAGEKIT
+    const oldImages = existingProduct.images || [];
+    const newImages = images || [];
+    
+    // Find images that were removed
+    const removedImages = oldImages.filter((oldImg: any) =>
+      !newImages.some((newImg: any) => newImg.fileId === oldImg.fileId)
+    );
+
+    // Extract fileIds and delete from ImageKit
+    if (removedImages.length > 0) {
+      const fileIdsToDelete = removedImages.map((img: any) => img.fileId);
+      console.log('🗑️ Deleting removed images from ImageKit:', fileIdsToDelete);
+      await deleteFromImageKit(fileIdsToDelete);
+    }
+
     const formattedVariants = Array.isArray(variants)
       ? variants.map((v: any) => ({ size: v.size, stock: Number(v.stock) }))
       : [];
