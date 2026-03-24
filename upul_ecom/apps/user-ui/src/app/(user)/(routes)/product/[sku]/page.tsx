@@ -21,8 +21,9 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
+import { useCart } from "@/app/hooks/useCart";
+import { useWishlist } from "@/app/hooks/useWishlist";
 import toast from "react-hot-toast";
-
 // --- Types ---
 interface ProductVariant {
   size: string;
@@ -271,6 +272,8 @@ export default function ProductPage() {
   const [isBuyingNow, setIsBuyingNow] = useState(false);
   const [sizeChartModalOpen, setSizeChartModalOpen] = useState(false);
 
+  const { items, addItem } = useCart();
+  const { toggleItem, isInWishlist } = useWishlist();
 
   const { data: product, isLoading } = useQuery<Product>({
     queryKey: ["product", sku],
@@ -728,20 +731,6 @@ export default function ProductPage() {
           </div>
         </div>
       </div>
-
-      {product.category && (
-        <RelatedProducts
-          categorySlugs={
-            [
-              product.category.slug,
-              product.category.parent?.slug,
-              product.category.parent?.parent?.slug,
-            ].filter(Boolean) as string[]
-          }
-          currentProductId={product.id}
-          categoryName={product.category.name}
-        />
-      )}
 
       {/* Utility Styles for Scrollbar Hiding */}
       <style jsx global>{`
