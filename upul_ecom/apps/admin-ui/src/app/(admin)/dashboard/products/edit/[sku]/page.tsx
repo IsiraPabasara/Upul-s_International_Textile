@@ -13,7 +13,6 @@ export default function EditProductPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  // 1. FETCH
   const { data: product, isLoading, isError } = useQuery({
     queryKey: ["product", sku],
     queryFn: async () => {
@@ -23,7 +22,6 @@ export default function EditProductPage() {
     enabled: !!sku,
   });
 
-  // 2. UPDATE
   const updateMutation = useMutation({
     mutationFn: async (formData: ProductFormValues) => {
       return axiosInstance.put(`/api/products/${sku}`, formData);
@@ -44,7 +42,6 @@ export default function EditProductPage() {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["product", sku] });
       
-      // Redirect after 2 seconds
       setTimeout(() => {
         router.push("/dashboard/productlist");
       }, 2000);

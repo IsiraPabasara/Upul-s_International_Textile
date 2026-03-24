@@ -21,6 +21,7 @@ router.use('/brands', brandRoutes);
 router.use('/imagekit', imagekitRoutes);
 router.use('/size-types', sizeTypeRoutes);
 router.use('/colors', colorRoutes);
+router.use('/size-charts', sizeChartRoutes);
 router.use('/cart', cartRoutes);
 router.use('/orders', orderRoutes);
 router.use('/size-charts', sizeChartRoutes);

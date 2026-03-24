@@ -48,21 +48,18 @@ const customScrollbar =
 export default function ProductListPage() {
   const queryClient = useQueryClient();
 
-  // --- STATE ---
   const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
-  // Debounce Logic: Wait 500ms after typing stops before searching
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchTerm);
-      setPage(1); // Reset to page 1 on new search
+      setPage(1); 
     }, 500);
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  // --- 1. FETCH PRODUCTS ---
   const { data, isLoading, isError } = useQuery<ApiResponse>({
     queryKey: ["products", page, debouncedSearch],
     queryFn: async () => {
@@ -78,7 +75,6 @@ export default function ProductListPage() {
     placeholderData: (previousData) => previousData,
   });
 
-  // --- 2. TOGGLE VISIBILITY MUTATION ---
   const toggleMutation = useMutation({
     mutationFn: async ({
       sku,
@@ -135,10 +131,8 @@ export default function ProductListPage() {
     }
   };
 
-  // --- RENDER ---
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 animate-in fade-in duration-500">
-      {/* HEADER */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight flex items-center gap-3">
@@ -161,7 +155,6 @@ export default function ProductListPage() {
         </Link>
       </div>
 
-      {/* FILTERS & SEARCH */}
       <div className="bg-white dark:bg-slate-900/50 p-4 sm:p-5 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm mb-6 transition-colors">
         <div className="relative w-full group">
           <Search
@@ -179,9 +172,7 @@ export default function ProductListPage() {
         </div>
       </div>
 
-      {/* TABLE CONTAINER */}
       <div className="bg-white dark:bg-slate-900 rounded-[1.5rem] border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col transition-colors">
-        {/* Table Wrapper for horizontal scroll (only triggers if absolute needed) */}
         <div className={`w-full overflow-x-auto ${customScrollbar}`}>
           {isLoading && !data ? (
             <div className="p-20 flex flex-col items-center justify-center text-blue-500">
@@ -216,10 +207,8 @@ export default function ProductListPage() {
                 <tr>
                   <th className="p-3 sm:p-5 pl-4 sm:pl-6 w-[40%] md:w-[30%]">Product</th>
                   <th className="p-3 sm:p-5 w-[20%] md:w-[15%]">SKU</th>
-                  {/* 🟢 Hidden on mobile */}
                   <th className="hidden md:table-cell p-3 sm:p-5 w-[15%]">Price</th>
                   <th className="p-3 sm:p-5 w-[25%] md:w-[20%]">Stock</th>
-                  {/* 🟢 Hidden on mobile */}
                   <th className="hidden md:table-cell p-3 sm:p-5 text-center w-[10%]">Visible</th>
                   <th className="p-3 sm:p-5 text-right pr-4 sm:pr-6 w-[15%] md:w-[10%]">Actions</th>
                 </tr>
@@ -230,12 +219,10 @@ export default function ProductListPage() {
                     key={product.id}
                     className="hover:bg-gray-50/50 dark:hover:bg-slate-800/30 transition-colors group"
                   >
-                    {/* 1. Product Info */}
                     <td className="p-3 sm:p-5 pl-4 sm:pl-6">
                       <div className="flex items-center gap-3 sm:gap-4">
                         <div className="w-10 h-22 sm:w-12 sm:h-22 bg-gray-100 dark:bg-slate-800 rounded-xl overflow-hidden border border-gray-200 dark:border-slate-700 shrink-0">
                           {product.images[0]?.url ? (
-                            // eslint-disable-next-line @next/next/no-img-element
                             <img
                               src={product.images[0].url}
                               alt={product.name}
@@ -251,7 +238,6 @@ export default function ProductListPage() {
                           <p className="font-bold text-[12px] sm:text-sm text-gray-900 dark:text-white line-clamp-2 sm:line-clamp-1">
                             {product.name}
                           </p>
-                          {/* 🟢 Category hidden on mobile to save space */}
                           <p className="hidden sm:block text-[10px] sm:text-xs font-medium text-gray-500 dark:text-slate-400 mt-0.5">
                             {product.category?.name || "Uncategorized"}
                           </p>
@@ -259,17 +245,14 @@ export default function ProductListPage() {
                       </div>
                     </td>
 
-                    {/* 2. SKU */}
                     <td className="p-3 sm:p-5 text-gray-500 dark:text-slate-400 font-mono text-[10px] sm:text-xs font-semibold truncate max-w-[80px] sm:max-w-none">
                       {product.sku}
                     </td>
 
-                    {/* 3. Price - Hidden on mobile */}
                     <td className="hidden md:table-cell p-3 sm:p-5 font-black text-gray-900 dark:text-white text-sm sm:text-base">
                       Rs. {product.price.toLocaleString()}
                     </td>
 
-                    {/* 4. Stock */}
                     <td className="p-3 sm:p-5">
                       {(() => {
                         const hasVariants =
@@ -283,7 +266,6 @@ export default function ProductListPage() {
 
                         return (
                           <div className="flex flex-col gap-1.5 items-start">
-                            {/* Primary Stock Badge */}
                             <span
                               className={`inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-lg text-[9px] sm:text-[10px] font-bold uppercase tracking-wider border transition-colors ${
                                 totalStock === 0
@@ -303,7 +285,6 @@ export default function ProductListPage() {
                                   : "In"}
                             </span>
 
-                            {/* Minimalist Variants Indicator */}
                             {hasVariants && (
                               <span className="text-[8px] sm:text-[9px] font-bold text-gray-500 dark:text-slate-400 flex items-center gap-1 bg-gray-50 dark:bg-slate-800/50 px-1.5 sm:px-2 py-0.5 rounded-md border border-gray-100 dark:border-slate-700 w-fit">
                                 <Layers
@@ -319,7 +300,6 @@ export default function ProductListPage() {
                       })()}
                     </td>
 
-                    {/* 5. Visibility Toggle - Hidden on mobile */}
                     <td className="hidden md:table-cell p-3 sm:p-5 text-center">
                       <button
                         type="button"
@@ -347,7 +327,6 @@ export default function ProductListPage() {
                       </button>
                     </td>
 
-                    {/* 6. Actions */}
                     <td className="p-3 sm:p-5 text-right pr-4 sm:pr-6">
                       <div className="flex items-center justify-end gap-1 sm:gap-1.5">
                         <Link
@@ -375,7 +354,6 @@ export default function ProductListPage() {
           )}
         </div>
 
-        {/* PAGINATION */}
         <div className="bg-gray-50 dark:bg-slate-800/30 border-t border-gray-100 dark:border-slate-800 p-4 sm:p-5 flex items-center justify-between transition-colors">
           <p className="text-xs sm:text-sm font-semibold text-gray-500 dark:text-slate-400">
             Page{" "}
