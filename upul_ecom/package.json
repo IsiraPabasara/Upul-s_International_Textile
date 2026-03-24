@@ -6,7 +6,7 @@
   "private": true,
   "dependencies": {
     "@prisma/client": "6.19",
-    "@tanstack/react-query": "^5.90.21",
+    "@tanstack/react-query": "^5.95.2",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.3",
     "clsx": "^2.1.1",
