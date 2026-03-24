@@ -21,7 +21,7 @@ export const uploadImageToKit = async (file: File, folder: string = '/products')
     const formData = new FormData();
     formData.append('file', file);
     formData.append('fileName', sanitizedFileName);
-    formData.append('publicKey', "public_IeRRcxkTOy5kNKEIAJaj4/XW4Qg=");
+    formData.append('publicKey', process.env.NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY || "");
     formData.append('signature', auth.signature);
     formData.append('expire', auth.expire);
     formData.append('token', auth.token);
@@ -40,7 +40,6 @@ export const uploadImageToKit = async (file: File, folder: string = '/products')
     return {
       fileId: response.data.fileId,
       url: response.data.url,
-      name: response.data.name,
     };
   } catch (error: any) {
     console.error('❌ Upload Error Details:');
