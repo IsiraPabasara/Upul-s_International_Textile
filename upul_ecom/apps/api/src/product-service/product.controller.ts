@@ -2,10 +2,14 @@ import { Request, Response, NextFunction } from "express";
 import prisma from "../../../../packages/libs/prisma";
 import { deleteFromImageKit } from "../imagekit-service/imagekit.controller";
 
-export const createProduct = async (req: Request, res: Response, next: NextFunction) => {
+export const createProduct = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const data = req.body;
-    
+
     // 1. Generate SKU if missing
     let finalSKU = data.sku;
     if (!finalSKU) {
@@ -13,16 +17,25 @@ export const createProduct = async (req: Request, res: Response, next: NextFunct
     }
 
     // 2. Check for Duplicates
-    const existing = await prisma.product.findUnique({ where: { sku: finalSKU } });
+    const existing = await prisma.product.findUnique({
+      where: { sku: finalSKU },
+    });
     if (existing) {
-      return res.status(400).json({ message: "Error generating unique SKU, please try again." });
+      return res
+        .status(400)
+        .json({ message: "Error generating unique SKU, please try again." });
     }
 
     // 3. CALCULATE STOCK LOGIC
     let finalStock = 0;
-    if (data.variants && Array.isArray(data.variants) && data.variants.length > 0) {
+    if (
+      data.variants &&
+      Array.isArray(data.variants) &&
+      data.variants.length > 0
+    ) {
       finalStock = data.variants.reduce(
-        (sum: number, v: any) => sum + Number(v.stock || 0), 0
+        (sum: number, v: any) => sum + Number(v.stock || 0),
+        0,
       );
     } else {
       finalStock = Number(data.stock || 0);
@@ -36,19 +49,22 @@ export const createProduct = async (req: Request, res: Response, next: NextFunct
         description: data.description,
         price: parseFloat(data.price),
         stock: finalStock,
-        availability: finalStock > 0, 
+        availability: finalStock > 0,
         visible: data.visible !== undefined ? data.visible : true,
 
         brand: data.brand || null,
-        
+
         // 🟢 Just save the raw string directly
         country: data.country || null,
 
         images: data.images,
         colors: data.colors || [],
         categoryId: data.categoryId,
+
+        sizeChartUrl: data.sizeChartUrl || null,
+
         sizeType: data.sizeType,
-        variants: data.variants || [], 
+        variants: data.variants || [],
         discountType: data.discountType || "NONE",
         discountValue: parseFloat(data.discountValue || 0),
         isNewArrival: data.isNewArrival || false,
@@ -60,7 +76,11 @@ export const createProduct = async (req: Request, res: Response, next: NextFunct
   }
 };
 
-export const getAllProducts = async (req: Request, res: Response, next: NextFunction) => {
+export const getAllProducts = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const { page = 1, limit = 10, search, categoryId } = req.query;
     const skip = (Number(page) - 1) * Number(limit);
@@ -104,7 +124,11 @@ export const getAllProducts = async (req: Request, res: Response, next: NextFunc
   }
 };
 
-export const getProductBySku = async (req: Request, res: Response, next: NextFunction) => {
+export const getProductBySku = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const { sku } = req.params;
     const product = await prisma.product.findUnique({
@@ -114,11 +138,11 @@ export const getProductBySku = async (req: Request, res: Response, next: NextFun
           include: {
             parent: {
               include: {
-                parent: true
-              }
-            }
-          }
-        }
+                parent: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -129,46 +153,70 @@ export const getProductBySku = async (req: Request, res: Response, next: NextFun
   }
 };
 
-export const updateProductBySku = async (req: Request, res: Response, next: NextFunction) => {
+export const updateProductBySku = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const { sku } = req.params;
-    const { 
-      name, description, price, stock, categoryId, 
+    const {
+      name,
+      description,
+      price,
+      stock,
+      categoryId,
       country, // 🟢 Changed from countryId to country
-      images, variants, discountType, discountValue, brand, sizeType, visible, colors, isNewArrival
+      images,
+      variants,
+      discountType,
+      discountValue,
+      brand,
+      sizeType,
+      visible,
+      colors,
+      isNewArrival,
+      sizeChartUrl,
     } = req.body;
 
     const existingProduct = await prisma.product.findUnique({ where: { sku } });
-    if (!existingProduct) return res.status(404).json({ error: "Product not found" });
+    if (!existingProduct)
+      return res.status(404).json({ error: "Product not found" });
 
     const formattedVariants = Array.isArray(variants)
       ? variants.map((v: any) => ({ size: v.size, stock: Number(v.stock) }))
       : [];
 
-    let finalStock = formattedVariants.length > 0 
-      ? formattedVariants.reduce((sum: number, v: any) => sum + v.stock, 0) 
-      : Number(stock || 0);
+    let finalStock =
+      formattedVariants.length > 0
+        ? formattedVariants.reduce((sum: number, v: any) => sum + v.stock, 0)
+        : Number(stock || 0);
 
     const updatedProduct = await prisma.product.update({
       where: { sku },
       data: {
         name,
         description,
-        price: Number(price), 
+        price: Number(price),
         brand: brand || null,
-        
+
         // 🟢 FIXED: Removed 'data.' prefix and used 'country' from destructuring
-        country: country || null, 
+        country: country || null,
         
+        sizeChartUrl: sizeChartUrl || null,
+
         sizeType,
         stock: finalStock,
-        availability: finalStock > 0, 
+        availability: finalStock > 0,
         visible: visible !== undefined ? visible : existingProduct.visible,
-        isNewArrival: isNewArrival !== undefined ? isNewArrival : existingProduct.isNewArrival,
+        isNewArrival:
+          isNewArrival !== undefined
+            ? isNewArrival
+            : existingProduct.isNewArrival,
         categoryId: categoryId || existingProduct.categoryId,
-        images: images || existingProduct.images, 
+        images: images || existingProduct.images,
         colors: colors || existingProduct.colors,
-        variants: formattedVariants, 
+        variants: formattedVariants,
         discountType: discountType || "NONE",
         discountValue: Number(discountValue || 0),
       },
@@ -177,24 +225,30 @@ export const updateProductBySku = async (req: Request, res: Response, next: Next
     return res.json({ success: true, product: updatedProduct });
   } catch (error) {
     console.error("Update Error:", error);
-    if ((error as any).code === 'P2002') {
-        return res.status(400).json({ error: "Duplicate value found." });
+    if ((error as any).code === "P2002") {
+      return res.status(400).json({ error: "Duplicate value found." });
     }
     return next(error);
   }
 };
 
-export const deleteProduct = async (req: Request, res: Response, next: NextFunction) => {
+export const deleteProduct = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const { sku } = req.params;
-    const product = await prisma.product.findUnique({ 
+    const product = await prisma.product.findUnique({
       where: { sku },
-      select: { images: true } 
+      select: { images: true },
     });
 
     if (!product) return res.status(404).json({ error: "Product not found" });
 
-    const idsToDelete = product.images.map((img: any) => img.fileId).filter(Boolean);
+    const idsToDelete = product.images
+      .map((img: any) => img.fileId)
+      .filter(Boolean);
     await deleteFromImageKit(idsToDelete);
 
     await prisma.product.delete({ where: { sku } });
@@ -204,11 +258,19 @@ export const deleteProduct = async (req: Request, res: Response, next: NextFunct
   }
 };
 
-export const toggleVisibility = async (req: Request, res: Response, next: NextFunction) => {
+export const toggleVisibility = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const { sku } = req.params;
-    const currentProduct = await prisma.product.findUnique({ where: { sku }, select: { visible: true } });
-    if (!currentProduct) return res.status(404).json({ error: "Product not found" });
+    const currentProduct = await prisma.product.findUnique({
+      where: { sku },
+      select: { visible: true },
+    });
+    if (!currentProduct)
+      return res.status(404).json({ error: "Product not found" });
 
     const product = await prisma.product.update({
       where: { sku },
@@ -222,18 +284,26 @@ export const toggleVisibility = async (req: Request, res: Response, next: NextFu
 };
 
 const generateNextSku = async (prefix = "SKU") => {
-  const lastProduct = await prisma.product.findFirst({ orderBy: { createdAt: "desc" } });
+  const lastProduct = await prisma.product.findFirst({
+    orderBy: { createdAt: "desc" },
+  });
   if (!lastProduct || !lastProduct.sku) return `${prefix}-1`;
   const skuParts = lastProduct.sku.split("-");
   const lastNumber = parseInt(skuParts[skuParts.length - 1]);
-  return isNaN(lastNumber) ? `${prefix}-${Date.now()}` : `${prefix}-${lastNumber + 1}`;
+  return isNaN(lastNumber)
+    ? `${prefix}-${Date.now()}`
+    : `${prefix}-${lastNumber + 1}`;
 };
 
-export const getProductCountries = async (req: Request, res: Response, next: NextFunction) => {
+export const getProductCountries = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     // 🟢 Fetching from your new Country model
     const countries = await prisma.country.findMany({
-      orderBy: { name: 'asc' }
+      orderBy: { name: "asc" },
     });
     return res.json(countries);
   } catch (error) {

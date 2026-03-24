@@ -8,7 +8,8 @@ import ImageUploader from "./../../products/imagekit/components/ImageUploader";
 import StockManager from "./../stockmanager/components/StockManager";
 import ColorSelector from "./../colorselector/ColorSelector";
 import CountrySelector from "../brand/components/CountrySelector";
-import { uploadImageToKit } from "../imagekit/utils/uploadService";
+import { uploadImageToKit } from "./../imagekit/utils/uploadService";
+import SizeChartSelector from "../size-charts/components/SizeChartSelector";
 import {
   Loader2,
   Tag,
@@ -51,6 +52,7 @@ export interface ProductFormValues {
   discountType: "NONE" | "PERCENTAGE" | "FIXED";
   discountValue: number;
   visible?: boolean;
+  sizeChartUrl?: string;
 }
 
 interface Props {
@@ -75,6 +77,7 @@ const INITIAL_DATA: ProductFormValues = {
   discountType: "NONE",
   discountValue: 0,
   visible: true,
+  sizeChartUrl: "",
 };
 
 export default function ProductForm({
@@ -370,7 +373,7 @@ export default function ProductForm({
                 <Controller
                   name="colors"
                   control={control}
-                  rules={{ required: true }}
+                  rules={{ required: false }}
                   render={({ field }) => (
                     <ColorSelector
                       key={`color-${resetKey}`}
@@ -412,15 +415,36 @@ export default function ProductForm({
               {/* Dynamic Content Area (Stock vs Variants) */}
               <div className="animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-300">
                 {hasVariants ? (
-                  <StockManager
-                    key={`stock-${resetKey}`}
-                    initialVariants={initialData?.variants}
-                    initialSizeType={initialData?.sizeType}
-                    onUpdate={(data) => {
-                      setValue("sizeType", data.sizeType);
-                      setValue("variants", data.variants);
-                    }}
-                  />
+                  <>
+                    <div className="mb-6 p-5 bg-blue-50/50 dark:bg-blue-900/10 rounded-2xl border border-blue-100 dark:border-blue-800/30">
+                      <label className="label mb-2 text-sm font-semibold text-gray-900 dark:text-white">
+                        Size Chart{" "}
+                        <span className="text-gray-400 font-normal ml-1">
+                          (Optional)
+                        </span>
+                      </label>
+                      <Controller
+                        name="sizeChartUrl"
+                        control={control}
+                        render={({ field }) => (
+                          <SizeChartSelector
+                            selectedChartUrl={field.value}
+                            onChange={field.onChange}
+                          />
+                        )}
+                      />
+                    </div>
+
+                    <StockManager
+                      key={`stock-${resetKey}`}
+                      initialVariants={initialData?.variants}
+                      initialSizeType={initialData?.sizeType}
+                      onUpdate={(data) => {
+                        setValue("sizeType", data.sizeType);
+                        setValue("variants", data.variants);
+                      }}
+                    />
+                  </>
                 ) : (
                   /* Single Stock Counter Card */
                   <div className="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 sm:gap-6">
