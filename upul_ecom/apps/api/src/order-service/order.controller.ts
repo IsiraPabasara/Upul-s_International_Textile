@@ -3,8 +3,7 @@ import prisma from "../../../../packages/libs/prisma"; // Adjust path if needed
 import { v4 as uuidv4 } from 'uuid'; 
 import { sendOrderCancelled, sendOrderConfirmation, sendShopNewOrderNotification } from "../email-service/email.service";
 import { validateCoupon } from "../coupen-service/coupon.service";
-import md5 from 'md5';
-import redis from "../../../../packages/libs/redis";
+
 
 // Helper: Generate a short, readable 6-digit ID (e.g., "829304")
 const generateOrderNumber = () => {
@@ -87,68 +86,11 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
     const orderNumber = generateOrderNumber();
 
     // ==========================================
-    // 🟢 PATH A: PAYHERE (REDIS CACHE STRATEGY)
+    //  PATH A: PAYHERE (PLACEHOLDER - DISABLED FOR NOW)
     // ==========================================
-    if (paymentMethod === 'PAYHERE') {
-      const merchantId = process.env.PAYHERE_MERCHANT_ID;
-      const secret = process.env.PAYHERE_SECRET;
-
-      if (!merchantId || !secret) throw new Error("PayHere config missing");
-
-      // 1. Prepare Payload for Redis
-      const shadowOrder = {
-        orderNumber,
-        guestToken,
-        customerId,
-        customerEmail,
-        shippingAddress,
-        billingAddress: finalBillingAddress, // 🟢 3. Add to Redis payload
-        finalItems,
-        grandTotal,
-        finalDiscount,
-        appliedCouponCode,
-        type // USER or GUEST
-      };
-
-      // 2. Save to Redis (Expire in 30 mins)
-      // Key: "pending_order:123456"
-      await redis.set(`pending_order:${orderNumber}`, JSON.stringify(shadowOrder), 'EX', 1800);
-
-      // 3. Generate Hash
-      const currency = 'LKR';
-      const amountStr = grandTotal.toFixed(2);
-      const hashedSecret = md5(secret).toUpperCase();
-      const hash = md5(merchantId + orderNumber + amountStr + currency + hashedSecret).toUpperCase();
-
-      // 4. Return Params (NO ORDER CREATED IN DB)
-      return res.status(200).json({
-        success: true,
-        isPayHere: true,
-        orderId: orderNumber, // needed for frontend tracking
-        payhereParams: {
-          sandbox: true,
-          merchant_id: merchantId,
-          return_url: `${process.env.FRONTEND_URL}/checkout/success?orderNumber=${orderNumber}`, // PayHere redirects here on success
-          cancel_url: `${process.env.FRONTEND_URL}/checkout`, // Simply go back to checkout
-          notify_url: `${process.env.API_URL}/api/payment/notify`,
-          order_id: orderNumber,
-          items: "Order #" + orderNumber,
-          currency: currency,
-          amount: amountStr,
-          first_name: shippingAddress.firstname,
-          last_name: shippingAddress.lastname,
-          email: customerEmail,
-          phone: shippingAddress.phoneNumber,
-          address: shippingAddress.addressLine,
-          city: shippingAddress.city,
-          country: "Sri Lanka",
-          hash: hash
-        }
-      });
-    }
-
+    
     // ==========================================
-    // 🔵 PATH B: COD (IMMEDIATE DB CREATION)
+    //  PATH B: COD (IMMEDIATE DB CREATION)
     // ==========================================
     // (This block remains exactly the same as your previous code because COD is instant)
     const order = await prisma.$transaction(async (tx: any) => {
