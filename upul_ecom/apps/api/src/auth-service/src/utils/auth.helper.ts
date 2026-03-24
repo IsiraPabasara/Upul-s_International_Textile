@@ -120,3 +120,27 @@ export const verifyForgotPasswordOtp = async (req:Request, res:Response, next:Ne
         next(error);
     }
 }
+
+export const validateAddressData = (data: any) => {
+    const { 
+        firstname, 
+        lastname, 
+        addressLine, 
+        city, 
+        postalCode, 
+        phoneNumber 
+    } = data;
+
+    if (!firstname || !lastname || !addressLine || !city || !postalCode || !phoneNumber) {
+        throw new ValidationError("Missing required address fields!");
+    }
+
+    const phoneRegex = /^\d{10}$/;
+    if (!phoneRegex.test(phoneNumber)) {
+        throw new ValidationError("Phone number must be exactly 10 digits!");
+    }
+
+    if (postalCode.length < 3 || postalCode.length > 10) {
+        throw new ValidationError("Invalid postal code format!");
+    }
+};
