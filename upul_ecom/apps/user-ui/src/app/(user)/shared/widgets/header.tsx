@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import axiosInstance from "@/app/utils/axiosInstance";
+import { useCart } from "@/app/hooks/useCart";
+import { useWishlist } from "@/app/hooks/useWishlist";
 import useUser from "@/app/hooks/useUser";
 
 export default function Header() {
@@ -29,6 +31,8 @@ export default function Header() {
   const { user } = useUser({ required: false });
   const isLoggedIn = !!user;
   const router = useRouter();
+  const { toggleCart, items } = useCart();
+  const { items: wishlistItems } = useWishlist();
 
   const announcements = [
     "ISLAND WIDE CASH-ON DELIVERY - SHOP NOW",
@@ -198,15 +202,26 @@ export default function Header() {
                 className="relative text-gray-800 hover:text-red-600 transition-colors p-1"
               >
                 <Heart className="w-6 h-6 md:w-7 md:h-7" strokeWidth={1.2} />
+                {wishlistItems.length > 0 && (
+                  <span className="absolute top-0 right-0 bg-red-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-bold">
+                    {wishlistItems.length}
+                  </span>
+                )}
               </Link>
 
               <button
+                onClick={toggleCart}
                 className="relative text-gray-800 hover:text-black transition-colors p-1"
               >
                 <ShoppingCart
                   className="w-6 h-6 md:w-7 md:h-7"
                   strokeWidth={1.2}
                 />
+                {items.length > 0 && (
+                  <span className="absolute top-0 right-0 bg-black text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center">
+                    {items.length}
+                  </span>
+                )}
               </button>
             </div>
           </div>
