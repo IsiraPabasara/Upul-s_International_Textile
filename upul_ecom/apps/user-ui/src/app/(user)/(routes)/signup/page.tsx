@@ -45,7 +45,7 @@ const Signup = () => {
 
     const signupMutation = useMutation({
         mutationFn: async (data: FormData) => {
-            const response = await axios.post(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/auth/register`, data);
+            const response = await axios.post(`http://localhost:4000/api/auth/register`, data);
             return response.data;
         },
         onSuccess: (_, formData) => {
@@ -67,7 +67,7 @@ const Signup = () => {
     const verifyOtpMutation = useMutation({
         mutationFn: async () => {
             if (!userData) return;
-            const response = await axios.post(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/auth/verify-user`, {
+            const response = await axios.post(`http://localhost:4000/api/auth/verify-user`, {
                 ...userData,
                 otp: otp.join(""),
             });
