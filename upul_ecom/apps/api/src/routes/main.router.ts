@@ -7,6 +7,7 @@ import sizeTypeRoutes from '../sizetype-service/sizetype.routes';
 import colorRoutes from '../color-service/color.routes';
 import cartRoutes from '../cart-service/cart.routes';
 import {authRouter} from '../auth-service/routes/auth.router';
+import sizeChartRoutes from '../size-types-service/sizetypes.routes';
 
 const router: Router = express.Router();
 
@@ -17,6 +18,7 @@ router.use('/brands', brandRoutes);
 router.use('/imagekit', imagekitRoutes);
 router.use('/size-types', sizeTypeRoutes);
 router.use('/colors', colorRoutes);
+router.use('/size-charts', sizeChartRoutes);
 router.use('/cart', cartRoutes);
 
 export default router;

@@ -1,5 +1,4 @@
 "use client";
-
 import { UploadCloud } from "lucide-react";
 
 interface ImageUploaderProps {
