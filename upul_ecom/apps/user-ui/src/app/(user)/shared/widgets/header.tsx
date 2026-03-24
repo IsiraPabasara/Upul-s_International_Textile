@@ -15,7 +15,6 @@ import {
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import axiosInstance from "@/app/utils/axiosInstance";
-
 import useUser from "@/app/hooks/useUser";
 
 export default function Header() {
@@ -31,12 +30,12 @@ export default function Header() {
   const isLoggedIn = !!user;
   const router = useRouter();
 
-
   const announcements = [
     "ISLAND WIDE CASH-ON DELIVERY - SHOP NOW",
-    "30% OFF ON ALL ITEMS - LIMITED TIME ONLY",
     "GLOBAL WIDE DELIVERY AVAILABLE",
   ];
+
+  // "30% OFF ON ALL ITEMS - LIMITED TIME ONLY",
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -115,7 +114,7 @@ export default function Header() {
               <Menu size={24} />
             </button>
 
-            <Link href="/" className="flex-shrink-0">
+            <Link href="/" className="flex-shrink-0 ml-3 md:ml-0">
               {/* <div className="flex flex-col leading-none">
                 <span className="text-2xl md:text-4xl font-serif font-bold text-[#1a1a3a] tracking-tighter">U<span className="text-red-600 text-sm">PUL'S</span></span>
                 <span className="text-[7px] md:text-[10px] tracking-[0.3em] font-bold text-[#1a1a3a] border-t border-gray-200 pt-0.5 md:pt-1 uppercase">International</span>
@@ -137,13 +136,13 @@ export default function Header() {
 
                     {/* PUL'S aligned with U bottom */}
                     <span className="text-red-600 text-sm font-serif font-bold tracking-tighter leading-none">
-                      PUL&apos;S
+                      PUL
                     </span>
                   </div>
                 </div>
 
-                <span className="text-[7px] md:text-[8px] tracking-[0.3em] font-bold text-[#1a1a3a] border-t border-gray-200 pt-0.5 md:pt-1 uppercase">
-                  International
+                <span className="text-[7px] md:text-[8px] tracking-[0.3em] font-bold text-[#1a1a3a] border-t border-gray-200 pt-0.5 md:pt-1 ml-3 uppercase">
+                  Tailors
                 </span>
               </div>
 
@@ -199,18 +198,15 @@ export default function Header() {
                 className="relative text-gray-800 hover:text-red-600 transition-colors p-1"
               >
                 <Heart className="w-6 h-6 md:w-7 md:h-7" strokeWidth={1.2} />
-                
               </Link>
 
               <button
-                
                 className="relative text-gray-800 hover:text-black transition-colors p-1"
               >
                 <ShoppingCart
                   className="w-6 h-6 md:w-7 md:h-7"
                   strokeWidth={1.2}
                 />
-                
               </button>
             </div>
           </div>
@@ -218,6 +214,12 @@ export default function Header() {
 
         <nav className="bg-white border-b overflow-x-auto scrollbar-hide shadow-sm w-full">
           <div className="max-w-8xl mx-auto px-5 flex gap-6 md:gap-10 h-11 items-center text-[12px] md:text-[13px] font-bold uppercase tracking-tight whitespace-nowrap">
+            <Link
+              href="/shop"
+              className="shrink-0 hover:opacity-70 transition-opacity"
+            >
+              All Products
+            </Link>
             <Link
               href="/shop?isNewArrival=true"
               className="shrink-0 hover:opacity-70 transition-opacity"
