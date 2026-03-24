@@ -6,8 +6,11 @@ import imagekitRoutes from '../imagekit-service/imagekit.routes';
 import sizeTypeRoutes from '../sizetype-service/sizetype.routes';
 import colorRoutes from '../color-service/color.routes';
 import cartRoutes from '../cart-service/cart.routes';
+import orderRoutes from '../order-service/order.router';
 import {authRouter} from '../auth-service/routes/auth.router';
 import sizeChartRoutes from '../size-types-service/sizetypes.routes';
+
+import couponsRoutes from '../coupen-service/coupen.routes';
 
 const router: Router = express.Router();
 
@@ -20,5 +23,9 @@ router.use('/size-types', sizeTypeRoutes);
 router.use('/colors', colorRoutes);
 router.use('/size-charts', sizeChartRoutes);
 router.use('/cart', cartRoutes);
+router.use('/orders', orderRoutes);
+router.use('/size-charts', sizeChartRoutes);
+
+router.use('/coupons', couponsRoutes);
 
 export default router;

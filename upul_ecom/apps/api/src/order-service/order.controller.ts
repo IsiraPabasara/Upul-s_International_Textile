@@ -13,7 +13,7 @@ const generateOrderNumber = () => {
 // Inside createOrder function:
 export const createOrder = async (req: Request, res: Response, next: NextFunction) => {
   // 🟢 1. Destructure billingAddress from req.body
-  const { type, userId, addressId, address, billingAddress, items, email, paymentMethod, couponCode } = req.body;
+  const { type, userId, addressId, address, billingAddress, items, email, couponCode } = req.body;
 
   try {
     // --- 1. PREPARE COMMON DATA ---
