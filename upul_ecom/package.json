@@ -5,6 +5,7 @@
   "scripts": {},
   "private": true,
   "dependencies": {
+    "@dnd-kit/sortable": "^10.0.0",
     "@prisma/client": "6.19",
     "@tanstack/react-query": "^5.90.21",
     "bcrypt": "^6.0.0",
