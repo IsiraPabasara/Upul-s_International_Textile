@@ -19,7 +19,7 @@ export default function AddProductPage() {
     onSuccess: () => {
       toast.success("Product created successfully! ");
       queryClient.invalidateQueries({ queryKey: ["products"] });
-      router.push("/dashboard/productlist");
+      router.push("/dashboard/products");
     },
     onError: (err: any) => {
       const msg = err.response?.data?.error || "Failed to create product";
