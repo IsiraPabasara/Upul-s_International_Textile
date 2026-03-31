@@ -59,7 +59,7 @@ const Login = () => {
            
 
             toast.success("Login successful!");
-            router.push("/dashboard/products/add");
+            router.push("/dashboard");
         },
         onError: (error: AxiosError) => {
             const errorMessage = (error.response?.data as { message?: string })?.message || "Invalid credentials";

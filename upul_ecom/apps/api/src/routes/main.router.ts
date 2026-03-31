@@ -9,6 +9,9 @@ import cartRoutes from '../cart-service/cart.routes';
 import {authRouter} from '../auth-service/routes/auth.router';
 import sizeChartRoutes from '../size-types-service/sizetypes.routes';
 import couponsRoutes from '../coupen-service/coupen.routes';
+import analyticsRoutes from "../analytics/analytics.routes";
+import orderRouter from '../order-service/order.router';
+import emailRoutes from '../email-service/email.routes';
 
 const router: Router = express.Router();
 
@@ -22,6 +25,9 @@ router.use('/colors', colorRoutes);
 router.use('/size-charts', sizeChartRoutes);
 router.use('/cart', cartRoutes);
 router.use('/coupons', couponsRoutes);
+router.use('/orders', orderRouter);
+router.use("/analytics", analyticsRoutes);
+router.use('/admin/email', emailRoutes);
 
 
 export default router;
