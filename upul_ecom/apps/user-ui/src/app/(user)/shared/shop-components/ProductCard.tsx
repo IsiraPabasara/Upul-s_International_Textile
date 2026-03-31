@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { Heart } from 'lucide-react';
-// import { useWishlist } from '@/app/hooks/useWishlist';
+import { useWishlist } from '@/app/hooks/useWishlist';
 import axiosInstance from '@/app/utils/axiosInstance';
 import toast from 'react-hot-toast';
 
@@ -22,8 +22,8 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
-  // const { toggleItem, isInWishlist } = useWishlist();
-  // const isWishlisted = isInWishlist(product.id);
+  const { toggleItem, isInWishlist } = useWishlist();
+  const isWishlisted = isInWishlist(product.id);
 
   const originalPrice = product.price;
   let finalPrice = originalPrice;
@@ -51,9 +51,9 @@ export default function ProductCard({ product }: ProductCardProps) {
       availability: product.availability
     };
 
-    // toggleItem(item); 
-    // if (!isWishlisted) toast.success("Added to wishlist");
-    // else toast.success("Removed from wishlist");
+    toggleItem(item); 
+    if (!isWishlisted) toast.success("Added to wishlist");
+    else toast.success("Removed from wishlist");
 
     try {
        await axiosInstance.post('/api/wishlist/toggle', item, { isPublic: true });
@@ -100,9 +100,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             <Heart 
               size={18} 
               strokeWidth={1.5} 
-              // className={isWishlisted ? "fill-black" : "fill-none"} 
-              className={"fill-none"} 
-
+              className={isWishlisted ? "fill-black" : "fill-none"} 
             />
           </button>
         </div>

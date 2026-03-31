@@ -2,7 +2,6 @@ import { Request, Response, NextFunction } from "express";
 import prisma from "../../../../packages/libs/prisma";
 import { sendOrderCancelled, sendOrderDelivered, sendOrderProcessing, sendOrderReturned, sendShippingUpdate } from "../email-service/email.service";
 
-// 📊 GET TOTAL ORDER STATS (For the top cards)
 export const getAdminOrderStats = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const statusCounts = await prisma.order.groupBy({
