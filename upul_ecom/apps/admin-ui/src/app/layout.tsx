@@ -1,6 +1,7 @@
 import './global.css';
 import { Poppins, Roboto, Outfit, Cormorant_Garamond } from 'next/font/google';
 import Providers from './providers';
+import { ThemeProvider } from './context/ThemeContext'; 
 
 export const metadata = {
   title: 'Welcome to admin-ui',
@@ -38,7 +39,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`
           ${roboto.variable}
@@ -49,7 +50,9 @@ export default function RootLayout({
         `}
       >
         <Providers>
-          {children}
+          <ThemeProvider>
+            {children}
+          </ThemeProvider>
         </Providers>
       </body>
     </html>
