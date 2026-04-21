@@ -85,6 +85,7 @@ export const useCart = create<CartState>()(
         get().clearValidationErrors();
       },
 
+      //update item prices
       updatePrices: (priceUpdates) => {
         set((state) => ({
           items: state.items.map((item) =>
@@ -95,11 +96,13 @@ export const useCart = create<CartState>()(
         }));
       },
 
+      //removing item
       removeItem: (sku) => {
         set((state) => ({ items: state.items.filter((i) => i.sku !== sku) }));
         get().clearValidationErrors();
       },
 
+      //updating item
       updateQuantity: (sku, qty) => {
         set((state) => ({
           items: state.items.map((i) => (i.sku === sku ? { ...i, quantity: qty } : i)),
@@ -153,3 +156,5 @@ export const useCart = create<CartState>()(
     }
   )
 );
+
+
