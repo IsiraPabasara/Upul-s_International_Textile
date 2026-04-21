@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import axiosInstance from "../../../../../axiosInstance";
+import axiosInstance from "@/app/utils/axiosInstance";
 import { ChevronRight, ChevronDown, Network, Check } from "lucide-react";
 
 interface Category {
