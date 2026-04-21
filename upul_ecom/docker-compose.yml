@@ -1,0 +1,30 @@
+services:
+  backend:
+    build:
+      context: .
+      target: api
+    image: saminuh2/upul-backend:latest
+    ports:
+      - "4000:4000"
+    env_file:
+      - .env.backend
+
+  frontend:
+    build:
+      context: .
+      target: ui
+    image: saminuh2/upul-frontend:latest
+    ports:
+      - "3001:3001"
+    depends_on:
+      - backend
+
+  admin:
+    build:
+      context: .
+      target: admin-ui
+    image: saminuh2/upul-admin:latest
+    ports:
+      - "3002:3002"
+    depends_on:
+      - backend
