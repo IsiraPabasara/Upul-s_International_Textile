@@ -1,10 +1,12 @@
 'use client';
+import { usePageTitle } from '@/app/hooks/usePageTitle';
 
 import { useWishlist } from '@/app/hooks/useWishlist';
 import ProductCard from '@/app/(user)/shared/shop-components/ProductCard';
 import Link from 'next/link';
 
 export default function WishlistPage() {
+  usePageTitle('Wishlist', 'Your saved items');
   const { items } = useWishlist();
 
   return (
