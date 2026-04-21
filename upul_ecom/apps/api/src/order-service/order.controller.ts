@@ -3,7 +3,8 @@ import prisma from "../../../../packages/libs/prisma"; // Adjust path if needed
 import { v4 as uuidv4 } from 'uuid'; 
 import { sendOrderCancelled, sendOrderConfirmation, sendShopNewOrderNotification } from "../email-service/email.service";
 import { validateCoupon } from "../coupen-service/coupon.service";
-
+import md5 from 'md5';
+import redis from "../../../../packages/libs/redis";
 
 // Helper: Generate a short, readable 6-digit ID (e.g., "829304")
 const generateOrderNumber = () => {
@@ -12,8 +13,8 @@ const generateOrderNumber = () => {
 
 // Inside createOrder function:
 export const createOrder = async (req: Request, res: Response, next: NextFunction) => {
-  // 🟢 1. Destructure billingAddress from req.body
-  const { type, userId, addressId, address, billingAddress, items, email, couponCode } = req.body;
+  // 🟢 1. Destructure billingAddress and shippingFee from req.body
+  const { type, userId, addressId, address, billingAddress, items, email, paymentMethod, couponCode} = req.body;
 
   try {
     // --- 1. PREPARE COMMON DATA ---
@@ -78,21 +79,105 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
     let finalDiscount = 0;
     let appliedCouponCode: string | null = null;
     if (couponCode) {
-      const { coupon, discount } = await validateCoupon(couponCode, customerId, calculatedTotal);
+      // Pass customerEmail here
+      const { coupon, discount } = await validateCoupon(couponCode, customerId, customerEmail, calculatedTotal);
       finalDiscount = discount;
       appliedCouponCode = coupon.code;
     }
-    const grandTotal = Math.max(0, calculatedTotal - finalDiscount);
+    
+    // � SECURE SHIPPING CALCULATION
+    // Frontend sends shippingFee, but we recalculate it server-side to prevent fraud
+    let finalShippingFee = 450; // Default fallback
+    if (shippingAddress && shippingAddress.city) {
+      const cityRecord = await prisma.shippingCity.findUnique({
+        where: { name: shippingAddress.city }
+      });
+      if (cityRecord) {
+        finalShippingFee = cityRecord.shippingCost;
+      }
+    }
+    
+    // 🟢 ADD SHIPPING FEE TO GRAND TOTAL
+    const grandTotal = Math.max(0, calculatedTotal - finalDiscount) + finalShippingFee;
     const orderNumber = generateOrderNumber();
 
     // ==========================================
-    //  PATH A: PAYHERE (PLACEHOLDER - DISABLED FOR NOW)
+    // 🟢 PATH A: PAYHERE (REDIS CACHE STRATEGY)
     // ==========================================
-    
+    if (paymentMethod === 'PAYHERE') {
+      const merchantId = process.env.PAYHERE_MERCHANT_ID;
+      const secret = process.env.PAYHERE_SECRET;
+
+      if (!merchantId || !secret) throw new Error("PayHere config missing");
+
+      // 1. Prepare Payload for Redis
+      const shadowOrder = {
+        orderNumber,
+        guestToken,
+        customerId,
+        customerEmail,
+        shippingAddress,
+        billingAddress: finalBillingAddress, // 🟢 3. Add to Redis payload
+        finalItems,
+        grandTotal,
+        shippingFee: finalShippingFee, // 🔒 Use the server-calculated shipping fee
+        finalDiscount,
+        appliedCouponCode,
+        type // USER or GUEST
+      };
+
+      // 2. Save to Redis (Expire in 30 mins)
+      // Key: "pending_order:123456"
+      await redis.set(`pending_order:${orderNumber}`, JSON.stringify(shadowOrder), 'EX', 1800);
+
+      // 3. Generate Hash
+      const currency = 'LKR';
+      const amountStr = grandTotal.toFixed(2);
+      const hashedSecret = md5(secret).toUpperCase();
+      const hash = md5(merchantId + orderNumber + amountStr + currency + hashedSecret).toUpperCase();
+
+      // 4. Return Params (NO ORDER CREATED IN DB)
+      return res.status(200).json({
+        success: true,
+        isPayHere: true,
+        orderId: orderNumber, // needed for frontend tracking
+        payhereParams: {
+          sandbox: false,
+          merchant_id: merchantId,
+          return_url: `${process.env.FRONTEND_URL}/checkout/success?orderNumber=${orderNumber}`, // PayHere redirects here on success
+          cancel_url: `${process.env.FRONTEND_URL}/checkout`, // Simply go back to checkout
+          notify_url: `${process.env.API_URL}/api/payment/notify`,
+          order_id: orderNumber,
+          items: "Order #" + orderNumber,
+          currency: currency,
+          amount: amountStr,
+          first_name: shippingAddress.firstname,
+          last_name: shippingAddress.lastname,
+          email: customerEmail,
+          phone: shippingAddress.phoneNumber,
+          address: shippingAddress.addressLine,
+          city: shippingAddress.city,
+          country: "Sri Lanka",
+          hash: hash
+        }
+      });
+    }
+
     // ==========================================
-    //  PATH B: COD (IMMEDIATE DB CREATION)
+    // 🔵 PATH B: COD (IMMEDIATE DB CREATION)
     // ==========================================
-    // (This block remains exactly the same as your previous code because COD is instant)
+    // Create a unique key based on the user (or email) and the total amount.
+    // This "locks" this specific order for 30 seconds.
+    const lockKey = `order_lock:cod:${customerId || email}:${grandTotal.toFixed(0)}`;
+    const lockAcquired = await redis.set(lockKey, "locked", "EX", 30, "NX");
+
+    if (!lockAcquired) {
+      return res.status(429).json({ 
+        success: false, 
+        message: "We are already processing an order for you. Please wait a moment." 
+      });
+    }
+
     const order = await prisma.$transaction(async (tx: any) => {
         // ... (Repeat the stock deduction & Order.create logic you had for COD)
         // Since you wanted to reuse code, ideally you extract the deduction logic to a helper function.
@@ -115,7 +200,8 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
         if (appliedCouponCode) {
           await tx.coupon.update({
             where: { code: appliedCouponCode },
-            data: { usedCount: { increment: 1 }, usedByUserIds: { push: customerId || '' } }
+            // Push customerId if it exists, otherwise fallback to customerEmail
+            data: { usedCount: { increment: 1 }, usedByUserIds: { push: customerId || customerEmail } }
           });
         }
 
@@ -129,6 +215,7 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
           items: finalItems,
           totalAmount: grandTotal,
           discountAmount: finalDiscount,
+          shippingFee: finalShippingFee, // 🔒 Store the server-calculated shipping fee
           couponCode: appliedCouponCode,
           status: 'PENDING',
           paymentMethod: 'COD'
@@ -350,5 +437,24 @@ export const cancelGuestOrder = async (req: Request, res: Response, next: NextFu
     return res.json({ success: true, message: "Order cancelled successfully", order: result });
   } catch (error: any) {
     return res.status(400).json({ message: error.message });
+  }
+};
+
+export const verifyOrder = async (req: Request, res: Response) => {
+  try {
+    const { orderNumber } = req.params;
+
+    const order = await prisma.order.findUnique({
+      where: { orderNumber: orderNumber }
+    });
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Order not found" });
+    }
+
+    // You can also check if (order.status !== 'CANCELLED')
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    return res.status(500).json({ success: false });
   }
 };
