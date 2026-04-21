@@ -7,15 +7,19 @@ import {
   reorderCategories,
   getCategoryPath
 } from "./category.controller";
+import isAuthenticated from "../../../../packages/middleware/isAuthenticated";
+import { isAdmin } from "../../../../packages/middleware/authorizedRoles";
 
 const router = Router();
 
-router.put("/reorder", reorderCategories);
-router.post("/", createCategory);
 router.get("/", getCategories);
-router.delete("/:id", deleteCategory);
-router.put("/:id", updateCategory);
-// ... existing routes
-router.get("/path/:id", getCategoryPath); // 👈 Add this
+router.get("/path/:id", getCategoryPath);
+
+router.use(isAuthenticated);
+
+router.put("/reorder", isAdmin, reorderCategories);
+router.post("/", isAdmin,createCategory);
+router.delete("/:id",isAdmin ,deleteCategory);
+router.put("/:id",isAdmin, updateCategory);
 
 export default router;

@@ -30,7 +30,7 @@ export const createCategory = async (
       data: {
         name,
         slug, // 👈 ADD THIS LINE
-        sortOrder: sortOrder ? Number(sortOrder) : 999,
+        sortOrder: Number(sortOrder),
         parent: safeParentId ? { connect: { id: safeParentId } } : undefined,
       },
     });
@@ -76,24 +76,19 @@ export const getCategories = async (req: Request, res: Response) => {
   res.json(categories);
 };
 
-// 1. Helper: Deletes products, children first, then the item itself
+// 1. Helper: Deletes children first, then the item itself
 const deleteCategoryRecursive = async (categoryId: string) => {
-  // 1. Delete all products in this category
-  await prisma.product.deleteMany({
-    where: { categoryId },
-  });
-
-  // 2. Find immediate children
+  // Find immediate children
   const children = await prisma.category.findMany({
     where: { parentId: categoryId },
   });
 
-  // 3. Recursively delete each child FIRST
+  // Recursively delete each child FIRST
   for (const child of children) {
     await deleteCategoryRecursive(child.id);
   }
 
-  // 4. Once all children and products are gone, delete the parent
+  // Once all children are gone, it's safe to delete the parent
   await prisma.category.delete({
     where: { id: categoryId },
   });
