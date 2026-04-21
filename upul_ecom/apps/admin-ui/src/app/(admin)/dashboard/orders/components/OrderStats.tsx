@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import axiosInstance from "@/app/axiosInstance";
+import axiosInstance from "@/app/utils/axiosInstance";
 import {
   Phone,
   CheckCircle2,

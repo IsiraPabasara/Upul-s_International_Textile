@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import axiosInstance from "../../../../axiosInstance";
+import axiosInstance from "@/app/utils/axiosInstance";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
