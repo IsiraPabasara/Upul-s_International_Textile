@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import axiosInstance from '@/app/utils/axiosInstance';
 
+//interface variables
 export interface WishlistItem {
   productId: string;
   name: string;
@@ -48,7 +49,7 @@ export const useWishlist = create<WishlistState>()(
 
       clearWishlist: () => set({ items: [] }),
 
-      // Call this ONLY right after the user successfully logs in
+      // Call this ONLY right after the user successfully sign in
       syncWithUser: async () => {
         const localItems = get().items; 
         
@@ -60,7 +61,7 @@ export const useWishlist = create<WishlistState>()(
             }
         }
         
-        // Fetch the newly merged list
+        // Fetch the newly merged list..
         await get().fetchWishlist();
       },
 
