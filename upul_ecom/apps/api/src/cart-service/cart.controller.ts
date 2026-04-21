@@ -17,7 +17,7 @@ const calculateEffectivePrice = (product: any) => {
 };
 
 /**
- * HELPER: Ensures data matches Prisma schema and forces number types
+ * HELPER: Ensures data matches Prisma schema and forces number  types
  */
 const sanitizeItem = (item: any) => ({
   productId: item.productId,
@@ -158,7 +158,7 @@ export const removeCartItem = async (req: any, res: Response, next: NextFunction
   }
 };
 
-// --- 6. Verify Cart (The Security Check) ---
+// --- 6. Verify Cart (Security Check) ---
 export const verifyCart = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { items } = req.body; 
@@ -185,7 +185,7 @@ export const verifyCart = async (req: Request, res: Response, next: NextFunction
       }
 
       // Calculate the Discounted Price dynamically
-      const dbPrice = calculateEffectivePrice(product);
+      const dbPrice =  calculateEffectivePrice(product);
       
       // Price Validation (Compare with Frontend Price)
       if (Number(item.price).toFixed(2) !== dbPrice.toFixed(2)) {
@@ -209,7 +209,7 @@ export const verifyCart = async (req: Request, res: Response, next: NextFunction
       }
     }
 
-    return res.json({ isValid, errors, updatedPrices });
+    return res.json({  isValid, errors, updatedPrices });
   } catch (error) {
     return next(error);
   }

@@ -1,7 +1,7 @@
 import { Response, NextFunction } from "express";
 import prisma from "../../../../packages/libs/prisma";
 
-// --- 🛠️ Helper: Strip extra UI fields (brand, availability, etc.) ---
+// --- Helper: Strip extra UI fields (brand, availability, etc) --
 // Prisma throws 500 if we try to save fields not defined in 'type WishlistItem'
 const sanitizeItem = (item: any) => {
   return {
@@ -16,7 +16,7 @@ const sanitizeItem = (item: any) => {
 // --- 1. Merge Local Wishlist to DB (On Login) ---
 export const mergeWishlist = async (req: any, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user!.id;
+    const userId  = req.user!.id;
     const { localItems } = req.body; 
 
     // 1. Sanitize incoming array
@@ -24,7 +24,7 @@ export const mergeWishlist = async (req: any, res: Response, next: NextFunction)
       ? localItems.map(sanitizeItem) 
       : [];
 
-    let wishlist = await prisma.wishlist.findUnique({ where: { userId } });
+    let wishlist =  await prisma.wishlist.findUnique({ where: { userId } });
     if (!wishlist) {
       wishlist = await prisma.wishlist.create({
         data: { userId, items: [] }
@@ -90,7 +90,7 @@ export const toggleWishlistItem = async (req: any, res: Response, next: NextFunc
   }
 };
 
-// --- 3. Get Wishlist ---
+// -- 3. Get Wishlist --
 export const getWishlist = async (req: any, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.id;

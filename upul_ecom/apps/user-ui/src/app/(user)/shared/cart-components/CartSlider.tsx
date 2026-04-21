@@ -164,7 +164,7 @@ export default function CartSlider() {
               <div className="flex flex-col items-center justify-center h-full text-gray-500">
                 <ShoppingBag size={48} className="mb-4 text-gray-300" />
                 <p>Your cart is empty</p>
-                <button onClick={toggleCart} className="mt-4 text-black underline hover:text-gray-600">
+                <button onClick={() => { toggleCart(); router.push('/shop'); }} className="mt-4 text-black underline hover:text-gray-600">
                   Continue Shopping
                 </button>
               </div>
