@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import axiosInstance from "@/app/axiosInstance";
+import axiosInstance from "@/app/utils/axiosInstance";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   CreditCard,
@@ -13,7 +13,6 @@ import {
   ChevronRight,
   X,
 } from "lucide-react";
-
 
 import OrderStats from "./components/OrderStats";
 
@@ -27,6 +26,14 @@ export default function AdminOrdersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  // Reset zoom to 100% when page loads
+  useEffect(() => {
+    document.body.style.zoom = "100%";
+    return () => {
+      document.body.style.zoom = "100%";
+    };
+  }, []);
 
   // 2. FETCH FROM BACKEND WITH PARAMS
   const { data, isLoading } = useQuery({
@@ -85,7 +92,7 @@ export default function AdminOrdersPage() {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 bg-gray-50/50 dark:bg-slate-950 min-h-screen transition-colors duration-300">
-      <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8 animate-in fade-in duration-500">
+      <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8">
         {/* PAGE HEADER */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
           <div>
@@ -136,6 +143,7 @@ export default function AdminOrdersPage() {
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
                 size={16}
               />
+              {/* Look for your search input around line 150 and update the className */}
               <input
                 type="text"
                 placeholder="Search Order ID or Name..."
@@ -144,7 +152,8 @@ export default function AdminOrdersPage() {
                   setSearchQuery(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="w-full pl-10 pr-4 py-2.5 sm:py-2 bg-gray-50 dark:bg-slate-800 border border-transparent focus:border-blue-200 dark:focus:border-blue-800 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-200 placeholder:text-slate-400 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all"
+                // CHANGE HERE: Changed text-sm to text-base sm:text-sm
+                className="w-full pl-10 pr-4 py-2.5 sm:py-2 bg-gray-50 dark:bg-slate-800 border border-transparent focus:border-blue-200 dark:focus:border-blue-800 rounded-xl text-base sm:text-sm font-semibold text-slate-700 dark:text-slate-200 placeholder:text-slate-400 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all"
               />
             </div>
           </div>
@@ -212,7 +221,7 @@ export default function AdminOrdersPage() {
                       colSpan={filterStatus === "ALL" ? 5 : 4}
                       className="px-4 sm:px-6 py-20 text-center text-slate-400"
                     >
-                      <div className="flex flex-col items-center justify-center animate-in zoom-in duration-300">
+                      <div className="flex flex-col items-center justify-center">
                         <FilterX size={48} className="mb-4 opacity-20" />
                         <p className="font-medium text-slate-500">
                           No orders found.
