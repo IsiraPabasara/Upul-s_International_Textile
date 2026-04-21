@@ -1,4 +1,5 @@
 'use client'
+import { usePageTitle } from '@/app/hooks/usePageTitle';
 import { useMutation } from '@tanstack/react-query';
 import { Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
@@ -17,6 +18,7 @@ type FormData = {
 }
 
 const Signup = () => {
+    usePageTitle('Sign Up', 'Create a new account');
     const [passwordVisible, setPasswordVisible] = useState(false);
     const [showOtp, setShowOtp] = useState(false);
     const [serverError, setServerError] = useState<string | null>(null);
@@ -45,7 +47,7 @@ const Signup = () => {
 
     const signupMutation = useMutation({
         mutationFn: async (data: FormData) => {
-            const response = await axios.post(`http://localhost:4000/api/auth/register`, data);
+            const response = await axios.post(`https://api.upuls.lk/api/auth/register`, data);
             return response.data;
         },
         onSuccess: (_, formData) => {
@@ -67,7 +69,7 @@ const Signup = () => {
     const verifyOtpMutation = useMutation({
         mutationFn: async () => {
             if (!userData) return;
-            const response = await axios.post(`http://localhost:4000/api/auth/verify-user`, {
+            const response = await axios.post(`https://api.upuls.lk/api/auth/verify-user`, {
                 ...userData,
                 otp: otp.join(""),
             });

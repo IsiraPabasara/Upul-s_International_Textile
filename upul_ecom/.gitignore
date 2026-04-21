@@ -6,7 +6,8 @@ tmp
 out-tsc
 
 #env
-
+.env
+.env.backend
 
 # dependencies
 node_modules

@@ -1,9 +1,12 @@
 import { Router } from 'express';
 import isAuthenticated from '../../../../packages/middleware/isAuthenticated';
-import { addToCart, getCart, mergeCart, removeCartItem, updateCartItem, verifyCart } from './cart.controller';
+import { addToCart, getCart, mergeCart, removeCartItem, updateCartItem, verifyCart, generateCartFrequencyReport } from './cart.controller';
 
 
 const router = Router();
+
+// 📋 Report Routes (Put this BEFORE /:sku to prevent route collision)
+router.get('/report', generateCartFrequencyReport);
 
 router.post('/verify', verifyCart);
 router.use(isAuthenticated);

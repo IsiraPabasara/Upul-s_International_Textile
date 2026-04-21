@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import { usePageTitle } from '@/app/hooks/usePageTitle';
 import { ChevronLeft, Plus, Trash2, Edit2, Check } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
@@ -21,10 +22,33 @@ type AddressFormData = {
 };
 
 const AddressManager = () => {
+  usePageTitle('Addresses', 'Manage your shipping addresses');
   const { user, isLoading } = useUser();
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+  
+  // City dropdown state
+  const [citySearch, setCitySearch] = useState('');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isValidCity, setIsValidCity] = useState(false);
+
+  // Fetch shipping cities
+  const { data: dbCities = [] } = useQuery({
+    queryKey: ['active-shipping-cities'],
+    queryFn: async () => {
+      const response = await axiosInstance.get('/api/shipping-cities');
+      return response.data.cities || [];
+    },
+  });
+
+  // Filter cities based on search
+  const filteredCities = useMemo(() => 
+    dbCities.filter((c: any) => 
+      c.name.toLowerCase().includes(citySearch.toLowerCase())
+    ),
+    [dbCities, citySearch]
+  );
 
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<AddressFormData>();
   const isDefaultChecked = watch("isDefault");
@@ -33,13 +57,13 @@ const AddressManager = () => {
 
   const addMutation = useMutation({
     mutationFn: (data: AddressFormData) => axiosInstance.post("/api/auth/add-address", data),
-    onSuccess: () => { invalidateUser(); reset(); setIsEditing(false); toast.success("Address added"); },
+    onSuccess: () => { invalidateUser(); reset(); setIsEditing(false); setCitySearch(''); setIsValidCity(false); toast.success("Address added"); },
     onError: (err: any) => toast.error(err.response?.data?.message || "Failed"),
   });
 
   const updateMutation = useMutation({
     mutationFn: (data: AddressFormData) => axiosInstance.put(`/api/auth/update-address/${selectedAddressId}`, data),
-    onSuccess: () => { invalidateUser(); setIsEditing(false); setSelectedAddressId(null); toast.success("Address updated"); },
+    onSuccess: () => { invalidateUser(); setIsEditing(false); setSelectedAddressId(null); setCitySearch(''); setIsValidCity(false); toast.success("Address updated"); },
   });
 
   const deleteMutation = useMutation({
@@ -53,6 +77,10 @@ const AddressManager = () => {
   });
 
   const onSubmit = (data: AddressFormData) => {
+    if (!isValidCity) {
+      toast.error('Please select a valid city from the dropdown');
+      return;
+    }
     if (selectedAddressId) updateMutation.mutate(data);
     else addMutation.mutate(data);
   };
@@ -60,7 +88,17 @@ const AddressManager = () => {
   const handleEditClick = (address: any) => {
     setSelectedAddressId(address.id);
     setIsEditing(true);
+    setCitySearch(address.city);
+    setIsValidCity(true);
     Object.keys(address).forEach((key) => setValue(key as keyof AddressFormData, address[key]));
+  };
+
+  // Function to handle city selection
+  const handleCitySelect = (city: any) => {
+    setValue('city', city.name, { shouldValidate: true });
+    setCitySearch(city.name);
+    setIsValidCity(true);
+    setIsDropdownOpen(false);
   };
 
   if (isLoading) return <div className="min-h-screen flex items-center justify-center text-xs uppercase tracking-[0.3em] font-bold">Loading...</div>;
@@ -76,7 +114,7 @@ const AddressManager = () => {
         <div className="flex justify-between items-end mb-16 border-b border-black pb-8">
           <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tighter">Addresses</h1>
           {!isEditing && (
-            <button onClick={() => { setIsEditing(true); setSelectedAddressId(null); reset(); }}
+            <button onClick={() => { setIsEditing(true); setSelectedAddressId(null); setCitySearch(''); setIsValidCity(false); reset(); }}
               className="flex items-center gap-2 text-[0.6rem] md:text-xs uppercase tracking-[0.2em] font-bold bg-black text-white px-3 py-3 hover:bg-gray-800 transition-all">
               <Plus size={14} /> Add New
             </button>
@@ -105,11 +143,58 @@ const AddressManager = () => {
                   {errors.addressLine && <p className="text-red-500 text-xs font-bold">{errors.addressLine.message}</p>}
               </div>
 
+              <div className="space-y-2">
+                  <label className="text-xs uppercase font-bold text-gray-400 tracking-widest">Apartment, Suite, etc. (Optional)</label>
+                  <input {...register("apartment")} className="w-full py-3 border-b border-gray-200 outline-none focus:border-black transition-colors text-base font-medium" />
+              </div>
+
               <div className="grid grid-cols-2 gap-8">
-                <div className="space-y-2">
+                <div className="space-y-2 relative">
                     <label className="text-xs uppercase font-bold text-gray-400 tracking-widest">City</label>
-                    <input {...register("city", { required: "Required" })} className="w-full py-3 border-b border-gray-200 outline-none focus:border-black transition-colors text-base font-medium" />
+                    <input
+                      type="text"
+                      placeholder="Search City..."
+                      value={citySearch}
+                      onChange={(e) => {
+                        setCitySearch(e.target.value);
+                        setIsDropdownOpen(true);
+                        if(e.target.value === '') {
+                          setValue('city', '');
+                          setIsValidCity(false);
+                        }
+                      }}
+                      onFocus={() => setIsDropdownOpen(true)}
+                      onBlur={() => setTimeout(() => setIsDropdownOpen(false), 200)}
+                      className="w-full py-3 border-b border-gray-200 outline-none focus:border-black transition-colors text-base font-medium"
+                    />
+                    
+                    {/* Dropdown Menu */}
+                    {isDropdownOpen && filteredCities.length > 0 && (
+                      <ul className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                        {filteredCities.map((city: any) => (
+                          <li
+                            key={city.name}
+                            className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm flex justify-between"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => handleCitySelect(city)}
+                          >
+                            <span>{city.name}</span>
+                            <span className="text-gray-500 text-xs font-bold">LKR {city.shippingCost}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {isDropdownOpen && filteredCities.length === 0 && (
+                      <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg p-3 text-sm text-gray-500">
+                        City not found. Please type a nearby major city.
+                      </div>
+                    )}
+                    
+                    <input type="hidden" {...register("city", { required: "Required" })} />
                     {errors.city && <p className="text-red-500 text-xs font-bold">{errors.city.message}</p>}
+                    {citySearch && !isValidCity && (
+                      <p className="text-orange-500 text-xs font-bold mt-2">Please select a valid city from the dropdown</p>
+                    )}
                 </div>
                 <div className="space-y-2">
                     <label className="text-xs uppercase font-bold text-gray-400 tracking-widest">Postal Code</label>
@@ -137,7 +222,7 @@ const AddressManager = () => {
                   className="flex-1 bg-black text-white py-5 text-xs uppercase tracking-[0.2em] font-bold hover:bg-gray-900 transition-colors">
                   {selectedAddressId ? "Update Address" : "Save Address"}
                 </button>
-                <button type="button" onClick={() => setIsEditing(false)} 
+                <button type="button" onClick={() => { setIsEditing(false); setCitySearch(''); setIsValidCity(false); }} 
                   className="px-12 py-5 border-2 border-black text-xs uppercase tracking-[0.2em] font-bold hover:bg-gray-50 transition-colors">
                   Cancel
                 </button>

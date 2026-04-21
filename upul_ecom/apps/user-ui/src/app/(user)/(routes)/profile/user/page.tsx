@@ -3,6 +3,7 @@
 import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { usePageTitle } from "@/app/hooks/usePageTitle";
 import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -17,6 +18,7 @@ type ProfileFormData = {
 };
 
 const EditProfilePage = () => {
+  usePageTitle('Edit Profile', 'Update your profile information');
   const { user, isLoading } = useUser();
   const queryClient = useQueryClient();
   const router = useRouter();

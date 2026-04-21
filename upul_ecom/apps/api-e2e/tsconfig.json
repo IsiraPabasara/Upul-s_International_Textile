@@ -4,11 +4,10 @@
     "outDir": "out-tsc/@upul-ecom/api-e2e",
     "esModuleInterop": true,
     "noUnusedLocals": false,
-    "noImplicitAny": false,
-    "types": ["jest", "node"]
+    "noImplicitAny": false
   },
   "include": [
-    "jest.config.cts",
+    "jest.config.ts",
     "src/**/*.ts"
   ],
   "references": []

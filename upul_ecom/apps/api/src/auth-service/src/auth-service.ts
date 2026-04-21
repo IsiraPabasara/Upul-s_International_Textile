@@ -71,18 +71,38 @@ export const verifyUser = async(req: Request, res: Response, next: NextFunction)
        if(!email || !otp || !password || !firstname || !lastname || !phonenumber) {
             return next(new ValidationError("All fields are required!"));
        } 
-       const existingUser = await prisma.users.findUnique({where: {email}}); 
-
-       if(existingUser) {
+       
+       // Check if email already exists
+       const existingEmail = await prisma.users.findUnique({where: {email}}); 
+       if(existingEmail) {
         return next(new ValidationError("User already exists with this email!"));
+       }
+
+       // Check if phone number already exists
+       const existingPhone = await prisma.users.findUnique({where: {phonenumber}});
+       if(existingPhone) {
+        return next(new ValidationError("Phone number already registered. Please use a different phone number!"));
        }
 
        await verifyOtp(email, otp, next);
        const hashedPassword = await bcrypt.hash(password, 10);
 
-       await prisma.users.create({
+       const newUser = await prisma.users.create({
         data: {firstname, lastname, email, phonenumber, password: hashedPassword},
        });
+
+       // NEW: Check if this email is already a newsletter subscriber (guest)
+       const existingSubscriber = await prisma.newsletterSubscriber.findUnique({
+        where: { email }
+       });
+
+       if (existingSubscriber) {
+        // Merge: Link the new user's ID to the existing newsletter subscription
+        await prisma.newsletterSubscriber.update({
+          where: { email },
+          data: { userId: newUser.id }
+        });
+       }
 
        res.status(200).json({
         success: true,
@@ -90,7 +110,12 @@ export const verifyUser = async(req: Request, res: Response, next: NextFunction)
        });
 
 
-    } catch (error) {
+    } catch (error: any) {
+        // Handle Prisma unique constraint errors
+        if(error.code === 'P2002') {
+            const field = error.meta?.target?.[0] || 'field';
+            return next(new ValidationError(`This ${field} is already registered. Please use a different one!`));
+        }
         return next(error);
     }
 }
@@ -275,7 +300,7 @@ export const addUserAddress = async (req: any, res: Response, next: NextFunction
 
         validateAddressData(req.body);
         const userId = req.user.id; 
-        const newAddress = req.body;
+        const { saveAddress, ...newAddress } = req.body; // Extract saveAddress, keep the rest
         
         const user = await prisma.users.findUnique({ where: { id: userId } });
         if (!user) throw new AuthError("User not found");
@@ -425,6 +450,95 @@ export const updateUserProfile = async (req: any, res: Response, next: NextFunct
         });
 
     } catch (error) {
+        next(error);
+    }
+};
+
+// Delete user account
+export const deleteUserAccount = async (req: any, res: Response, next: NextFunction) => {
+    try {
+        const userId = req.user.id;
+        const { password } = req.body;
+
+        if (!password) {
+            throw new ValidationError("Password is required to delete account.", { 
+                code: "MISSING_PASSWORD" 
+            });
+        }
+
+        // 1. Fetch user by ID
+        const user = await prisma.users.findUnique({ 
+            where: { id: userId } 
+        });
+        if (!user) {
+            throw new AuthError("User not found");
+        }
+
+        // Check if password hash exists
+        if (!user.password) {
+            throw new ValidationError("Account password not found. Please reset your password first.", { 
+                code: "NO_PASSWORD_SET" 
+            });
+        }
+
+        // 2. Security Check: Verify Password
+        const isMatch = await bcrypt.compare(password, user.password!);
+        if (!isMatch) {
+            throw new ValidationError("Incorrect password. Account deletion aborted.", { 
+                code: "INVALID_PASSWORD" 
+            });
+        }
+
+        // 3. Business Logic Check: Check for Active Orders
+        const activeOrders = await prisma.order.findFirst({
+            where: {
+                userId: userId,
+                status: {
+                    in: ['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED']
+                }
+            }
+        });
+
+        if (activeOrders) {
+            throw new ValidationError(
+                "Cannot delete account with active orders. Please wait until your orders are delivered or cancelled.",
+                { code: "ACTIVE_ORDERS" }
+            );
+        }
+
+        // 4. Delete related records first (Cart and Wishlist)
+        // These have required relations to users, so must be deleted first
+        await prisma.cart.deleteMany({
+            where: { userId: userId }
+        });
+
+        await prisma.wishlist.deleteMany({
+            where: { userId: userId }
+        });
+
+        // 5. Delete the user
+        // Note: Orders will remain in the database with the old userId for tax records.
+        await prisma.users.delete({
+            where: { id: userId }
+        });
+
+        // 6. Clear session
+        res.clearCookie("access_token");
+        res.clearCookie("refresh_token");
+
+        res.status(200).json({
+            success: true,
+            message: "Account and personal data removed successfully."
+        });
+
+    } catch (error: any) {
+        // Handle Prisma relation errors
+        if (error.code === 'P2014') {
+            return next(new ValidationError(
+                "Cannot delete account due to data constraints. Please contact support.",
+                { code: "DELETION_CONSTRAINT_ERROR" }
+            ));
+        }
         next(error);
     }
 };

@@ -31,6 +31,7 @@ model users {
   addresses    Address[]
   cart        Cart?
   orders      Order[]
+  newsletters  NewsletterSubscriber[]
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 }
@@ -53,13 +54,14 @@ enum DiscountType {
 
 model Product {
   id           String  @id @default(auto()) @map("_id") @db.ObjectId
-  name         String
+  name         String  
+  slug         String  @unique
   sku          String  @unique
   description  String
   price        Float
   availability Boolean @default(true)
   brand     String?   
- country    String?
+  country    String?
   visible      Boolean @default(true)
 
   images ProductImage[]
@@ -203,6 +205,7 @@ model Order {
 
   couponCode     String?
   discountAmount Float      @default(0)      
+  shippingFee    Float      @default(450)
   
   totalAmount   Float
   status        OrderStatus @default(PENDING)
@@ -280,12 +283,16 @@ model Coupon {
 
 model PaymentLog {
   id              String   @id @default(auto()) @map("_id") @db.ObjectId
-  orderId         String   
+  orderId         String   // Stores the orderNumber (e.g., "ORD-93820")
   paymentId       String?  
   statusCode      String? 
   rawPayload      Json     
   status          String   
   createdAt       DateTime @default(now())
+
+  @@index([orderId])
+  @@index([createdAt(sort: Desc)])
+  @@index([status])
 }
 
 //Site Images Uploader
@@ -319,4 +326,41 @@ model SizeChart {
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+}
+
+model ShippingCity {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  name         String   @unique
+  shippingCost Float
+  isActive     Boolean  @default(true)
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model NewsletterSubscriber {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  email     String   @unique
+  isActive  Boolean  @default(true)
+  
+  // Link to registered user (optional, because guests can subscribe)
+  userId    String?  @db.ObjectId
+  user      users?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive])
+}
+
+model Announcement {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  text      String
+  isActive  Boolean  @default(true)
+  position  Int      @default(0)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, position])
 }

@@ -2,13 +2,13 @@
   "swagger": "2.0",
   "info": {
     "title": "Upul E-com API",
-    "description": "API for Auth and Product services",
+    "description": "Complete API for Upuls.lk e-commerce platform with authentication, product management, orders, analytics, and admin features",
     "version": "1.0.0"
   },
-  "host": "localhost:4000",
+  "host": "https://api.upuls.lk",
   "basePath": "/api",
   "schemes": [
-    "http"
+    "https"
   ],
   "consumes": [
     "application/json"
@@ -16,529 +16,4098 @@
   "produces": [
     "application/json"
   ],
+  "securityDefinitions": {
+    "Bearer": {
+      "type": "apiKey",
+      "name": "Authorization",
+      "in": "header",
+      "description": "JWT Bearer Token"
+    }
+  },
   "paths": {
-    "/docs-json": {
-      "get": {
-        "description": "",
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/health": {
-      "get": {
-        "description": "",
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/auth/register": {
+    "/auth/register": {
       "post": {
-        "description": "",
+        "tags": ["Authentication"],
+        "summary": "Register new user",
+        "description": "Create a new user account with email, password and personal information. Returns verification OTP sent to email.",
         "parameters": [
           {
             "name": "body",
             "in": "body",
             "description": "User registration data",
+            "required": true,
             "schema": {
               "type": "object",
               "properties": {
                 "firstname": {
                   "type": "string",
-                  "example": "saminu"
+                  "description": "User's first name",
+                  "example": "Saminu"
                 },
                 "lastname": {
                   "type": "string",
-                  "example": "hansaja"
+                  "description": "User's last name",
+                  "example": "Hansaja"
                 },
                 "email": {
                   "type": "string",
-                  "example": "saminuhansaja.w@gmail.com"
+                  "format": "email",
+                  "description": "User's email address (must be unique)",
+                  "example": "saminu@example.com"
                 },
                 "phonenumber": {
                   "type": "string",
+                  "description": "User's phone number",
                   "example": "0767406952"
                 },
                 "password": {
                   "type": "string",
-                  "example": "123456"
+                  "format": "password",
+                  "description": "User's password",
+                  "example": "SecurePass123!"
                 }
               },
-              "required": [
-                "firstname",
-                "lastname",
-                "email",
-                "phonenumber",
-                "password"
-              ]
+              "required": ["firstname", "lastname", "email", "phonenumber", "password"]
             }
           }
         ],
         "responses": {
-          "200": {
-            "description": "OK"
+          "201": {
+            "description": "User registered successfully, OTP sent to email"
+          },
+          "400": {
+            "description": "Validation error - invalid email format, weak password, or email already exists"
           }
         }
       }
     },
-    "/api/auth/verify-user": {
+    "/auth/verify-user": {
       "post": {
-        "description": "",
+        "tags": ["Authentication"],
+        "summary": "Verify user email with OTP",
+        "description": "Verify the user's email address using the OTP received during registration",
         "parameters": [
           {
             "name": "body",
             "in": "body",
-            "description": "User registration verify",
+            "description": "User registration verification data",
+            "required": true,
             "schema": {
               "type": "object",
               "properties": {
                 "email": {
                   "type": "string",
-                  "example": "saminuhansaja.w@gmail.com"
+                  "format": "email",
+                  "description": "User's email address",
+                  "example": "saminu@example.com"
                 },
                 "otp": {
                   "type": "string",
-                  "example": "any"
+                  "description": "6-digit OTP sent to email",
+                  "example": "123456"
                 },
                 "password": {
                   "type": "string",
-                  "example": "123456"
+                  "format": "password",
+                  "description": "User's password",
+                  "example": "SecurePass123!"
                 },
                 "firstname": {
                   "type": "string",
-                  "example": "saminu"
+                  "description": "User's first name",
+                  "example": "Saminu"
                 },
                 "lastname": {
                   "type": "string",
-                  "example": "hansaja"
+                  "description": "User's last name",
+                  "example": "Hansaja"
                 },
                 "phonenumber": {
                   "type": "string",
+                  "description": "User's phone number",
                   "example": "0767406952"
                 }
-              }
+              },
+              "required": ["email", "otp", "password", "firstname", "lastname", "phonenumber"]
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Email verified successfully, user account created"
+          },
+          "400": {
+            "description": "Invalid or expired OTP"
           }
         }
       }
     },
-    "/api/auth/forgot-password-user": {
+    "/auth/forgot-password-user": {
       "post": {
-        "description": "",
-        "responses": {
-          "default": {
-            "description": ""
-          }
-        }
-      }
-    },
-    "/api/auth/verify-forgot-password-user": {
-      "post": {
-        "description": "",
-        "responses": {
-          "default": {
-            "description": ""
-          }
-        }
-      }
-    },
-    "/api/auth/reset-password-user": {
-      "post": {
-        "description": "",
+        "tags": ["Authentication"],
+        "summary": "Request password reset",
+        "description": "Send OTP to user's email for password reset",
         "parameters": [
           {
             "name": "body",
             "in": "body",
+            "description": "Email to send reset OTP",
+            "required": true,
             "schema": {
               "type": "object",
               "properties": {
                 "email": {
-                  "example": "any"
+                  "type": "string",
+                  "format": "email",
+                  "description": "Registered email address",
+                  "example": "saminu@example.com"
+                }
+              },
+              "required": ["email"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Password reset OTP sent to email"
+          },
+          "404": {
+            "description": "Email not found"
+          }
+        }
+      }
+    },
+    "/auth/verify-forgot-password-user": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Verify password reset OTP",
+        "description": "Verify the OTP sent for password reset",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "OTP verification for password reset",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "email": {
+                  "type": "string",
+                  "format": "email",
+                  "description": "User's email address",
+                  "example": "saminu@example.com"
+                },
+                "otp": {
+                  "type": "string",
+                  "description": "6-digit OTP sent to email",
+                  "example": "123456"
+                }
+              },
+              "required": ["email", "otp"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OTP verified successfully"
+          },
+          "400": {
+            "description": "Invalid or expired OTP"
+          }
+        }
+      }
+    },
+    "/auth/reset-password-user": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Reset user password",
+        "description": "Set new password after verifying OTP",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "New password details",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "email": {
+                  "type": "string",
+                  "format": "email",
+                  "description": "User's email address",
+                  "example": "saminu@example.com"
                 },
                 "newPassword": {
-                  "example": "any"
+                  "type": "string",
+                  "format": "password",
+                  "description": "New password",
+                  "example": "NewSecurePass123!"
                 }
-              }
+              },
+              "required": ["email", "newPassword"]
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Password reset successfully"
+          },
+          "400": {
+            "description": "Invalid request or weak password"
           }
         }
       }
     },
-    "/api/auth/login-user": {
+    "/auth/login-user": {
       "post": {
-        "description": "",
+        "tags": ["Authentication"],
+        "summary": "User login",
+        "description": "Authenticate user with email and password. Rate limited to 15 attempts per 15 minutes.",
         "parameters": [
           {
             "name": "body",
             "in": "body",
+            "description": "User login credentials",
+            "required": true,
             "schema": {
               "type": "object",
               "properties": {
                 "email": {
-                  "example": "any"
+                  "type": "string",
+                  "format": "email",
+                  "description": "Registered email address",
+                  "example": "saminu@example.com"
                 },
                 "password": {
-                  "example": "any"
+                  "type": "string",
+                  "format": "password",
+                  "description": "User's password",
+                  "example": "SecurePass123!"
                 }
-              }
+              },
+              "required": ["email", "password"]
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Login successful, returns JWT access token",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "accessToken": {
+                  "type": "string",
+                  "description": "JWT access token for authenticated requests"
+                },
+                "user": {
+                  "type": "object",
+                  "description": "User profile information"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid email or password"
+          },
+          "429": {
+            "description": "Too many login attempts, account temporarily locked"
           }
         }
       }
     },
-    "/api/auth/refresh-token": {
+    "/auth/refresh-token": {
       "post": {
-        "description": "",
+        "tags": ["Authentication"],
+        "summary": "Refresh JWT token",
+        "description": "Get a new JWT token using the current token",
+        "security": [{"Bearer": []}],
         "parameters": [
           {
             "name": "authorization",
             "in": "header",
-            "type": "string"
+            "type": "string",
+            "description": "Bearer token for authentication",
+            "required": true,
+            "example": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
           }
         ],
         "responses": {
-          "201": {
-            "description": "Created"
+          "200": {
+            "description": "New token generated successfully"
+          },
+          "401": {
+            "description": "Invalid or expired token"
           }
         }
       }
     },
-    "/api/auth/logged-in-user": {
+    "/auth/logged-in-user": {
       "get": {
-        "description": "",
+        "tags": ["Authentication"],
+        "summary": "Get current user profile",
+        "description": "Retrieve the authenticated user's profile information",
+        "security": [{"Bearer": []}],
         "responses": {
-          "201": {
-            "description": "Created"
+          "200": {
+            "description": "User profile retrieved successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "id": {"type": "string"},
+                "email": {"type": "string"},
+                "firstname": {"type": "string"},
+                "lastname": {"type": "string"},
+                "phonenumber": {"type": "string"},
+                "role": {"type": "string"}
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - valid token required"
           }
         }
       }
     },
-    "/api/auth/logout-user": {
+    "/auth/logout-user": {
       "get": {
-        "description": "",
+        "tags": ["Authentication"],
+        "summary": "User logout",
+        "description": "Invalidate current session/token",
+        "security": [{"Bearer": []}],
         "responses": {
-          "201": {
-            "description": "Created"
+          "200": {
+            "description": "Logout successful"
+          },
+          "401": {
+            "description": "Unauthorized - valid token required"
           }
         }
       }
     },
-    "/api/products/": {
+    "/auth/add-address": {
       "post": {
-        "description": "",
+        "tags": ["User Addresses"],
+        "summary": "Add shipping address",
+        "description": "Add a new shipping address to user's account",
+        "security": [{"Bearer": []}],
         "parameters": [
           {
             "name": "body",
             "in": "body",
+            "description": "Address details",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "saveAddress": {
+                  "type": "string",
+                  "description": "Name/label for this address",
+                  "example": "Home"
+                },
+                "newAddress": {
+                  "type": "object",
+                  "description": "Address object with street, city, postal code, etc.",
+                  "properties": {
+                    "street": {"type": "string", "example": "123 Main St"},
+                    "city": {"type": "string", "example": "Colombo"},
+                    "zipCode": {"type": "string", "example": "00100"},
+                    "phone": {"type": "string", "example": "0767406952"}
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Address added successfully"
+          },
+          "400": {
+            "description": "Invalid address data"
+          }
+        }
+      }
+    },
+    "/auth/delete-address/{addressId}": {
+      "delete": {
+        "tags": ["User Addresses"],
+        "summary": "Delete shipping address",
+        "description": "Remove an address from user's account",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "addressId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "ID of address to delete"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Address deleted successfully"
+          },
+          "404": {
+            "description": "Address not found"
+          }
+        }
+      }
+    },
+    "/auth/update-address/{addressId}": {
+      "put": {
+        "tags": ["User Addresses"],
+        "summary": "Update shipping address",
+        "description": "Modify an existing shipping address",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "addressId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "ID of address to update"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Updated address data",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "street": {"type": "string", "example": "456 Oak Ave"},
+                "city": {"type": "string", "example": "Kandy"},
+                "zipCode": {"type": "string", "example": "20000"},
+                "phone": {"type": "string", "example": "0767406952"},
+                "isDefault": {"type": "boolean", "description": "Set as default address"}
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Address updated successfully"
+          },
+          "404": {
+            "description": "Address not found"
+          }
+        }
+      }
+    },
+    "/auth/set-default-address/{addressId}": {
+      "patch": {
+        "tags": ["User Addresses"],
+        "summary": "Set default address",
+        "description": "Mark an address as the default shipping address",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "addressId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "ID of address to set as default"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default address updated successfully"
+          },
+          "404": {
+            "description": "Address not found"
+          }
+        }
+      }
+    },
+    "/auth/update-profile": {
+      "put": {
+        "tags": ["User Profile"],
+        "summary": "Update user profile",
+        "description": "Modify user's personal information (name, phone)",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Updated profile data",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "firstname": {
+                  "type": "string",
+                  "description": "First name",
+                  "example": "Saminu"
+                },
+                "lastname": {
+                  "type": "string",
+                  "description": "Last name",
+                  "example": "Hansaja"
+                },
+                "phonenumber": {
+                  "type": "string",
+                  "description": "Phone number",
+                  "example": "0767406952"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Profile updated successfully"
+          },
+          "400": {
+            "description": "Invalid data provided"
+          }
+        }
+      }
+    },
+    "/auth/logged-in-admin": {
+      "get": {
+        "tags": ["Authentication"],
+        "summary": "Get admin profile",
+        "description": "Retrieve authenticated admin user's profile",
+        "security": [{"Bearer": []}],
+        "responses": {
+          "200": {
+            "description": "Admin profile retrieved successfully"
+          },
+          "403": {
+            "description": "Forbidden - admin access required"
+          }
+        }
+      }
+    },
+    "/auth/delete-account": {
+      "delete": {
+        "tags": ["User Profile"],
+        "summary": "Delete user account",
+        "description": "Permanently delete the authenticated user's account. Requires password confirmation.",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Password confirmation",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "password": {
+                  "type": "string",
+                  "format": "password",
+                  "description": "Current password for confirmation",
+                  "example": "SecurePass123!"
+                }
+              },
+              "required": ["password"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Account deleted successfully"
+          },
+          "401": {
+            "description": "Invalid password"
+          }
+        }
+      }
+    },
+    "/admin/users/statistics": {
+      "get": {
+        "tags": ["Admin - Users"],
+        "summary": "Get user statistics",
+        "description": "Retrieve user count, role distribution, and trend analytics",
+        "security": [{"Bearer": []}],
+        "responses": {
+          "200": {
+            "description": "User statistics retrieved successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "totalUsers": {"type": "number"},
+                "byRole": {"type": "object"},
+                "trends": {"type": "object"}
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - admin access required"
+          }
+        }
+      }
+    },
+    "/admin/users/report": {
+      "get": {
+        "tags": ["Admin - Users"],
+        "summary": "Export user report",
+        "description": "Generate and download user data in specified format (Excel/PDF)",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "startDate",
+            "in": "query",
+            "type": "string",
+            "format": "date",
+            "description": "Report start date (YYYY-MM-DD)"
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "type": "string",
+            "format": "date",
+            "description": "Report end date (YYYY-MM-DD)"
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "type": "string",
+            "enum": ["excel", "pdf"],
+            "description": "Export format",
+            "example": "excel"
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "type": "string",
+            "description": "Filter by user role"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Report generated and downloaded successfully"
+          },
+          "400": {
+            "description": "Invalid date range or format"
+          },
+          "403": {
+            "description": "Forbidden - admin access required"
+          }
+        }
+      }
+    },
+    "/admin/users/": {
+      "get": {
+        "tags": ["Admin - Users"],
+        "summary": "List all users",
+        "description": "Get paginated list of users with filtering and sorting options",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "type": "string",
+            "description": "Search by email, name, or phone number",
+            "example": "saminu"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "type": "integer",
+            "description": "Page number (1-indexed)",
+            "example": 1
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "type": "integer",
+            "description": "Items per page",
+            "example": 20
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "type": "string",
+            "enum": ["user", "admin", "vendor"],
+            "description": "Filter by user role"
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "type": "string",
+            "enum": ["createdAt", "email", "name"],
+            "description": "Sort field"
+          },
+          {
+            "name": "sortOrder",
+            "in": "query",
+            "type": "string",
+            "enum": ["asc", "desc"],
+            "description": "Sort direction"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Users retrieved successfully"
+          },
+          "403": {
+            "description": "Forbidden - admin access required"
+          }
+        }
+      }
+    },
+    "/admin/users/{id}": {
+      "get": {
+        "tags": ["Admin - Users"],
+        "summary": "Get user details",
+        "description": "Retrieve detailed profile information for a specific user",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "User ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User details retrieved successfully"
+          },
+          "403": {
+            "description": "Forbidden - admin access required"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      }
+    },
+    "/admin/users/{id}/orders": {
+      "get": {
+        "tags": ["Admin - Users"],
+        "summary": "Get user's order history",
+        "description": "Retrieve all orders placed by a specific user with filtering",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "User ID"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "type": "integer",
+            "description": "Page number"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "type": "integer",
+            "description": "Items per page"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "type": "string",
+            "enum": ["PENDING", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED", "RETURNED"],
+            "description": "Filter by order status"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User orders retrieved successfully"
+          },
+          "403": {
+            "description": "Forbidden - admin access required"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      }
+    },
+    "/admin/users/{id}/role": {
+      "put": {
+        "tags": ["Admin - Users"],
+        "summary": "Update user role",
+        "description": "Change a user's role (user, admin, vendor)",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "User ID to update"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "description": "New role assignment",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": ["user", "admin", "vendor"],
+                  "description": "New user role",
+                  "example": "admin"
+                }
+              },
+              "required": ["role"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User role updated successfully"
+          },
+          "400": {
+            "description": "Invalid role specified"
+          },
+          "403": {
+            "description": "Forbidden - admin access required"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      }
+    },
+    "/admin/users/bulk/role-update": {
+      "post": {
+        "tags": ["Admin - Users"],
+        "summary": "Bulk update user roles",
+        "description": "Update roles for multiple users in a single request",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Array of role updates",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "updates": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "userId": {"type": "string"},
+                      "role": {"type": "string", "enum": ["user", "admin", "vendor"]}
+                    }
+                  },
+                  "example": [
+                    {"userId": "user123", "role": "admin"},
+                    {"userId": "user456", "role": "vendor"}
+                  ]
+                }
+              },
+              "required": ["updates"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Roles updated successfully for all users"
+          },
+          "400": {
+            "description": "Invalid data format or role"
+          },
+          "403": {
+            "description": "Forbidden - admin access required"
+          }
+        }
+      }
+    },
+    "/products/shop": {
+      "get": {
+        "tags": ["Products"],
+        "summary": "Shop products",
+        "description": "Get paginated list of products with advanced filtering, sorting, and search capabilities",
+        "parameters": [
+          {
+            "name": "category",
+            "in": "query",
+            "type": "string",
+            "description": "Filter by category ID"
+          },
+          {
+            "name": "brand",
+            "in": "query",
+            "type": "string",
+            "description": "Filter by brand ID"
+          },
+          {
+            "name": "minPrice",
+            "in": "query",
+            "type": "number",
+            "description": "Minimum price filter (inclusive)",
+            "example": 1000
+          },
+          {
+            "name": "maxPrice",
+            "in": "query",
+            "type": "number",
+            "description": "Maximum price filter (inclusive)",
+            "example": 50000
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "type": "string",
+            "enum": ["newest", "price-asc", "price-desc", "popular"],
+            "description": "Sort order"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "type": "string",
+            "description": "Search by product name or description",
+            "example": "t-shirt"
+          },
+          {
+            "name": "isNewArrival",
+            "in": "query",
+            "type": "boolean",
+            "description": "Filter new arrivals only"
+          },
+          {
+            "name": "hasDiscount",
+            "in": "query",
+            "type": "boolean",
+            "description": "Filter discounted products only"
+          },
+          {
+            "name": "availability",
+            "in": "query",
+            "type": "string",
+            "enum": ["in-stock", "out-of-stock", "all"],
+            "description": "Filter by availability"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "type": "integer",
+            "description": "Page number",
+            "example": 1
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "type": "integer",
+            "description": "Items per page",
+            "example": 20
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Products retrieved successfully"
+          }
+        }
+      }
+    },
+    "/products/meta/countries": {
+      "get": {
+        "tags": ["Products"],
+        "summary": "Get country list",
+        "description": "Retrieve list of countries where products originate from",
+        "responses": {
+          "200": {
+            "description": "Countries list retrieved successfully"
+          }
+        }
+      }
+    },
+    "/products/": {
+      "get": {
+        "tags": ["Products - Admin"],
+        "summary": "List all products",
+        "description": "Admin endpoint to retrieve all products with pagination and search",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "type": "integer",
+            "description": "Page number",
+            "example": 1
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "type": "integer",
+            "description": "Items per page",
+            "example": 20
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "type": "string",
+            "description": "Search by product name or SKU"
+          },
+          {
+            "name": "categoryId",
+            "in": "query",
+            "type": "string",
+            "description": "Filter by category"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Products retrieved successfully"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Products - Admin"],
+        "summary": "Create new product",
+        "description": "Add a new product with variants, images, and pricing information",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Product creation data",
+            "required": true,
             "schema": {
               "type": "object",
               "properties": {
                 "sku": {
-                  "example": "any"
-                },
-                "variants": {
-                  "example": "any"
+                  "type": "string",
+                  "description": "Unique stock keeping unit",
+                  "example": "TS-001-BLK-M"
                 },
                 "name": {
-                  "example": "any"
+                  "type": "string",
+                  "description": "Product name",
+                  "example": "Classic T-Shirt"
                 },
                 "description": {
-                  "example": "any"
+                  "type": "string",
+                  "description": "Product description",
+                  "example": "High-quality cotton t-shirt"
                 },
                 "price": {
-                  "example": "any"
+                  "type": "number",
+                  "description": "Base price",
+                  "example": 2500
                 },
-                "availability": {
-                  "example": "any"
-                },
-                "isNewArrival": {
-                  "example": "any"
-                },
-                "discountType": {
-                  "example": "any"
-                },
-                "discountValue": {
-                  "example": "any"
-                },
-                "brand": {
-                  "example": "any"
-                },
-                "images": {
-                  "example": "any"
-                },
-                "colors": {
-                  "example": "any"
+                "stock": {
+                  "type": "number",
+                  "description": "Available quantity",
+                  "example": 100
                 },
                 "categoryId": {
-                  "example": "any"
+                  "type": "string",
+                  "description": "Category ID"
+                },
+                "brand": {
+                  "type": "string",
+                  "description": "Brand name"
+                },
+                "country": {
+                  "type": "string",
+                  "description": "Country of origin"
+                },
+                "images": {
+                  "type": "array",
+                  "items": {"type": "string"},
+                  "description": "Product image URLs"
+                },
+                "colors": {
+                  "type": "array",
+                  "items": {"type": "string"},
+                  "description": "Available colors (hex codes)",
+                  "example": ["#000000", "#FFFFFF"]
+                },
+                "variants": {
+                  "type": "array",
+                  "description": "Product variants (size, color combinations)"
                 },
                 "sizeType": {
-                  "example": "any"
+                  "type": "string",
+                  "description": "Size standard (S/M/L/XL, etc.)"
+                },
+                "sizeChartUrl": {
+                  "type": "string",
+                  "description": "URL to size chart image"
+                },
+                "discountType": {
+                  "type": "string",
+                  "enum": ["PERCENTAGE", "FIXED"],
+                  "description": "Type of discount if applicable"
+                },
+                "discountValue": {
+                  "type": "number",
+                  "description": "Discount amount or percentage"
+                },
+                "isNewArrival": {
+                  "type": "boolean",
+                  "description": "Mark as new arrival",
+                  "example": true
+                },
+                "visible": {
+                  "type": "boolean",
+                  "description": "Show product in shop",
+                  "example": true
                 }
-              }
+              },
+              "required": ["sku", "name", "description", "price", "stock", "categoryId"]
             }
           }
         ],
         "responses": {
           "201": {
-            "description": "Created"
+            "description": "Product created successfully"
           },
           "400": {
-            "description": "Bad Request"
-          }
-        }
-      },
-      "get": {
-        "description": "",
-        "responses": {
-          "200": {
-            "description": "OK"
+            "description": "Invalid product data or duplicate SKU"
           }
         }
       }
     },
-    "/api/products/{sku}": {
+    "/products/inventory/list": {
       "get": {
-        "description": "",
+        "tags": ["Products - Admin"],
+        "summary": "List inventory",
+        "description": "View product stock levels with filtering and search",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "type": "string",
+            "description": "Search by product name or SKU"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "type": "integer",
+            "description": "Page number"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "type": "integer",
+            "description": "Items per page"
+          },
+          {
+            "name": "stock_status",
+            "in": "query",
+            "type": "string",
+            "enum": ["in-stock", "low-stock", "out-of-stock"],
+            "description": "Filter by stock status"
+          },
+          {
+            "name": "filter_type",
+            "in": "query",
+            "type": "string",
+            "description": "Additional filter criteria"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Inventory list retrieved successfully"
+          }
+        }
+      }
+    },
+    "/products/inventory/bulk-update": {
+      "patch": {
+        "tags": ["Products - Admin"],
+        "summary": "Bulk update inventory",
+        "description": "Update stock levels for multiple products at once",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Array of inventory updates",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "updates": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "productId": {"type": "string"},
+                      "stock": {"type": "number"},
+                      "variants": {"type": "array"}
+                    }
+                  },
+                  "example": [
+                    {"productId": "prod123", "stock": 50},
+                    {"productId": "prod456", "stock": 0}
+                  ]
+                }
+              },
+              "required": ["updates"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Inventory updated successfully"
+          },
+          "400": {
+            "description": "Invalid data format"
+          }
+        }
+      }
+    },
+    "/products/inventory/report": {
+      "get": {
+        "tags": ["Products - Admin"],
+        "summary": "Export inventory report",
+        "description": "Generate inventory report in specified format (Excel/PDF)",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "type": "string",
+            "enum": ["all", "in-stock", "low-stock", "out-of-stock"],
+            "description": "Filter by stock status"
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "type": "string",
+            "enum": ["excel", "pdf"],
+            "description": "Export format",
+            "example": "excel"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Report generated and downloaded successfully"
+          },
+          "400": {
+            "description": "Invalid format or parameters"
+          }
+        }
+      }
+    },
+    "/products/report": {
+      "get": {
+        "tags": ["Products - Admin"],
+        "summary": "Export products report",
+        "description": "Generate product listing report with visibility filter",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "visibility",
+            "in": "query",
+            "type": "string",
+            "enum": ["visible", "hidden", "all"],
+            "description": "Filter by product visibility"
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "type": "string",
+            "enum": ["excel", "pdf"],
+            "description": "Export format",
+            "example": "excel"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Report generated successfully"
+          },
+          "400": {
+            "description": "Invalid format"
+          }
+        }
+      }
+    },
+    "/products/{slug}": {
+      "get": {
+        "tags": ["Products"],
+        "summary": "Get product by slug",
+        "description": "Retrieve detailed product information using URL-friendly slug",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "Product URL slug",
+            "example": "classic-t-shirt"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Product retrieved successfully"
+          },
+          "404": {
+            "description": "Product not found"
+          }
+        }
+      }
+    },
+    "/products/sku/{sku}": {
+      "get": {
+        "tags": ["Products"],
+        "summary": "Get product by SKU",
+        "description": "Retrieve product details using stock keeping unit",
         "parameters": [
           {
             "name": "sku",
             "in": "path",
+            "type": "string",
             "required": true,
-            "type": "string"
+            "description": "Stock keeping unit",
+            "example": "TS-001-BLK-M"
           }
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Product retrieved successfully"
           },
           "404": {
-            "description": "Not Found"
+            "description": "Product not found"
           }
         }
       }
     },
-    "/api/categories/": {
-      "post": {
-        "description": "",
+    "/products/{sku}": {
+      "put": {
+        "tags": ["Products - Admin"],
+        "summary": "Update product",
+        "description": "Modify product details, pricing, stock, and attributes",
+        "security": [{"Bearer": []}],
         "parameters": [
+          {
+            "name": "sku",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "Product SKU"
+          },
           {
             "name": "body",
             "in": "body",
+            "description": "Product update data",
             "schema": {
               "type": "object",
               "properties": {
-                "name": {
-                  "example": "any"
-                },
-                "slug": {
-                  "example": "any"
-                },
-                "parentId": {
-                  "example": "any"
-                }
+                "name": {"type": "string"},
+                "description": {"type": "string"},
+                "price": {"type": "number"},
+                "stock": {"type": "number"},
+                "categoryId": {"type": "string"},
+                "country": {"type": "string"},
+                "images": {"type": "array", "items": {"type": "string"}},
+                "variants": {"type": "array"},
+                "discountType": {"type": "string", "enum": ["PERCENTAGE", "FIXED"]},
+                "discountValue": {"type": "number"},
+                "brand": {"type": "string"},
+                "sizeType": {"type": "string"},
+                "visible": {"type": "boolean"},
+                "colors": {"type": "array", "items": {"type": "string"}},
+                "isNewArrival": {"type": "boolean"},
+                "sizeChartUrl": {"type": "string"}
               }
             }
           }
         ],
         "responses": {
-          "201": {
-            "description": "Created"
+          "200": {
+            "description": "Product updated successfully"
+          },
+          "400": {
+            "description": "Invalid product data"
+          },
+          "404": {
+            "description": "Product not found"
           }
         }
       },
+      "delete": {
+        "tags": ["Products - Admin"],
+        "summary": "Delete product",
+        "description": "Remove a product from the system",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "sku",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "Product SKU to delete"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Product deleted successfully"
+          },
+          "404": {
+            "description": "Product not found"
+          }
+        }
+      }
+    },
+    "/products/{sku}/visibility": {
+      "patch": {
+        "tags": ["Products - Admin"],
+        "summary": "Toggle product visibility",
+        "description": "Show or hide product from customer shop view",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "sku",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "Product SKU"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Visibility toggle",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "visible": {"type": "boolean", "example": true}
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Product visibility updated successfully"
+          },
+          "404": {
+            "description": "Product not found"
+          }
+        }
+      }
+    },
+    "/categories/": {
       "get": {
-        "description": "",
+        "tags": ["Categories"],
+        "summary": "Get categories",
+        "description": "Retrieve category hierarchy with optional filtering",
         "parameters": [
           {
             "name": "parentId",
             "in": "query",
-            "type": "string"
+            "type": "string",
+            "description": "Get only subcategories of specified parent"
+          },
+          {
+            "name": "roots",
+            "in": "query",
+            "type": "boolean",
+            "description": "Get only top-level categories (no parent)"
           }
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Categories retrieved successfully"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Categories - Admin"],
+        "summary": "Create category",
+        "description": "Add a new product category",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Category data",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Category name",
+                  "example": "Men's Clothing"
+                },
+                "parentId": {
+                  "type": "string",
+                  "description": "Parent category ID (for subcategories)"
+                },
+                "sortOrder": {
+                  "type": "number",
+                  "description": "Display order (lower = first)"
+                }
+              },
+              "required": ["name"]
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Category created successfully"
+          },
+          "400": {
+            "description": "Invalid category data"
           }
         }
       }
     },
-    "/api/categories/{id}": {
-      "delete": {
-        "description": "",
+    "/categories/path/{id}": {
+      "get": {
+        "tags": ["Categories"],
+        "summary": "Get category path",
+        "description": "Get breadcrumb path from root to specified category",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "type": "string",
             "required": true,
-            "type": "string"
+            "description": "Category ID"
           }
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Category path retrieved successfully"
+          }
+        }
+      }
+    },
+    "/categories/reorder": {
+      "put": {
+        "tags": ["Categories - Admin"],
+        "summary": "Reorder categories",
+        "description": "Update sort order for multiple categories",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "New sort order",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {"type": "string"},
+                      "sortOrder": {"type": "number"}
+                    }
+                  },
+                  "example": [
+                    {"id": "cat1", "sortOrder": 1},
+                    {"id": "cat2", "sortOrder": 2}
+                  ]
+                }
+              },
+              "required": ["items"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Categories reordered successfully"
+          },
+          "400": {
+            "description": "Invalid sort order data"
+          }
+        }
+      }
+    },
+    "/categories/{id}": {
+      "delete": {
+        "tags": ["Categories - Admin"],
+        "summary": "Delete category",
+        "description": "Remove category (recursive deletion of subcategories)",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "Category ID to delete"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Category deleted successfully"
           },
           "404": {
-            "description": "Not Found"
-          }
-        }
-      }
-    },
-    "/api/brands/": {
-      "get": {
-        "description": "",
-        "responses": {
-          "200": {
-            "description": "OK"
+            "description": "Category not found"
           }
         }
       },
-      "post": {
-        "description": "",
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "name": {
-                  "example": "any"
-                }
-              }
-            }
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": "Created"
-          },
-          "400": {
-            "description": "Bad Request"
-          }
-        }
-      }
-    },
-    "/api/imagekit/auth": {
-      "get": {
-        "description": "",
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/size-types/": {
-      "get": {
-        "description": "",
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      },
-      "post": {
-        "description": "",
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "name": {
-                  "example": "any"
-                },
-                "values": {
-                  "example": "any"
-                }
-              }
-            }
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": "Created"
-          },
-          "400": {
-            "description": "Bad Request"
-          }
-        }
-      }
-    },
-    "/api/size-types/{id}": {
-      "delete": {
-        "description": "",
+      "put": {
+        "tags": ["Categories - Admin"],
+        "summary": "Update category",
+        "description": "Modify category name and sort order",
+        "security": [{"Bearer": []}],
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "type": "string",
             "required": true,
-            "type": "string"
+            "description": "Category ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Updated category data",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {"type": "string"},
+                "sortOrder": {"type": "number"}
+              }
+            }
           }
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Category updated successfully"
           }
         }
       }
     },
-    "/api/colors/": {
+    "/brands/": {
       "get": {
-        "description": "",
+        "tags": ["Brands"],
+        "summary": "Get all brands",
+        "description": "Retrieve list of all available brands",
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Brands retrieved successfully"
           }
         }
       },
       "post": {
-        "description": "",
+        "tags": ["Brands - Admin"],
+        "summary": "Create brand",
+        "description": "Add a new brand with logo",
+        "security": [{"Bearer": []}],
         "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Brand data",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Brand name",
+                  "example": "Upul Basics"
+                },
+                "logoUrl": {
+                  "type": "string",
+                  "description": "Logo image URL"
+                },
+                "logoFileId": {
+                  "type": "string",
+                  "description": "ImageKit file ID for logo"
+                }
+              },
+              "required": ["name"]
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Brand created successfully"
+          },
+          "400": {
+            "description": "Invalid brand data"
+          }
+        }
+      }
+    },
+    "/brands/{id}": {
+      "delete": {
+        "tags": ["Brands - Admin"],
+        "summary": "Delete brand",
+        "description": "Remove brand (cannot delete if linked to products)",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "Brand ID to delete"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Brand deleted successfully"
+          },
+          "400": {
+            "description": "Brand linked to products, cannot delete"
+          },
+          "404": {
+            "description": "Brand not found"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Brands - Admin"],
+        "summary": "Update brand",
+        "description": "Modify brand information and logo",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "Brand ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Updated brand data",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {"type": "string"},
+                "logoUrl": {"type": "string"},
+                "logoFileId": {"type": "string"}
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Brand updated successfully"
+          },
+          "400": {
+            "description": "Invalid data"
+          },
+          "404": {
+            "description": "Brand not found"
+          }
+        }
+      }
+    },
+    "/imagekit/auth": {
+      "get": {
+        "tags": ["ImageKit - File Management"],
+        "summary": "Get ImageKit auth credentials",
+        "description": "Retrieve authentication token and parameters for file uploads",
+        "responses": {
+          "200": {
+            "description": "Auth credentials retrieved successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "signature": {"type": "string"},
+                "expire": {"type": "number"},
+                "token": {"type": "string"},
+                "publicKey": {"type": "string"}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/imagekit/{fileId}": {
+      "delete": {
+        "tags": ["ImageKit - File Management"],
+        "summary": "Delete image file",
+        "description": "Remove image from ImageKit",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "fileId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "ImageKit file ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "File deleted successfully"
+          },
+          "400": {
+            "description": "Invalid file ID"
+          }
+        }
+      }
+    },
+    "/size-types/": {
+      "get": {
+        "tags": ["Size Management"],
+        "summary": "Get size standards",
+        "description": "Retrieve available size type standards (S/M/L, XS/S/M/L/XL, etc.)",
+        "responses": {
+          "200": {
+            "description": "Size standards retrieved successfully"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Size Management - Admin"],
+        "summary": "Create size standard",
+        "description": "Add new size type with available values",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Size standard data",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Size standard name",
+                  "example": "US Shirt Sizes"
+                },
+                "values": {
+                  "type": "array",
+                  "items": {"type": "string"},
+                  "description": "Available size values",
+                  "example": ["XS", "S", "M", "L", "XL", "XXL"]
+                }
+              },
+              "required": ["name", "values"]
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Size standard created successfully"
+          },
+          "400": {
+            "description": "Invalid size data"
+          }
+        }
+      }
+    },
+    "/size-types/{id}": {
+      "delete": {
+        "tags": ["Size Management - Admin"],
+        "summary": "Delete size standard",
+        "description": "Remove a size type standard",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "Size standard ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Size standard deleted successfully"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Size Management - Admin"],
+        "summary": "Update size standard",
+        "description": "Modify size type name and available values",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "Size standard ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Updated size data",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {"type": "string"},
+                "values": {"type": "array", "items": {"type": "string"}}
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Size standard updated successfully"
+          },
+          "400": {
+            "description": "Invalid data"
+          },
+          "404": {
+            "description": "Size standard not found"
+          }
+        }
+      }
+    },
+    "/colors/": {
+      "get": {
+        "tags": ["Colors"],
+        "summary": "Get all colors",
+        "description": "Retrieve list of available product colors",
+        "responses": {
+          "200": {
+            "description": "Colors retrieved successfully"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Colors - Admin"],
+        "summary": "Create color",
+        "description": "Add a new color option with hex code",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Color data",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Color name",
+                  "example": "Black"
+                },
+                "hexCode": {
+                  "type": "string",
+                  "description": "Hex color code",
+                  "example": "#000000"
+                }
+              },
+              "required": ["name", "hexCode"]
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Color created successfully"
+          }
+        }
+      }
+    },
+    "/cart/verify": {
+      "post": {
+        "tags": ["Shopping Cart"],
+        "summary": "Verify cart items",
+        "description": "Check if all cart items are still available and in stock",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Cart items to verify",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "sku": {"type": "string"},
+                      "quantity": {"type": "number"}
+                    }
+                  },
+                  "example": [{"sku": "TS-001-BLK-M", "quantity": 2}]
+                }
+              },
+              "required": ["items"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cart verification completed",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "valid": {"type": "boolean"},
+                "issues": {"type": "array"}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cart/merge": {
+      "post": {
+        "tags": ["Shopping Cart"],
+        "summary": "Merge local cart with user cart",
+        "description": "Sync local shopping cart items after user login",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Local cart items to merge",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "localItems": {
+                  "type": "array",
+                  "items": {"type": "object"},
+                  "description": "Items from browser local storage"
+                }
+              },
+              "required": ["localItems"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cart merged successfully"
+          }
+        }
+      }
+    },
+    "/cart/": {
+      "get": {
+        "tags": ["Shopping Cart"],
+        "summary": "Get shopping cart",
+        "description": "Retrieve user's current shopping cart contents",
+        "security": [{"Bearer": []}],
+        "responses": {
+          "200": {
+            "description": "Cart retrieved successfully"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Shopping Cart"],
+        "summary": "Add item to cart",
+        "description": "Add product to shopping cart with quantity and options",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Item to add to cart",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "sku": {
+                  "type": "string",
+                  "description": "Product SKU",
+                  "example": "TS-001-BLK-M"
+                },
+                "quantity": {
+                  "type": "number",
+                  "description": "Quantity to add",
+                  "example": 1
+                },
+                "size": {"type": "string", "example": "M"},
+                "color": {"type": "string", "example": "#000000"}
+              },
+              "required": ["sku", "quantity"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Item added to cart successfully"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Shopping Cart"],
+        "summary": "Update cart item quantity",
+        "description": "Change the quantity of an item in the cart",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Updated quantity",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "sku": {
+                  "type": "string",
+                  "description": "Product SKU"
+                },
+                "quantity": {
+                  "type": "number",
+                  "description": "New quantity"
+                }
+              },
+              "required": ["sku", "quantity"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cart item updated successfully"
+          }
+        }
+      }
+    },
+    "/cart/{sku}": {
+      "delete": {
+        "tags": ["Shopping Cart"],
+        "summary": "Remove item from cart",
+        "description": "Delete a product from shopping cart",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "sku",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "Product SKU to remove"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Item removed from cart successfully"
+          }
+        }
+      }
+    },
+    "/wishlist/": {
+      "get": {
+        "tags": ["Wishlist"],
+        "summary": "Get wishlist",
+        "description": "Retrieve user's wishlist items",
+        "security": [{"Bearer": []}],
+        "responses": {
+          "200": {
+            "description": "Wishlist retrieved successfully"
+          }
+        }
+      }
+    },
+    "/wishlist/toggle": {
+      "post": {
+        "tags": ["Wishlist"],
+        "summary": "Toggle wishlist item",
+        "description": "Add or remove product from wishlist",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Product to toggle",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "sku": {"type": "string", "example": "TS-001-BLK-M"},
+                "productId": {"type": "string"}
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Wishlist updated successfully"
+          }
+        }
+      }
+    },
+    "/wishlist/merge": {
+      "post": {
+        "tags": ["Wishlist"],
+        "summary": "Merge local wishlist",
+        "description": "Sync local wishlist items after user login",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Local wishlist items",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "localItems": {
+                  "type": "array",
+                  "items": {"type": "object"}
+                }
+              },
+              "required": ["localItems"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Wishlist merged successfully"
+          }
+        }
+      }
+    },
+    "/orders/": {
+      "post": {
+        "tags": ["Orders"],
+        "summary": "Create order",
+        "description": "Place a new order. For PayHere payment, returns payment parameters. Order is reserved in Redis during checkout.",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Order creation data",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": ["USER", "GUEST"],
+                  "description": "Order type",
+                  "example": "USER"
+                },
+                "userId": {
+                  "type": "string",
+                  "description": "User ID (for USER type)"
+                },
+                "addressId": {
+                  "type": "string",
+                  "description": "Saved address ID (for USER type)"
+                },
+                "address": {
+                  "type": "object",
+                  "description": "Address object (for GUEST type)"
+                },
+                "billingAddress": {
+                  "type": "object",
+                  "description": "Billing address"
+                },
+                "items": {
+                  "type": "array",
+                  "description": "Order items with SKU and quantity",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "sku": {"type": "string"},
+                      "quantity": {"type": "number"}
+                    }
+                  }
+                },
+                "email": {
+                  "type": "string",
+                  "format": "email",
+                  "description": "Order email"
+                },
+                "paymentMethod": {
+                  "type": "string",
+                  "enum": ["COD", "PAYHERE"],
+                  "description": "Payment method"
+                },
+                "couponCode": {
+                  "type": "string",
+                  "description": "Discount coupon code (optional)"
+                }
+              },
+              "required": ["type", "items", "paymentMethod"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order created (for PayHere, returns payment params)"
+          },
+          "400": {
+            "description": "Invalid order data or insufficient stock"
+          },
+          "404": {
+            "description": "Product or address not found"
+          },
+          "429": {
+            "description": "Too many order attempts, rate limited"
+          }
+        }
+      }
+    },
+    "/orders/track/{token}": {
+      "get": {
+        "tags": ["Orders"],
+        "summary": "Track guest order",
+        "description": "Retrieve order details using guest tracking token",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "Guest order tracking token"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order details retrieved successfully"
+          },
+          "400": {
+            "description": "Invalid token"
+          },
+          "404": {
+            "description": "Order not found"
+          },
+          "410": {
+            "description": "Order tracking link has expired"
+          }
+        }
+      }
+    },
+    "/orders/track/{token}/cancel": {
+      "patch": {
+        "tags": ["Orders"],
+        "summary": "Cancel guest order",
+        "description": "Cancel order by guest using tracking token",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "Guest order tracking token"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Cancellation reason",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "reason": {"type": "string"}
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order cancelled successfully"
+          },
+          "400": {
+            "description": "Order cannot be cancelled in current status"
+          },
+          "404": {
+            "description": "Order not found"
+          }
+        }
+      }
+    },
+    "/orders/verify/{orderNumber}": {
+      "get": {
+        "tags": ["Orders"],
+        "summary": "Verify order exists",
+        "description": "Check if an order number exists in the system",
+        "parameters": [
+          {
+            "name": "orderNumber",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "Order number to verify"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order verified and details returned"
+          },
+          "404": {
+            "description": "Order not found"
+          },
+          "500": {
+            "description": "Server error during verification"
+          }
+        }
+      }
+    },
+    "/orders/my-orders": {
+      "get": {
+        "tags": ["Orders - User"],
+        "summary": "Get my orders",
+        "description": "Retrieve authenticated user's order history",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "type": "integer",
+            "description": "Page number",
+            "example": 1
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "type": "integer",
+            "description": "Items per page",
+            "example": 10
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User orders retrieved successfully"
+          }
+        }
+      }
+    },
+    "/orders/my-orders/{id}": {
+      "get": {
+        "tags": ["Orders - User"],
+        "summary": "Get order details",
+        "description": "Retrieve details of a specific order (must be user's own order)",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "Order ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order details retrieved successfully"
+          },
+          "403": {
+            "description": "Forbidden - order belongs to another user"
+          },
+          "404": {
+            "description": "Order not found"
+          }
+        }
+      }
+    },
+    "/orders/my-orders/{id}/cancel": {
+      "patch": {
+        "tags": ["Orders - User"],
+        "summary": "Cancel my order",
+        "description": "Cancel an order placed by the authenticated user",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "Order ID to cancel"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Cancellation reason",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "reason": {"type": "string"}
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order cancelled successfully"
+          },
+          "400": {
+            "description": "Order cannot be cancelled (already shipped, delivered, etc.)"
+          },
+          "403": {
+            "description": "Forbidden - order not yours"
+          },
+          "404": {
+            "description": "Order not found"
+          }
+        }
+      }
+    },
+    "/orders/admin/{orderId}/refund": {
+      "post": {
+        "tags": ["Orders - Admin"],
+        "summary": "Process refund",
+        "description": "Mark order as refunded, restore stock, and send notification email",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "Order ID to refund"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Refund processed successfully, stock restored"
+          },
+          "400": {
+            "description": "Order cannot be refunded in current status"
+          },
+          "404": {
+            "description": "Order not found"
+          }
+        }
+      }
+    },
+    "/orders/admin": {
+      "get": {
+        "tags": ["Orders - Admin"],
+        "summary": "List all orders",
+        "description": "Admin view of all orders with filtering and search",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "type": "integer",
+            "description": "Page number"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "type": "integer",
+            "description": "Items per page"
+          },
+          {
+            "name": "filter",
+            "in": "query",
+            "type": "string",
+            "enum": ["ALL", "PENDING", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED", "RETURNED", "ISSUES"],
+            "description": "Filter by order status"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "type": "string",
+            "description": "Search by order number, customer name, or email"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Orders retrieved successfully"
+          }
+        }
+      }
+    },
+    "/orders/admin/stats": {
+      "get": {
+        "tags": ["Orders - Admin"],
+        "summary": "Get order statistics",
+        "description": "Retrieve count of orders by status",
+        "security": [{"Bearer": []}],
+        "responses": {
+          "200": {
+            "description": "Order statistics retrieved successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "ALL": {"type": "number"},
+                "PENDING": {"type": "number"},
+                "PROCESSING": {"type": "number"},
+                "SHIPPED": {"type": "number"},
+                "DELIVERED": {"type": "number"},
+                "CANCELLED": {"type": "number"}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/orders/admin/report": {
+      "get": {
+        "tags": ["Orders - Admin"],
+        "summary": "Export orders report",
+        "description": "Generate orders report in specified format with date and status filters",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "startDate",
+            "in": "query",
+            "type": "string",
+            "format": "date",
+            "description": "Report start date (YYYY-MM-DD)"
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "type": "string",
+            "format": "date",
+            "description": "Report end date (YYYY-MM-DD)"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "type": "string",
+            "description": "Filter by order status"
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "type": "string",
+            "enum": ["excel", "pdf"],
+            "description": "Export format"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Report generated successfully"
+          },
+          "400": {
+            "description": "Invalid date range or format"
+          }
+        }
+      }
+    },
+    "/orders/admin/{orderId}": {
+      "get": {
+        "tags": ["Orders - Admin"],
+        "summary": "Get order details",
+        "description": "Admin view of complete order information including customer details",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "Order ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order details retrieved successfully"
+          },
+          "404": {
+            "description": "Order not found"
+          }
+        }
+      }
+    },
+    "/orders/admin/{orderId}/status": {
+      "patch": {
+        "tags": ["Orders - Admin"],
+        "summary": "Update order status",
+        "description": "Change order status (PENDING → PROCESSING → SHIPPED → DELIVERED). Triggers email notification and updates stock if needed.",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "Order ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "description": "New status and optional tracking details",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "enum": ["PENDING", "PROCESSING", "CONFIRMED", "SHIPPED", "DELIVERED", "CANCELLED", "RETURNED"],
+                  "description": "New order status",
+                  "example": "SHIPPED"
+                },
+                "trackingNumber": {
+                  "type": "string",
+                  "description": "Tracking number for shipment (for SHIPPED status)"
+                }
+              },
+              "required": ["status"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order status updated successfully, notification email sent"
+          },
+          "400": {
+            "description": "Invalid status transition"
+          },
+          "404": {
+            "description": "Order not found"
+          }
+        }
+      }
+    },
+    "/orders/payment/notify": {
+      "post": {
+        "tags": ["Payment"],
+        "summary": "PayHere payment callback",
+        "description": "Webhook endpoint for PayHere payment notifications. Called by PayHere after payment processing. Updates order status and creates order in database if payment successful.",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "PayHere payment notification data",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "merchant_id": {
+                  "type": "string",
+                  "description": "PayHere merchant ID"
+                },
+                "order_id": {
+                  "type": "string",
+                  "description": "Order ID"
+                },
+                "payment_id": {
+                  "type": "string",
+                  "description": "PayHere payment ID"
+                },
+                "status_code": {
+                  "type": "string",
+                  "enum": ["0", "2", "-1", "-2", "-3"],
+                  "description": "Payment status (0=pending, 2=success, -1=failed, -2=cancelled, -3=expired)"
+                },
+                "md5sig": {
+                  "type": "string",
+                  "description": "MD5 signature for verification"
+                },
+                "payhere_amount": {
+                  "type": "string",
+                  "description": "Amount paid"
+                },
+                "payhere_currency": {
+                  "type": "string",
+                  "description": "Currency code (LKR)"
+                }
+              },
+              "required": ["merchant_id", "order_id", "payment_id", "status_code", "md5sig"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Webhook processed successfully (status_code=2 creates order)"
+          },
+          "400": {
+            "description": "Invalid notification data or signature mismatch"
+          },
+          "404": {
+            "description": "Order not found in Redis cache"
+          },
+          "500": {
+            "description": "Error processing payment notification"
+          }
+        }
+      }
+    },
+    "/coupons/validate-coupon": {
+      "post": {
+        "tags": ["Coupons"],
+        "summary": "Validate coupon",
+        "description": "Check if coupon is valid for checkout (checks expiry, usage limits, minimum amount)",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Coupon validation data",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string",
+                  "description": "Coupon code",
+                  "example": "SUMMER2024"
+                },
+                "cartTotal": {
+                  "type": "number",
+                  "description": "Total cart amount",
+                  "example": 5000
+                },
+                "userId": {
+                  "type": "string",
+                  "description": "User ID (for per-user limit checks)"
+                },
+                "email": {
+                  "type": "string",
+                  "format": "email",
+                  "description": "Email for guest coupon application"
+                }
+              },
+              "required": ["code", "cartTotal"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Coupon validation result",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "valid": {"type": "boolean"},
+                "discount": {"type": "number"},
+                "message": {"type": "string"}
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid coupon or validation failed"
+          }
+        }
+      }
+    },
+    "/coupons/": {
+      "get": {
+        "tags": ["Coupons - Admin"],
+        "summary": "List coupons",
+        "description": "Get all coupons (admin only)",
+        "security": [{"Bearer": []}],
+        "responses": {
+          "200": {
+            "description": "Coupons retrieved successfully"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Coupons - Admin"],
+        "summary": "Create coupon",
+        "description": "Add a new discount coupon",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Coupon details",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string",
+                  "description": "Unique coupon code",
+                  "example": "SUMMER2024"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": ["PERCENTAGE", "FIXED"],
+                  "description": "Discount type"
+                },
+                "value": {
+                  "type": "number",
+                  "description": "Discount value (percentage or amount)",
+                  "example": 10
+                },
+                "minOrderAmount": {
+                  "type": "number",
+                  "description": "Minimum cart total to apply"
+                },
+                "expiresAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "Expiration date/time"
+                },
+                "limitPerUser": {
+                  "type": "number",
+                  "description": "Max uses per customer"
+                },
+                "maxUses": {
+                  "type": "number",
+                  "description": "Total max uses"
+                },
+                "isPublic": {
+                  "type": "boolean",
+                  "description": "Public coupon or admin-only"
+                }
+              },
+              "required": ["code", "type", "value"]
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Coupon created successfully"
+          },
+          "400": {
+            "description": "Invalid coupon data"
+          }
+        }
+      }
+    },
+    "/coupons/{id}": {
+      "delete": {
+        "tags": ["Coupons - Admin"],
+        "summary": "Delete coupon",
+        "description": "Remove a coupon from the system",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "Coupon ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Coupon deleted successfully"
+          }
+        }
+      },
+      "patch": {
+        "tags": ["Coupons - Admin"],
+        "summary": "Toggle coupon status",
+        "description": "Activate or deactivate a coupon",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "Coupon ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "description": "New status",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "isActive": {"type": "boolean"}
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Coupon status updated successfully"
+          }
+        }
+      }
+    },
+    "/site-images/": {
+      "get": {
+        "tags": ["Site Content"],
+        "summary": "Get site images",
+        "description": "Retrieve promotional images (banners, sliders) by section",
+        "parameters": [
+          {
+            "name": "section",
+            "in": "query",
+            "type": "string",
+            "enum": ["HERO_BANNER", "CATEGORY_GRID", "PROMO", "OTHER"],
+            "description": "Image section filter"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Site images retrieved successfully"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Site Content - Admin"],
+        "summary": "Create site image",
+        "description": "Add promotional image to website",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Site image data",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "description": "Image title"
+                },
+                "section": {
+                  "type": "string",
+                  "enum": ["HERO_BANNER", "CATEGORY_GRID", "PROMO"],
+                  "description": "Image placement section"
+                },
+                "imageUrl": {
+                  "type": "string",
+                  "description": "Image URL"
+                },
+                "fileId": {
+                  "type": "string",
+                  "description": "ImageKit file ID"
+                },
+                "position": {
+                  "type": "number",
+                  "description": "Display order"
+                },
+                "isActive": {
+                  "type": "boolean",
+                  "description": "Show on website"
+                }
+              },
+              "required": ["title", "section", "imageUrl"]
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Site image created successfully"
+          },
+          "400": {
+            "description": "Invalid image data"
+          }
+        }
+      }
+    },
+    "/site-images/{id}": {
+      "delete": {
+        "tags": ["Site Content - Admin"],
+        "summary": "Delete site image",
+        "description": "Remove promotional image from website",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "Image ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Image deleted successfully"
+          },
+          "404": {
+            "description": "Image not found"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Site Content - Admin"],
+        "summary": "Update site image",
+        "description": "Modify promotional image details",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "Image ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Updated image data",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "title": {"type": "string"},
+                "section": {"type": "string"},
+                "imageUrl": {"type": "string"},
+                "fileId": {"type": "string"},
+                "position": {"type": "number"},
+                "isActive": {"type": "boolean"}
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Image updated successfully"
+          },
+          "404": {
+            "description": "Image not found"
+          }
+        }
+      }
+    },
+    "/contact/": {
+      "post": {
+        "tags": ["Contact"],
+        "summary": "Submit contact form",
+        "description": "Submit contact form message from customers",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Contact form data",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Sender's name",
+                  "example": "John Doe"
+                },
+                "phoneNumber": {
+                  "type": "string",
+                  "description": "Contact phone number"
+                },
+                "email": {
+                  "type": "string",
+                  "format": "email",
+                  "description": "Sender's email"
+                },
+                "comment": {
+                  "type": "string",
+                  "description": "Message content"
+                }
+              },
+              "required": ["name", "email", "comment"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Contact message received and sent to admin"
+          }
+        }
+      }
+    },
+    "/size-charts/": {
+      "get": {
+        "tags": ["Size Charts"],
+        "summary": "Get size charts",
+        "description": "Retrieve available product size chart images",
+        "responses": {
+          "200": {
+            "description": "Size charts retrieved successfully"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Size Charts - Admin"],
+        "summary": "Create size chart",
+        "description": "Upload a new size chart image",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Size chart data",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Size chart name",
+                  "example": "Men's T-Shirt Sizes"
+                },
+                "imageUrl": {
+                  "type": "string",
+                  "description": "Chart image URL"
+                },
+                "fileId": {
+                  "type": "string",
+                  "description": "ImageKit file ID"
+                }
+              },
+              "required": ["name", "imageUrl"]
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Size chart created successfully"
+          },
+          "400": {
+            "description": "Invalid data or duplicate chart"
+          }
+        }
+      }
+    },
+    "/size-charts/{id}": {
+      "put": {
+        "tags": ["Size Charts - Admin"],
+        "summary": "Update size chart",
+        "description": "Modify size chart image or name",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "Size chart ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Updated chart data",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {"type": "string"},
+                "imageUrl": {"type": "string"},
+                "fileId": {"type": "string"}
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Size chart updated successfully"
+          },
+          "400": {
+            "description": "Invalid data"
+          },
+          "404": {
+            "description": "Size chart not found"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Size Charts - Admin"],
+        "summary": "Delete size chart",
+        "description": "Remove size chart and its image",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "Size chart ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Size chart deleted successfully"
+          },
+          "404": {
+            "description": "Size chart not found"
+          }
+        }
+      }
+    },
+    "/shipping-cities/": {
+      "get": {
+        "tags": ["Shipping"],
+        "summary": "Get active shipping cities",
+        "description": "Retrieve list of cities where shipping is available (for checkout dropdown)",
+        "responses": {
+          "200": {
+            "description": "Shipping cities retrieved successfully"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Shipping - Admin"],
+        "summary": "Add shipping city",
+        "description": "Add a new city to the shipping service",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Shipping city data",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "City name",
+                  "example": "Colombo"
+                },
+                "shippingCost": {
+                  "type": "number",
+                  "description": "Shipping cost for this city",
+                  "example": 250
+                },
+                "isActive": {
+                  "type": "boolean",
+                  "description": "Show in checkout",
+                  "example": true
+                }
+              },
+              "required": ["name", "shippingCost"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Shipping city created successfully"
+          },
+          "400": {
+            "description": "Invalid data"
+          }
+        }
+      }
+    },
+    "/shipping-cities/admin/all": {
+      "get": {
+        "tags": ["Shipping - Admin"],
+        "summary": "Get all shipping cities",
+        "description": "Admin view - retrieve all cities including inactive ones",
+        "security": [{"Bearer": []}],
+        "responses": {
+          "200": {
+            "description": "All shipping cities retrieved successfully"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/shipping-cities/{id}": {
+      "put": {
+        "tags": ["Shipping - Admin"],
+        "summary": "Update shipping city",
+        "description": "Modify city shipping cost or status",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "City ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Updated city data",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {"type": "string"},
+                "shippingCost": {"type": "number"},
+                "isActive": {"type": "boolean"}
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Shipping city updated successfully"
+          },
+          "400": {
+            "description": "Invalid data"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Shipping - Admin"],
+        "summary": "Delete shipping city",
+        "description": "Remove a city from shipping destinations",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "City ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Shipping city deleted successfully"
+          },
+          "400": {
+            "description": "Cannot delete city with active orders"
+          }
+        }
+      }
+    },
+    "/announcements/": {
+      "get": {
+        "tags": ["Announcements"],
+        "summary": "Get announcements",
+        "description": "Retrieve site announcements/notices",
+        "parameters": [
+          {
+            "name": "all",
+            "in": "query",
+            "type": "boolean",
+            "description": "Get all or only active announcements",
+            "example": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Announcements retrieved successfully"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Announcements - Admin"],
+        "summary": "Create announcement",
+        "description": "Add a new site-wide announcement or notice",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Announcement data",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "description": "Announcement message",
+                  "example": "Free shipping on orders over Rs. 5000!"
+                },
+                "isActive": {
+                  "type": "boolean",
+                  "description": "Display announcement",
+                  "example": true
+                },
+                "position": {
+                  "type": "number",
+                  "description": "Display order"
+                }
+              },
+              "required": ["text"]
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Announcement created successfully"
+          },
+          "400": {
+            "description": "Invalid data"
+          }
+        }
+      }
+    },
+    "/announcements/{id}": {
+      "put": {
+        "tags": ["Announcements - Admin"],
+        "summary": "Update announcement",
+        "description": "Modify announcement text or status",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "Announcement ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Updated announcement data",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "text": {"type": "string"},
+                "isActive": {"type": "boolean"},
+                "position": {"type": "number"}
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Announcement updated successfully"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Announcements - Admin"],
+        "summary": "Delete announcement",
+        "description": "Remove an announcement",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "Announcement ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Announcement deleted successfully"
+          }
+        }
+      }
+    },
+    "/admin/email/newsletter/subscribe": {
+      "post": {
+        "tags": ["Email - Newsletter"],
+        "summary": "Subscribe to newsletter",
+        "description": "Add email to newsletter subscription list",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Email subscription",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "email": {
+                  "type": "string",
+                  "format": "email",
+                  "description": "Email address to subscribe"
+                }
+              },
+              "required": ["email"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Already subscribed"
+          },
+          "201": {
+            "description": "Subscribed successfully"
+          },
+          "400": {
+            "description": "Invalid email format"
+          },
+          "500": {
+            "description": "Subscription error"
+          }
+        }
+      }
+    },
+    "/admin/email/unsubscribe": {
+      "post": {
+        "tags": ["Email - Newsletter"],
+        "summary": "Unsubscribe from newsletter",
+        "description": "Remove email from newsletter mailing list",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Email to unsubscribe",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "email": {"type": "string"},
+                "token": {"type": "string"}
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Unsubscribed successfully"
+          }
+        }
+      }
+    },
+    "/admin/email/newsletter/me": {
+      "get": {
+        "tags": ["Email - Newsletter"],
+        "summary": "Get my subscription status",
+        "description": "Check if logged-in user is subscribed to newsletter",
+        "security": [{"Bearer": []}],
+        "responses": {
+          "200": {
+            "description": "Subscription status retrieved"
+          }
+        }
+      }
+    },
+    "/admin/email/newsletter/toggle": {
+      "post": {
+        "tags": ["Email - Newsletter"],
+        "summary": "Toggle newsletter subscription",
+        "description": "Subscribe or unsubscribe the logged-in user from newsletter",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "New subscription status",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "isSubscribed": {"type": "boolean"}
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Subscription status updated"
+          }
+        }
+      }
+    },
+    "/admin/email/newsletter/subscribers": {
+      "get": {
+        "tags": ["Email - Admin"],
+        "summary": "List newsletter subscribers",
+        "description": "Admin: View all newsletter subscribers with pagination and filtering",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "type": "integer",
+            "description": "Page number"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "type": "integer",
+            "description": "Items per page"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "type": "string",
+            "description": "Search by email"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "type": "string",
+            "enum": ["active", "inactive", "all"],
+            "description": "Filter by subscription status"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Subscribers retrieved successfully"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/admin/email/newsletter/subscribers/{id}/toggle": {
+      "put": {
+        "tags": ["Email - Admin"],
+        "summary": "Toggle subscriber status",
+        "description": "Activate or deactivate a subscriber",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "Subscriber ID"
+          },
           {
             "name": "body",
             "in": "body",
             "schema": {
               "type": "object",
               "properties": {
-                "name": {
-                  "example": "any"
-                },
-                "hexCode": {
-                  "example": "any"
-                }
+                "isSubscribed": {"type": "boolean"}
               }
             }
           }
         ],
         "responses": {
-          "201": {
-            "description": "Created"
+          "200": {
+            "description": "Subscriber status updated"
+          },
+          "404": {
+            "description": "Subscriber not found"
+          },
+          "500": {
+            "description": "Server error"
           }
         }
       }
+    },
+    "/admin/email/newsletter/broadcast": {
+      "post": {
+        "tags": ["Email - Admin"],
+        "summary": "Send newsletter broadcast",
+        "description": "Send email campaign to all newsletter subscribers",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Newsletter content",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "subject": {
+                  "type": "string",
+                  "description": "Email subject",
+                  "example": "Summer Sale 2024!"
+                },
+                "htmlContent": {
+                  "type": "string",
+                  "description": "HTML email content"
+                }
+              },
+              "required": ["subject", "htmlContent"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Newsletter broadcast queued successfully"
+          },
+          "400": {
+            "description": "Invalid content"
+          },
+          "500": {
+            "description": "Broadcast error"
+          }
+        }
+      }
+    },
+    "/admin/email/queue/stats": {
+      "get": {
+        "tags": ["Email - Admin"],
+        "summary": "Get email queue statistics",
+        "description": "View pending, sent, and failed email counts",
+        "security": [{"Bearer": []}],
+        "responses": {
+          "200": {
+            "description": "Queue statistics retrieved",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "pending": {"type": "number"},
+                "sent": {"type": "number"},
+                "failed": {"type": "number"},
+                "processing": {"type": "number"}
+              }
+            }
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/admin/email/logs": {
+      "get": {
+        "tags": ["Email - Admin"],
+        "summary": "View email logs",
+        "description": "Admin: View sent/failed emails with filtering",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "type": "integer",
+            "description": "Page number"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "type": "integer",
+            "description": "Items per page"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "type": "string",
+            "enum": ["sent", "failed", "pending", "all"],
+            "description": "Filter by email status"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "type": "string",
+            "description": "Search by recipient email or subject"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Email logs retrieved successfully"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/admin/email/statistics": {
+      "get": {
+        "tags": ["Email - Admin"],
+        "summary": "Get email statistics",
+        "description": "View email metrics and trends",
+        "security": [{"Bearer": []}],
+        "responses": {
+          "200": {
+            "description": "Email statistics retrieved",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "dailyStats": {"type": "array"},
+                "weeklyStats": {"type": "array"},
+                "monthlyStats": {"type": "array"}
+              }
+            }
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/admin/email/order/{orderNumber}": {
+      "get": {
+        "tags": ["Email - Admin"],
+        "summary": "Get emails for order",
+        "description": "View all emails sent related to a specific order",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "orderNumber",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "Order number"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order emails retrieved successfully"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/admin/email/retry/{emailLogId}": {
+      "post": {
+        "tags": ["Email - Admin"],
+        "summary": "Retry failed email",
+        "description": "Manually resend a failed email",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "emailLogId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "Email log ID to retry"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Email queued for retry"
+          },
+          "404": {
+            "description": "Email log not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/admin/email/cleanup": {
+      "delete": {
+        "tags": ["Email - Admin"],
+        "summary": "Clean up old emails",
+        "description": "Delete email logs older than specified number of days",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "type": "integer",
+            "description": "Delete logs older than N days",
+            "example": 30
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Old emails deleted successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "deletedCount": {"type": "number"}
+              }
+            }
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/admin/payment-logs/": {
+      "get": {
+        "tags": ["Payment Logs"],
+        "summary": "Get payment logs",
+        "description": "Admin: View payment transaction history",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "type": "integer",
+            "description": "Page number (limit=20 per page)",
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Payment logs retrieved successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "logs": {"type": "array"},
+                "totalPages": {"type": "number"},
+                "total": {"type": "number"},
+                "currentPage": {"type": "number"}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analytics/overview": {
+      "get": {
+        "tags": ["Analytics - Admin"],
+        "summary": "Get analytics overview",
+        "description": "Retrieve dashboard statistics and metrics",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "range",
+            "in": "query",
+            "type": "string",
+            "enum": ["weekly", "monthly", "yearly", "custom"],
+            "description": "Time range for analytics"
+          },
+          {
+            "name": "startYear",
+            "in": "query",
+            "type": "integer",
+            "description": "Start year for custom range"
+          },
+          {
+            "name": "endYear",
+            "in": "query",
+            "type": "integer",
+            "description": "End year for custom range"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Analytics overview retrieved successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "cards": {"type": "object"},
+                "comparisons": {"type": "object"},
+                "charts": {"type": "object"}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analytics/top-products": {
+      "get": {
+        "tags": ["Analytics - Admin"],
+        "summary": "Get top products",
+        "description": "Retrieve best-selling products for specified period",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "range",
+            "in": "query",
+            "type": "string",
+            "enum": ["weekly", "monthly", "yearly"],
+            "description": "Time range"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Top products retrieved successfully"
+          }
+        }
+      }
+    },
+    "/analytics/top-customers": {
+      "get": {
+        "tags": ["Analytics - Admin"],
+        "summary": "Get top customers",
+        "description": "Retrieve most valuable customers for specified period",
+        "security": [{"Bearer": []}],
+        "parameters": [
+          {
+            "name": "range",
+            "in": "query",
+            "type": "string",
+            "enum": ["weekly", "monthly", "yearly"],
+            "description": "Time range"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Top customers retrieved successfully"
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "Product": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "example": "Classic T-Shirt"
+        },
+        "sku": {
+          "type": "string",
+          "example": "TS-001-BLK-M"
+        },
+        "description": {
+          "type": "string",
+          "example": "High-quality cotton t-shirt"
+        },
+        "price": {
+          "type": "number",
+          "example": 2500
+        },
+        "stock": {
+          "type": "number",
+          "example": 100
+        },
+        "brand": {
+          "type": "string",
+          "example": "Upul Basics"
+        },
+        "availability": {
+          "type": "boolean",
+          "example": true
+        },
+        "images": {
+          "type": "array",
+          "example": ["url1", "url2"],
+          "items": {"type": "string"}
+        },
+        "colors": {
+          "type": "array",
+          "example": ["#000", "#FFF"],
+          "items": {"type": "string"}
+        },
+        "size": {
+          "type": "string",
+          "example": "M"
+        }
+      },
+      "required": ["name", "sku", "description", "price", "stock", "brand"]
     }
   }
 }

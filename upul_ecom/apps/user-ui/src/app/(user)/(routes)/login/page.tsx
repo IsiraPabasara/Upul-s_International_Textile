@@ -1,5 +1,8 @@
 'use client'
-import { useMutation, useQueryClient } from '@tanstack/react-query'; // Added useQueryClient
+import { useCart } from '@/app/hooks/useCart';
+import { useWishlist } from '@/app/hooks/useWishlist';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { usePageTitle } from '@/app/hooks/usePageTitle'; // Added useQueryClient
 import axios, { AxiosError } from 'axios';
 import { Eye, EyeOff } from 'lucide-react'; 
 import Link from 'next/link';
@@ -15,11 +18,14 @@ type FormData = {
 }
 
 const Login = () => {
+    usePageTitle('Login', 'Sign in to your account');
     const [passwordVisible, setPasswordVisible] = useState(false)
     const [serverError, setServerError] = useState<string | null>(null)
     const router = useRouter();
     const queryClient = useQueryClient(); // Initialize QueryClient
     
+    const { syncWithUser: syncCart } = useCart();
+    const { syncWithUser: syncWishlist } = useWishlist();
     
     const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormData>({
         defaultValues: {
@@ -39,7 +45,7 @@ const Login = () => {
 
     const loginMutation = useMutation({
         mutationFn: async (data: FormData) => {
-            const response = await axios.post(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/auth/login-user`,
+            const response = await axios.post(`https://api.upuls.lk/api/auth/login-user`,
                 data, { withCredentials: true }
             )
             return response.data;
@@ -54,7 +60,10 @@ const Login = () => {
             // IMPORTANT: Invalidate the user query to update Header and other components
             await queryClient.invalidateQueries({ queryKey: ["user"] });
 
-        
+            await Promise.all([
+                syncCart(),
+                syncWishlist() 
+            ]);
 
             toast.success("Login successful!");
             router.push("/");
@@ -72,7 +81,7 @@ const Login = () => {
     };
 
     return (
-        <div className='w-full min-h-[70vh] mt-[50px] bg-white flex flex-col items-center justify-center font-sans'>
+        <div className='w-full min-h-[70vh] mt-[50px] bg-white flex flex-col items-center justify-center font-sans mb-5'>
             <div className='w-full max-w-[450px] px-8'>
                 <div className="mb-14 text-center"> 
                     <h2 className='text-2xl tracking-[0.4em] uppercase mb-6 text-black font-semibold'>Login</h2>

@@ -15,3 +15,13 @@ export const createColor = async (req: Request, res: Response, next: NextFunctio
     return res.status(201).json(color);
   } catch (error) { return next(error); }
 };
+
+export const deleteColor = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    await prisma.color.delete({ where: { id } });
+    return res.status(200).json({ message: "Color deleted successfully" });
+  } catch (error) { 
+    return next(error); 
+  }
+};

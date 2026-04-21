@@ -1,21 +1,11 @@
 import Queue from 'bull';
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import { PrismaClient } from '@prisma/client';
 import Redis from 'ioredis';
 
 const prisma = new PrismaClient();
-
-// Configure email transporter
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: Number(process.env.SMTP_PORT) || 465,
-  secure: true,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
+const FROM_EMAIL = 'Upul International <noreply@upuls.lk>'; // Your verified domain
 
 // Redis client factory for Bull queue (creates new clients for each purpose)
 const createBullRedisClient = () => {
@@ -35,7 +25,7 @@ export interface EmailJob {
   subject: string;
   html: string;
   orderNumber?: string;
-  emailType: 'confirmation' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'returned' | 'refunded' | 'admin-alert';
+  emailType: 'confirmation' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'returned' | 'refunded' | 'admin-alert' | 'newsletter-welcome' | 'promotional-campaign';
 }
 
 // Queue an email to be sent
@@ -62,19 +52,20 @@ emailQueue.process(async (job) => {
   const { to, subject, html, orderNumber, emailType } = job.data as EmailJob;
 
   try {
-    // Check if email was already sent (prevent duplicates)
-    const existing = await prisma.emailLog.findFirst({
-      where: {
-        recipientEmail: to,
-        subject: subject,
-        orderNumber: orderNumber || null,
-        status: 'sent',
-      },
-    });
+    if (emailType !== 'admin-alert') {
+      const existing = await prisma.emailLog.findFirst({
+        where: {
+          recipientEmail: to,
+          subject: subject,
+          orderNumber: orderNumber || null,
+          status: 'sent',
+        },
+      });
 
-    if (existing) {
-      console.log(`✅ Email already sent: ${emailType} to ${to}`);
-      return { skipped: true, reason: 'Email already sent' };
+      if (existing) {
+        console.log(`✅ Email already sent: ${emailType} to ${to}`);
+        return { skipped: true, reason: 'Email already sent' };
+      }
     }
 
     // Log attempt
@@ -82,7 +73,7 @@ emailQueue.process(async (job) => {
       data: {
         recipientEmail: to,
         subject,
-        html, // Store HTML for retry capability
+        html,
         emailType,
         orderNumber: orderNumber || null,
         status: 'processing',
@@ -90,13 +81,26 @@ emailQueue.process(async (job) => {
       },
     });
 
-    // Send email
-    await transporter.sendMail({
-      from: `"Upul International" <${process.env.SMTP_USER}>`,
-      to,
+    // Send email via Resend
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: [to],
       subject,
       html,
     });
+
+    // Resend doesn't throw on API failure, so we manually throw to trigger Bull's retry
+    if (error) {
+      console.error(`❌ Resend API Error for ${to}:`, error);
+      throw new Error(`Resend API Error: ${error.message}`);
+    }
+
+    if (!data?.id) {
+      console.error(`❌ No email ID received from Resend for ${to}`);
+      throw new Error('Resend did not return an email ID');
+    }
+
+    console.log(`📧 Email sent via Resend (ID: ${data.id}): ${emailType} to ${to}`);
 
     // Mark as sent
     await prisma.emailLog.update({
@@ -117,7 +121,7 @@ emailQueue.process(async (job) => {
       data: {
         recipientEmail: to,
         subject,
-        html, // Store HTML for retry capability
+        html, 
         emailType,
         orderNumber: orderNumber || null,
         status: 'failed',
@@ -155,9 +159,9 @@ emailQueue.on('failed', async (job, err) => {
   // Optionally send alert to admin
   if (process.env.ADMIN_EMAIL) {
     try {
-      await transporter.sendMail({
-        from: `"System" <${process.env.SMTP_USER}>`,
-        to: process.env.ADMIN_EMAIL,
+      await resend.emails.send({
+        from: FROM_EMAIL,
+        to: [process.env.ADMIN_EMAIL],
         subject: `⚠️ Critical: Email delivery failed - ${emailType}`,
         html: `
           <p>Email delivery has permanently failed after 5 retry attempts.</p>
@@ -226,7 +230,7 @@ export const retryFailedEmail = async (emailLogId: string) => {
   await queueEmail({
     to: emailLog.recipientEmail,
     subject: emailLog.subject,
-    html: emailLog.html, // Use stored HTML
+    html: emailLog.html,
     orderNumber: emailLog.orderNumber || undefined,
     emailType: emailLog.emailType as any,
   });

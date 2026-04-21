@@ -1,22 +1,15 @@
-import nodemailer from 'nodemailer';
-import dotenv from 'dotenv'
-import ejs from 'ejs'
-import path from 'path'
+import { Resend } from 'resend';
+import dotenv from 'dotenv';
+import ejs from 'ejs';
+import path from 'path';
 
 dotenv.config();
 
-const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: Number(process.env.SMTP_PORT) || 587,
-    service: process.env.SMTP_SERVICE,
-    auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS, 
-    }
-});
+// Initialize Resend with your API Key
+const resend = new Resend(process.env.RESEND_API_KEY);
 
-// Render an ejs email template
-const rendererEmailTemplate = async (templateName:string, data: Record<string, any>): Promise<string> => {
+// Render an EJS email template (Unchanged - this was already perfect!)
+const rendererEmailTemplate = async (templateName: string, data: Record<string, any>): Promise<string> => {
     const templatePath = path.join(
         process.cwd(),
         "apps",
@@ -29,23 +22,34 @@ const rendererEmailTemplate = async (templateName:string, data: Record<string, a
         `${templateName}.ejs`
     );
 
-    return ejs.renderFile(templatePath, data)
+    return ejs.renderFile(templatePath, data);
 }
 
-// send an email using nodemailer
-    export const sendEmail = async(to:string, subject:string, templateName:string, data:Record<string,any>) => {
-        try {
-            const html = await rendererEmailTemplate(templateName, data);
+// Send an email using Resend
+export const sendEmail = async (to: string, subject: string, templateName: string, data: Record<string, any>) => {
+    try {
+        // 1. Generate the HTML from your EJS template
+        const html = await rendererEmailTemplate(templateName, data);
 
-            await transporter.sendMail({
-                from: `<${process.env.SMTP_USER}>`,
-                to,
-                subject,
-                html,
-            })
-            return true;
-        } catch (error) {
-            console.log("Error sending email", error);
+        // 2. Send via Resend's API
+        const { data: responseData, error } = await resend.emails.send({
+            from: 'Upul International <noreply@upuls.lk>', // Using your verified domain!
+            to: [to],
+            subject: subject,
+            html: html,
+        });
+
+        // 3. Resend doesn't always "throw" an error, so we check for it explicitly
+        if (error) {
+            console.error("Resend API Error:", error);
             return false;
         }
+
+        console.log("Email sent successfully. ID:", responseData?.id);
+        return true;
+
+    } catch (error) {
+        console.error("Critical error sending email:", error);
+        return false;
     }
+}

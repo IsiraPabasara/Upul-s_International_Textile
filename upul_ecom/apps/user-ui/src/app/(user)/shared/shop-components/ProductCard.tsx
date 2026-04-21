@@ -63,7 +63,7 @@ export default function ProductCard({ product }: ProductCardProps) {
   return (
     /* Always visible border and subtle shadow to match the reference images */
     <div className="group  relative bg-white border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden h-full flex flex-col">
-      <Link href={`/product/${product.sku}`}>
+      <Link href={`/product/${product.slug}`}>
         {/* Image expanded fully to the edges of the card */}
         <div className="relative aspect-[2/3] bg-[#f5f5f5] overflow-hidden">
           {product.images[0] ? (

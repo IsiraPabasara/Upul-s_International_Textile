@@ -1,4 +1,5 @@
 'use client'
+import { usePageTitle } from '@/app/hooks/usePageTitle';
 import { useMutation } from '@tanstack/react-query';
 import axios, { AxiosError } from 'axios';
 import { Eye, EyeOff } from 'lucide-react';
@@ -14,6 +15,7 @@ type FormData = {
 }
 
 const ForgotPassword = () => {
+    usePageTitle('Forgot Password', 'Reset your password');
     const [step, setStep] = useState<"email" | "otp" | "reset">("email");
     const [serverError, setServerError] = useState<string | null>(null);
     const [otp, setOtp] = useState(["", "", "", ""]);
@@ -41,7 +43,7 @@ const ForgotPassword = () => {
 
     const requestOtpMutation = useMutation({
         mutationFn: async ({ email }: { email: string }) => {
-            const response = await axios.post(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/auth/forgot-password-user`, { email });
+            const response = await axios.post(`https://api.upuls.lk/api/auth/forgot-password-user`, { email });
             return response.data;
         },
         onSuccess: (_, { email }) => {
@@ -58,7 +60,7 @@ const ForgotPassword = () => {
 
     const verifyOtpMutation = useMutation({
         mutationFn: async () => {
-            const response = await axios.post(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/auth/verify-forgot-password-user`, { email: userEmail, otp: otp.join("") });
+            const response = await axios.post(`https://api.upuls.lk/api/auth/verify-forgot-password-user`, { email: userEmail, otp: otp.join("") });
             return response.data;
         },
         onSuccess: () => {
@@ -70,7 +72,7 @@ const ForgotPassword = () => {
 
     const resetPasswordMutation = useMutation({
         mutationFn: async ({ password }: { password: string }) => {
-            const response = await axios.post(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/auth/reset-password-user`, { email: userEmail, newPassword: password });
+            const response = await axios.post(`https://api.upuls.lk/api/auth/reset-password-user`, { email: userEmail, newPassword: password });
             return response.data;
         },
         onSuccess: () => {

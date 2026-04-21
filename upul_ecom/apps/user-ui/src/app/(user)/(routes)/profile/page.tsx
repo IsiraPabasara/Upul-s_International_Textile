@@ -3,31 +3,118 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from 'next/navigation';
-import { LogOut, User, MapPin, Package, ArrowRight } from "lucide-react";
+import { usePageTitle } from "@/app/hooks/usePageTitle";
+import { LogOut, User, MapPin, Package, ArrowRight, Mail, MailOpen } from "lucide-react";
 import useUser from "@/app/hooks/useUser";
 import axiosInstance from "@/app/utils/axiosInstance";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
+import { useCart } from "@/app/hooks/useCart";
 import toast from "react-hot-toast";
+import { useWishlist } from "@/app/hooks/useWishlist";
 
 const ProfilePage = () => {
+  usePageTitle('My Profile', 'Manage your profile and orders');
   const { user, isLoading } = useUser({required: true});
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteError, setDeleteError] = useState("");
+  const [isTogglingNewsletter, setIsTogglingNewsletter] = useState(false);
   
   const router = useRouter();
   const queryClient = useQueryClient();
+
+  // Fetch newsletter status
+  const { data: newsletterData, refetch: refetchNewsletter } = useQuery({
+    queryKey: ['newsletterStatus'],
+    queryFn: async () => {
+      const res = await axiosInstance.get('/api/admin/email/newsletter/me');
+      return res.data;
+    },
+    enabled: !!user && !isLoading,
+  });
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
     try {
       await axiosInstance.get('/api/auth/logout-user');
       queryClient.clear();
+      useCart.getState().clearCart();
+      useWishlist.getState().clearWishlist();
+      useWishlist.persist.clearStorage();
+      localStorage.removeItem('eshop-cart-storage');
+      localStorage.removeItem('eshop-wishlist-storage');
       toast.success("Logged out successfully");
       router.push('/login');
     } catch (error) {
       toast.error("Logout failed");
       setIsLoggingOut(false);
       setShowLogoutConfirm(false);
+    }
+  };
+
+  const handleToggleNewsletter = async () => {
+    setIsTogglingNewsletter(true);
+    try {
+      const res = await axiosInstance.post('/api/admin/email/newsletter/toggle');
+      toast.success(res.data.message);
+      refetchNewsletter();
+    } catch (error: any) {
+      toast.error("Failed to update preferences.");
+    } finally {
+      setIsTogglingNewsletter(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!deletePassword) {
+      setDeleteError("Please enter your password to confirm deletion.");
+      return;
+    }
+
+    setDeleteError("");
+    setIsDeleting(true);
+    try {
+      await axiosInstance.delete('/api/auth/delete-account', { 
+        data: { password: deletePassword.trim() } 
+      });
+      
+      queryClient.clear();
+      useCart.getState().clearCart();
+      useWishlist.getState().clearWishlist();
+      
+      toast.success("Account deleted successfully.");
+      router.push('/login');
+    } catch (error: any) {
+      setIsDeleting(false);
+      const errorCode = error.response?.data?.details?.code;
+      const errorMessage = error.response?.data?.message;
+
+      console.log("Delete error response:", error.response?.data);
+
+      let displayError = "";
+      if (errorCode === 'INVALID_PASSWORD') {
+        displayError = "Incorrect password. Please try again.";
+        toast.error(displayError);
+      } else if (errorCode === 'ACTIVE_ORDERS') {
+        displayError = "You have active orders. Please wait until they are delivered or cancelled before deleting your account.";
+        toast.error(displayError);
+      } else if (errorCode === 'MISSING_PASSWORD') {
+        displayError = "Password is required to delete your account.";
+        toast.error(displayError);
+      } else if (errorCode === 'NO_PASSWORD_SET') {
+        displayError = "Your account password is not set in the system. Please reset your password first.";
+        toast.error(displayError);
+      } else if (errorCode === 'DELETION_CONSTRAINT_ERROR') {
+        displayError = "Unable to delete account due to data constraints. Please contact our support team for assistance.";
+        toast.error(displayError);
+      } else {
+        displayError = errorMessage || "Failed to delete account. Please try again.";
+        toast.error(displayError);
+      }
+      setDeleteError(displayError);
     }
   };
 
@@ -59,6 +146,48 @@ const ProfilePage = () => {
         </div>
       )}
 
+      {/* Delete Account Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-white/90 backdrop-blur-md" onClick={() => !isDeleting && setShowDeleteConfirm(false)} />
+          <div className="relative bg-black text-white p-12 max-w-md w-full shadow-2xl">
+            <h3 className="text-sm tracking-[0.2em] uppercase font-bold mb-2">Delete Account</h3>
+            <p className="text-xs text-red-400 mb-6 leading-relaxed">This action cannot be undone. Your account and personal data will be permanently removed.</p>
+            
+            {deleteError && (
+              <div className="mb-6 p-4 bg-red-500/20 border border-red-500 rounded text-sm text-red-200">
+                {deleteError}
+              </div>
+            )}
+            
+            <div className="space-y-4 w-full mb-8">
+              <label className="text-[10px] uppercase tracking-[0.2em] font-bold text-gray-400">
+                Confirm with Password
+              </label>
+              <input 
+                type="password"
+                value={deletePassword}
+                onChange={(e) => { setDeletePassword(e.target.value); setDeleteError(""); }}
+                placeholder="Enter your password"
+                disabled={isDeleting}
+                className="w-full py-3 border-b border-gray-200 outline-none focus:border-red-600 transition-colors text-base bg-black text-white placeholder-gray-600"
+              />
+            </div>
+
+            <div className="flex flex-col gap-4">
+              <button onClick={handleDeleteAccount} disabled={isDeleting}
+                className="w-full py-4 text-xs tracking-[0.3em] uppercase font-bold bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50">
+                {isDeleting ? "Processing..." : "Delete Account"}
+              </button>
+              <button onClick={() => { setShowDeleteConfirm(false); setDeletePassword(""); setDeleteError(""); }} disabled={isDeleting}
+                className="w-full py-4 text-xs tracking-[0.3em] uppercase font-bold text-gray-500 hover:text-white transition-colors">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-6xl mx-auto px-6 pt-20">
         
         {/* Header */}
@@ -74,7 +203,7 @@ const ProfilePage = () => {
         </div>
 
         {/* Dashboard Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
           
           {/* Column 1: Profile */}
           <div className="flex flex-col gap-6">
@@ -116,7 +245,7 @@ const ProfilePage = () => {
                     <p className="text-base text-gray-400 italic">No default address set.</p>
                 )}
                 <Link href="/profile/address" className="mt-8 text-xs uppercase tracking-[0.2em] font-bold border-b-2 border-transparent group-hover:border-black w-fit transition-all text-gray-400 group-hover:text-black">
-                    Manage Addresses
+                    Edit Addresses
                 </Link>
             </div>
           </div>
@@ -138,6 +267,40 @@ const ProfilePage = () => {
             </div>
           </div>
 
+          {/* Column 4: Preferences / Newsletter */}
+          <div className="flex flex-col gap-6">
+            <div className="flex items-center gap-3 mb-2">
+              <Mail size={20} className="text-black" />
+              <h2 className="text-sm font-bold uppercase tracking-[0.2em]">Preferences</h2>
+            </div>
+            <div className="p-10 border border-gray-200 hover:border-black transition-all duration-500 min-h-[240px] flex flex-col justify-between group bg-gray-50/50 hover:bg-white">
+              <div className="flex flex-col justify-center h-full">
+                <p className="text-md md:text-xl font-bold text-black mb-2">Newsletter</p>
+                <p className="text-sm md:text-base text-gray-600 mb-4 leading-relaxed">
+                  {newsletterData?.isSubscribed 
+                    ? "You are currently receiving exclusive offers and updates." 
+                    : "Subscribe to get early access to new arrivals and sales."}
+                </p>
+              </div>
+              <button 
+                onClick={handleToggleNewsletter}
+                disabled={isTogglingNewsletter}
+                className={`mt-4 flex items-center gap-2 text-xs uppercase tracking-[0.2em] font-bold border-b-2 w-fit transition-all ${
+                  newsletterData?.isSubscribed 
+                    ? "text-red-600 border-red-200 hover:border-red-600" 
+                    : "text-black border-gray-200 hover:border-black"
+                } disabled:opacity-50`}
+              >
+                {isTogglingNewsletter ? "Updating..." : (
+                  <>
+                    {newsletterData?.isSubscribed ? <MailOpen size={14} /> : <Mail size={14} />}
+                    {newsletterData?.isSubscribed ? "Unsubscribe" : "Subscribe Now"}
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
         </div>
 
         {/* Mobile Logout */}
@@ -145,6 +308,18 @@ const ProfilePage = () => {
             className="md:hidden mt-20 w-full py-5 border-red-100 text-white text-xs uppercase tracking-[0.2em] font-bold bg-black">
             Sign Out
         </button>
+
+        {/* Danger Zone */}
+        <div className="mt-20 pt-12 border-t border-gray-300">
+          <h3 className="text-sm tracking-[0.2em] uppercase font-bold text-black-600 mb-6">Account Ternination</h3>
+          <div className="p-8 border-2 border-gray-200 bg-gray-50/30">
+            <p className="text-sm text-gray-700 mb-6">Permanently delete your account and all associated personal data. This action cannot be undone.</p>
+            <button onClick={() => setShowDeleteConfirm(true)}
+              className="w-full py-4 text-xs uppercase tracking-[0.2em] font-bold bg-black text-white hover:bg-red-700 transition-colors">
+              Delete Account
+            </button>
+          </div>
+        </div>
 
       </div>
     </div>

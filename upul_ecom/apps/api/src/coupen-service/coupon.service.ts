@@ -2,7 +2,7 @@ import { NextFunction, Response } from "express";
 import prisma from "../../../../packages/libs/prisma";
 
 
-export const validateCoupon = async (code: string, userId: string | null, cartTotal: number) => {
+export const validateCoupon = async (code: string, userId: string | null, email: string | null, cartTotal: number) => {
   const coupon = await prisma.coupon.findUnique({
     where: { code: code },
   });
@@ -25,19 +25,22 @@ export const validateCoupon = async (code: string, userId: string | null, cartTo
     throw new Error(`Minimum order of ${coupon.minOrderAmount} required`);
   }
 
-  // 4. User Specific Checks
-  if (userId) {
-    // Check if user has already used it (if limit exists)
-    if (coupon.limitPerUser) {
-      const userUsageCount = coupon.usedByUserIds.filter((id: any) => id === userId).length;
-      if (userUsageCount >= coupon.limitPerUser) {
-        throw new Error("You have already used this coupon");
+  // 4. User / Guest Specific Checks
+  if (!userId && !coupon.isPublic) {
+    // If it's strictly private, still block guests
+    throw new Error("Login required to use this coupon");
+  }
+
+  if (coupon.limitPerUser) {
+    // Use the userId if logged in, otherwise use the guest's email
+    const identifier = userId || email;
+    
+    if (identifier) {
+      // Check how many times this specific ID or Email appears in the array
+      const usageCount = coupon.usedByUserIds.filter((id: string) => id === userId || id === email).length;
+      if (usageCount >= coupon.limitPerUser) {
+        throw new Error("You have already reached the usage limit for this coupon");
       }
-    }
-  } else {
-    // If guest tries to use a "logged-in only" code (implied by limitPerUser logic)
-    if (!coupon.isPublic || coupon.limitPerUser) {
-        throw new Error("Login required to use this coupon");
     }
   }
 
@@ -60,8 +63,8 @@ export const validateCoupon = async (code: string, userId: string | null, cartTo
 
 export const validateCartCoupon = async (req: any, res: Response, next: NextFunction) => {
   try {
-    // 1. In Express, use req.body directly
-    const { code, cartTotal, userId } = req.body;
+    // Grab the email from the request body
+    const { code, cartTotal, userId, email } = req.body;
 
     if (!code) {
       return res.status(400).json({ 
@@ -70,10 +73,10 @@ export const validateCartCoupon = async (req: any, res: Response, next: NextFunc
       });
     }
 
-    // 2. Call your logic helper
-    const { coupon, discount } = await validateCoupon(code, userId || null, cartTotal);
+    // Pass the email into the validator
+    const { coupon, discount } = await validateCoupon(code, userId || null, email || null, cartTotal);
 
-    // 3. Send response using Express 'res' object
+    // Send response using Express 'res' object
     return res.status(200).json({ 
       success: true, 
       discount, 
@@ -83,7 +86,7 @@ export const validateCartCoupon = async (req: any, res: Response, next: NextFunc
     });
 
   } catch (error: any) {
-    // 4. Handle errors using Express
+    // Handle errors using Express
     console.error("Coupon Error:", error);
     return res.status(400).json({ 
       success: false, 

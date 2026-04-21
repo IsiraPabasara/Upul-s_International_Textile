@@ -2,14 +2,16 @@ import { Router } from 'express';
 import { 
   createProduct, 
   getAllProducts, 
-  getProductBySku, 
+  getProductBySku,
+  getProductBySlug,
   updateProductBySku, 
   toggleVisibility, 
   deleteProduct,
-  getProductCountries
+  getProductCountries,
+  generateProductReport
 } from './product.controller';
 import { getShopProducts } from './shop.controller';
-import { getInventory, bulkUpdateInventory } from "../inventory-service/inventory.controller";
+import { getInventory, bulkUpdateInventory , generateInventoryReport } from "../inventory-service/inventory.controller";
 import isAuthenticated from '../../../../packages/middleware/isAuthenticated';
 import { isAdmin } from '../../../../packages/middleware/authorizedRoles';
 
@@ -21,8 +23,13 @@ router.get('/', getAllProducts);
 
 router.get("/inventory/list", isAuthenticated, isAdmin, getInventory);
 router.patch("/inventory/bulk-update", isAuthenticated, isAdmin, bulkUpdateInventory);
+router.get("/inventory/report", isAuthenticated, isAdmin, generateInventoryReport);
 
-router.get('/:sku', getProductBySku);
+router.get("/report", isAuthenticated, isAdmin, generateProductReport);
+
+router.get('/:slug', getProductBySlug);
+
+router.get('/sku/:sku', getProductBySku);
 
 router.use(isAuthenticated, isAdmin);
 

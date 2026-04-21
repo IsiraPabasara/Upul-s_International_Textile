@@ -12,17 +12,22 @@ const nextConfig = {
   nx: {},
   output: "standalone",
   // Configure external image domains
-  experimental: {
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "ik.imagekit.io",
+      },
+    ],
   },
+  
   productionBrowserSourceMaps: false,
   compress: true,
-  poweredByHeader: false,
-  typescript: {
-    ignoreBuildErrors: false,
-  },
+
 };
 
 const plugins = [
+  // Add more Next.js plugins to this list if needed.
   withNx,
 ];
 

@@ -36,8 +36,8 @@
     "src/**/*.tsx",
     "src/**/*.js",
     "src/**/*.jsx",
-    "../../apps/user-ui/.next/types/**/*.ts",
-    "../../dist/apps/user-ui/.next/types/**/*.ts",
+    "../../apps/admin-ui/.next/types/**/*.ts",
+    "../../dist/apps/admin-ui/.next/types/**/*.ts",
     "next-env.d.ts"
   ],
   "exclude": [

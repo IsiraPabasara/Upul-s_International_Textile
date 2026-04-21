@@ -19,6 +19,9 @@ out/
 
 # Environment and secrets
 .env
+.env.admin
+.env.backend
+.env.frontend
 *.env.local
 *.env.*.local
 .npmrc

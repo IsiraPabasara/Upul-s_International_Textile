@@ -1,7 +1,6 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-// import Image from 'next/image';
 import Link from "next/link";
 import {
   Search,
@@ -12,6 +11,7 @@ import {
   X,
   Package,
   UserCircle,
+  Loader2
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import axiosInstance from "@/app/utils/axiosInstance";
@@ -19,48 +19,84 @@ import { useCart } from "@/app/hooks/useCart";
 import { useWishlist } from "@/app/hooks/useWishlist";
 import useUser from "@/app/hooks/useUser";
 
+// --- Helper Hook: Debounce ---
+// Delays the updating of a value until after a specified time has elapsed.
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedValue(value), delay);
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+  return debouncedValue;
+}
+
 export default function Header() {
+  // UI States
   const [searchTerm, setSearchTerm] = useState("");
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [announcementIndex, setAnnouncementIndex] = useState(0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-
   const [isAtTop, setIsAtTop] = useState(true);
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
 
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+  
   const { user } = useUser({ required: false });
   const isLoggedIn = !!user;
-  const router = useRouter();
   const { toggleCart, items } = useCart();
   const { items: wishlistItems } = useWishlist();
 
-  const announcements = [
-    "ISLAND WIDE CASH-ON DELIVERY - SHOP NOW",
-    "GLOBAL WIDE DELIVERY AVAILABLE",
-  ];
+  // --- Fetch Live Announcements from API ---
+  const { data: dbAnnouncements = [] } = useQuery({
+    queryKey: ["live-announcements"],
+    queryFn: async () => {
+      const res = await axiosInstance.get("/api/announcements", { isPublic: true } as any);
+      return res.data;
+    },
+  });
 
-  // "30% OFF ON ALL ITEMS - LIMITED TIME ONLY",
+  // Fallback array if DB is empty or still loading
+  const announcements = dbAnnouncements.length > 0 
+    ? dbAnnouncements.map((a: any) => a.text)
+    : ["WELCOME TO UPUL'S INTERNATIONAL"];
 
+  // --- Prevent Background Scroll When Menu is Open ---
   useEffect(() => {
-    const timer = setInterval(() => {
-      setAnnouncementIndex((prev) => (prev + 1) % announcements.length);
-    }, 4000);
-    return () => clearInterval(timer);
-  }, [announcements.length]);
+    if (isMenuOpen) {
+      document.documentElement.style.overflow = "hidden";
+      document.body.style.overflow = "hidden";
+    } else {
+      document.documentElement.style.overflow = "";
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.documentElement.style.overflow = "";
+      document.body.style.overflow = "";
+    };
+  }, [isMenuOpen]);
 
+  // --- Click Outside Logic for Desktop Search ---
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+        setIsSearchFocused(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // --- Scroll Logic ---
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-
-      // Increase this value (e.g., 100) to "wait" longer at the top
-      // before Part 1 & 2 start collapsing.
       if (currentScrollY < 180) {
         setIsAtTop(true);
         setIsVisible(true);
       } else {
         setIsAtTop(false);
-
-        // Only trigger the hide/show logic after passing the 100px threshold
         if (currentScrollY > lastScrollY) {
           setIsVisible(false); // Scrolling Down
         } else {
@@ -69,138 +105,182 @@ export default function Header() {
       }
       setLastScrollY(currentScrollY);
     };
-
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, [lastScrollY]);
 
+  // --- Announcements Logic ---
+  useEffect(() => {
+    if (announcements.length <= 1) return; // Prevent interval if only 1 item
+    
+    const timer = setInterval(() => {
+      setAnnouncementIndex((prev) => (prev + 1) % announcements.length);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [announcements.length]);
+
+  // --- Queries ---
   const { data: categories = [] } = useQuery({
     queryKey: ["categories-tree"],
     queryFn: async () => {
-      const res = await axiosInstance.get("/api/categories", {
-        isPublic: true,
-      } as any);
+      const res = await axiosInstance.get("/api/categories", { isPublic: true } as any);
       return res.data;
     },
   });
 
-  const handleSearch = (e: React.FormEvent) => {
+  // Debounce the search term to prevent API spam
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+
+  const { data: searchResults, isFetching: isSearching } = useQuery({
+    queryKey: ["quick-search", debouncedSearchTerm],
+    queryFn: async () => {
+      if (!debouncedSearchTerm.trim()) return { products: [], pagination: { total: 0 } };
+      // Limit to 5 results for the quick preview
+      const res = await axiosInstance.get(
+        `/api/products/shop?search=${encodeURIComponent(debouncedSearchTerm)}&limit=5`, 
+        { isPublic: true } as any
+      );
+      return res.data;
+    },
+    // Only fetch if they've typed at least 2 characters
+    enabled: debouncedSearchTerm.trim().length > 1,
+  });
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchTerm.trim()) {
       router.push(`/shop?search=${encodeURIComponent(searchTerm)}`);
       setIsMenuOpen(false);
+      setIsSearchFocused(false);
     }
+  };
+
+  const handleProductClick = (slug: string) => {
+    router.push(`/product/${slug}`);
+    setIsMenuOpen(false);
+    setIsSearchFocused(false);
+  };
+
+  // --- Reusable Quick Search Result Component ---
+  const QuickSearchResultItem = ({ product }: { product: any }) => {
+    const imageUrl = product.images?.[0]?.url || '/placeholder.jpg';
+    // Basic price calculation (you can adjust this based on your exact schema logic)
+    const price = product.price;
+    const finalPrice = product.discountType !== "NONE" 
+      ? product.discountType === "PERCENTAGE" 
+        ? price - (price * product.discountValue / 100)
+        : price - product.discountValue
+      : price;
+
+    return (
+      <div 
+        onClick={() => handleProductClick(product.slug)} // Using slug for product page navigation
+        className="flex items-center gap-4 p-3 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-100 last:border-0"
+      >
+        <div className="w-16 h-24 bg-gray-100 rounded overflow-hidden shrink-0">
+          <img src={imageUrl} alt={product.name} className="w-full h-full object-cover" />
+        </div>
+        <div className="flex flex-col flex-1 min-w-0">
+          <span className="text-xs font-bold uppercase truncate text-gray-900">{product.name}</span>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-xs text-red-600 font-bold">LKR {finalPrice.toLocaleString()}</span>
+            {product.discountType !== "NONE" && (
+              <span className="text-[10px] text-gray-400 line-through">LKR {price.toLocaleString()}</span>
+            )}
+          </div>
+        </div>
+      </div>
+    );
   };
 
   return (
     <>
-      {/* 1. Spacer to prevent content jump */}
       <div className="h-[108px] md:h-[145px]" />
 
-      {/* 2. Main Header (Sticky/Scroll Logic) */}
       <header
         className={`w-full fixed top-0 z-50 transition-transform duration-300 ease-in-out bg-white ${
           !isVisible && !isAtTop ? "-translate-y-full" : "translate-y-0"
         }`}
       >
-        <div
-          className={`overflow-hidden transition-all duration-300 ease-in-out ${isAtTop ? "max-h-[200px] opacity-100" : "max-h-0 opacity-0"}`}
-        >
+        <div className={`overflow-visible transition-all duration-300 ease-in-out ${isAtTop ? "max-h-[200px] opacity-100" : "max-h-0 opacity-0"}`}>
           <div className="w-full bg-black text-white py-2 text-center text-[10px] md:text-[11px] font-bold tracking-[0.1em] uppercase">
-            {announcements[announcementIndex]}
+            {announcements[announcementIndex] || announcements[0]}
           </div>
 
           <div className="max-w-8xl mx-auto px-4 md:px-5 h-16 md:h-20 flex items-center justify-between gap-4 md:gap-8 border-b">
-            <button
-              className="lg:hidden text-gray-800"
-              onClick={() => setIsMenuOpen(true)}
-            >
+            <button className="lg:hidden text-gray-800" onClick={() => setIsMenuOpen(true)}>
               <Menu size={24} />
             </button>
 
             <Link href="/" className="flex-shrink-0 ml-3 md:ml-0">
-              {/* <div className="flex flex-col leading-none">
-                <span className="text-2xl md:text-4xl font-serif font-bold text-[#1a1a3a] tracking-tighter">U<span className="text-red-600 text-sm">PUL'S</span></span>
-                <span className="text-[7px] md:text-[10px] tracking-[0.3em] font-bold text-[#1a1a3a] border-t border-gray-200 pt-0.5 md:pt-1 uppercase">International</span>
-              </div> */}
               <div className="flex flex-col leading-none">
                 <div className="inline-flex items-end">
-                  {/* Bigger & wider U */}
-                  <span className="text-4xl md:text-5xl font-serif font-bold text-[#1a1a3a] tracking-tight leading-none mr-0.5">
-                    U
-                  </span>
-
-                  {/* Lines + PUL'S */}
+                  <span className="text-4xl md:text-5xl font-serif font-bold text-[#1a1a3a] tracking-tight leading-none mr-0.5">U</span>
                   <div className="flex flex-col ml-1 mb-1 md:mb-2">
-                    {/* Decorative lines */}
                     <div className="mb-0.5">
                       <div className="h-[2px] w-8 bg-black mb-1"></div>
                       <div className="h-[2px] w-5 bg-black"></div>
                     </div>
-
-                    {/* PUL'S aligned with U bottom */}
-                    <span className="text-red-600 text-sm font-serif font-bold tracking-tighter leading-none">
-                      PUL
-                    </span>
+                    <span className="text-red-600 text-sm font-serif font-bold tracking-tighter leading-none">PUL&apos;S</span>
                   </div>
                 </div>
-
-                <span className="text-[7px] md:text-[8px] tracking-[0.3em] font-bold text-[#1a1a3a] border-t border-gray-200 pt-0.5 md:pt-1 ml-3 uppercase">
-                  Tailors
+                <span className="text-[7px] md:text-[8px] tracking-[0.3em] font-bold text-[#1a1a3a] border-t border-gray-200 pt-0.5 md:pt-1 uppercase">
+                  International
                 </span>
               </div>
-
-              {/* <Image 
-                src="/logo1.png" 
-                alt="UPUL'S International"
-                width={100}
-                height={70}
-                priority
-              /> */}
             </Link>
 
-            <form
-              onSubmit={handleSearch}
-              className="hidden md:flex flex-1 max-w-xl"
-            >
-              <div className="relative flex-1">
+            {/* --- DESKTOP SEARCH FORM --- */}
+            <div className="hidden md:flex flex-1 max-w-xl relative" ref={searchContainerRef}>
+              <form onSubmit={handleSearchSubmit} className="flex w-full">
                 <input
                   type="text"
                   placeholder="Search For Anything"
+                  value={searchTerm}
                   className="w-full border border-gray-400 py-2.5 px-4 text-sm focus:outline-none focus:border-black"
                   onChange={(e) => setSearchTerm(e.target.value)}
+                  onFocus={() => setIsSearchFocused(true)}
                 />
-              </div>
-              <button
-                type="submit"
-                className="bg-black text-white px-5 flex items-center justify-center hover:bg-zinc-800 transition-colors"
-              >
-                <Search size={18} />
-              </button>
-            </form>
+                <button type="submit" className="bg-black text-white px-5 flex items-center justify-center hover:bg-zinc-800 transition-colors">
+                  <Search size={18} />
+                </button>
+              </form>
 
-            <div className="flex items-center gap-3 md:gap-4">
-              <Link
-                href={isLoggedIn ? "/profile" : "/login"}
-                className="hidden sm:flex items-center gap-1 hover:text-red-600 transition-all text-gray-800"
-              >
-                <User className="w-6 h-6 md:w-7 md:h-7" strokeWidth={1.2} />
-                <div className="flex flex-col -gap-1">
-                  {/* <span className="text-[10px] uppercase text-gray-400 font-bold leading-none">
-                    Account
-                  </span> */}
-                  {/* <span className="text-xs font-bold uppercase tracking-tight leading-none">
-                    {isLoggedIn && user?.firstname
-                      ? `Hi, ${user.firstname}`
-                      : "Sign In"}
-                  </span> */}
+              {/* Desktop Quick Search Dropdown */}
+              {isSearchFocused && debouncedSearchTerm.trim().length > 1 && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 shadow-2xl rounded-sm overflow-hidden z-[9999]">
+                  {isSearching ? (
+                    <div className="p-6 flex justify-center items-center text-gray-400">
+                      <Loader2 className="w-6 h-6 animate-spin" />
+                    </div>
+                  ) : searchResults?.products?.length > 0 ? (
+                    <div className="flex flex-col max-h-[400px] overflow-y-auto thin-scrollbar">
+                      {searchResults.products.map((product: any) => (
+                        <QuickSearchResultItem key={product.id} product={product} />
+                      ))}
+                      <div 
+                        onClick={handleSearchSubmit}
+                        className="p-3 bg-gray-100 text-center text-[10px] font-bold uppercase tracking-widest cursor-pointer hover:bg-gray-200 transition-colors text-gray-600"
+                      >
+                        View all {searchResults.pagination.total} results
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-6 text-center text-xs font-bold uppercase tracking-wide text-gray-400">
+                      No products found for "{debouncedSearchTerm}"
+                    </div>
+                  )}
                 </div>
+              )}
+            </div>
+
+            {/* Desktop Icons */}
+            <div className="flex items-center gap-3 md:gap-4">
+              <Link href={isLoggedIn ? "/profile" : "/login"} className="hidden sm:flex items-center gap-1 hover:text-red-600 transition-all text-gray-800">
+                <User className="w-6 h-6 md:w-7 md:h-7" strokeWidth={1.2} />
               </Link>
 
-              <Link
-                href="/wishlist"
-                className="relative text-gray-800 hover:text-red-600 transition-colors p-1"
-              >
+              <Link href="/wishlist" className="relative text-gray-800 hover:text-red-600 transition-colors p-1">
                 <Heart className="w-6 h-6 md:w-7 md:h-7" strokeWidth={1.2} />
                 {wishlistItems.length > 0 && (
                   <span className="absolute top-0 right-0 bg-red-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-bold">
@@ -209,14 +289,8 @@ export default function Header() {
                 )}
               </Link>
 
-              <button
-                onClick={toggleCart}
-                className="relative text-gray-800 hover:text-black transition-colors p-1"
-              >
-                <ShoppingCart
-                  className="w-6 h-6 md:w-7 md:h-7"
-                  strokeWidth={1.2}
-                />
+              <button onClick={toggleCart} className="relative text-gray-800 hover:text-black transition-colors p-1">
+                <ShoppingCart className="w-6 h-6 md:w-7 md:h-7" strokeWidth={1.2} />
                 {items.length > 0 && (
                   <span className="absolute top-0 right-0 bg-black text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center">
                     {items.length}
@@ -227,42 +301,19 @@ export default function Header() {
           </div>
         </div>
 
+        {/* Categories Nav */}
         <nav className="bg-white border-b overflow-x-auto scrollbar-hide shadow-sm w-full">
           <div className="max-w-8xl mx-auto px-5 flex gap-6 md:gap-10 h-11 items-center text-[12px] md:text-[13px] font-bold uppercase tracking-tight whitespace-nowrap">
-            <Link
-              href="/shop"
-              className="shrink-0 hover:opacity-70 transition-opacity"
-            >
-              All Products
-            </Link>
-            <Link
-              href="/shop?isNewArrival=true"
-              className="shrink-0 hover:opacity-70 transition-opacity"
-            >
-              New Arrivals
-            </Link>
-            {categories
-              .filter((c: any) => !c.parentId)
-              .map((cat: any) => (
-                <Link
-                  key={cat.id}
-                  href={`/shop?category=${cat.slug}`}
-                  className="shrink-0 hover:opacity-70 transition-opacity"
-                >
-                  {cat.name}
-                </Link>
-              ))}
-            <Link
-              href="/shop?hasDiscount=true"
-              className="text-red-500 shrink-0 hover:opacity-70 transition-opacity pr-4"
-            >
-              Sale
-            </Link>
+            <Link href="/shop" className="shrink-0 hover:opacity-70 transition-opacity">All Products</Link>
+            <Link href="/shop?isNewArrival=true" className="shrink-0 hover:opacity-70 transition-opacity">New Arrivals</Link>
+            <Link href="/shop?category=men" className="shrink-0 hover:opacity-70 transition-opacity">Men</Link>
+            <Link href="/shop?category=women" className="shrink-0 hover:opacity-70 transition-opacity">Women</Link>
+            <Link href="/shop?hasDiscount=true" className="text-red-500 shrink-0 hover:opacity-70 transition-opacity pr-4">Sale</Link>
           </div>
         </nav>
       </header>
 
-      {/* 3. Mobile Menu Overlay (Moved outside <header> to be on top of everything) */}
+      {/* --- MOBILE MENU OVERLAY --- */}
       <div
         className={`fixed block md:hidden inset-0 bg-white z-[100] transform transition-transform duration-300 ease-in-out ${
           isMenuOpen ? "translate-x-0" : "-translate-x-full"
@@ -276,52 +327,75 @@ export default function Header() {
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-6 py-8">
-            <form 
-            onSubmit={handleSearch} 
-            className="flex items-center w-full border border-gray-200 rounded-lg p- mb-8 shadow-sm hover:shadow-md transition-shadow bg-white"
-          >
-            <input
-              type="text"
-              placeholder="Search..."
-              className="flex-1 px-4 py-0 text-base outline-none border-none placeholder-gray-400"
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <button 
-              type="submit" 
-              className="p-3 bg-black text-white rounded-md hover:bg-zinc-800 transition-colors"
-            >
-              <Search size={20} />
-            </button>
-          </form>
+          <div className="flex-1 overflow-y-auto px-6 py-6 flex flex-col">
+            <form onSubmit={handleSearchSubmit} className="flex items-center w-full border border-gray-300 rounded-md p- mb-6 shadow-sm focus-within:border-black transition-colors bg-white">
+              <input
+                type="text"
+                placeholder="Search..."
+                value={searchTerm}
+                className="flex-1 px-3 py-2 text-base outline-none border-none placeholder-gray-400"
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              <button type="submit" className="p-4 bg-black text-white rounded-sm hover:bg-zinc-800 transition-colors">
+                <Search size={18} />
+              </button>
+            </form>
 
-            <div className="flex flex-col gap-4 text-md font-bold uppercase tracking-tighter">
-              <Link href="/" onClick={() => setIsMenuOpen(false)}>Home</Link>
-              <Link href="/shop?isNewArrival=true" onClick={() => setIsMenuOpen(false)}>New Arrivals</Link>
-              {categories.filter((c: any) => !c.parentId).map((cat: any) => (
-                <Link key={cat.id} href={`/shop?category=${cat.slug}`} onClick={() => setIsMenuOpen(false)}>{cat.name}</Link>
-              ))}
-              <Link href="/shop?hasDiscount=true" className="text-red-500" onClick={() => setIsMenuOpen(false)}>Sale</Link>
-              
-              <hr className="border-gray-100 my-4" />
-              
-              <div className="flex flex-col gap-4">
-                {isLoggedIn ? (
-                  <>
-                    <Link href="/profile" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-3 text-md">
-                      <UserCircle size={18} strokeWidth={1.5} /> My Profile
-                    </Link>
-                    <Link href="/profile/orders" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-3 text-md">
-                      <Package size={18} strokeWidth={1.5} /> My Orders
-                    </Link>
-                  </>
+            {/* Mobile Inline Search Results vs Menu Links */}
+            {debouncedSearchTerm.trim().length > 1 ? (
+              <div className="flex-1 overflow-y-auto border-t border-gray-100 pt-4 -mx-6 px-6">
+                <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Search Results</h3>
+                {isSearching ? (
+                  <div className="flex justify-center py-10 text-gray-400">
+                     <Loader2 className="w-6 h-6 animate-spin" />
+                  </div>
+                ) : searchResults?.products?.length > 0 ? (
+                  <div className="flex flex-col">
+                    {searchResults.products.map((product: any) => (
+                      <QuickSearchResultItem key={product.id} product={product} />
+                    ))}
+                    <button 
+                      onClick={handleSearchSubmit}
+                      className="mt-6 w-full py-4 border border-black text-xs font-bold uppercase tracking-widest hover:bg-black hover:text-white transition-colors"
+                    >
+                      View all {searchResults.pagination.total} results
+                    </button>
+                  </div>
                 ) : (
-                  <Link href="/login" onClick={() => setIsMenuOpen(false)} className="flex items-center text-sm justify-center w-full bg-black text-white py-4 rounded-sm font-bold uppercase tracking-[0.2em]">
-                    Sign In / Register
-                  </Link>
+                   <div className="text-center py-10 text-xs font-bold uppercase tracking-wide text-gray-400">
+                     No products found
+                   </div>
                 )}
               </div>
-            </div>
+            ) : (
+              <div className="flex flex-col gap-4 text-md font-bold uppercase tracking-tighter">
+                <Link href="/" onClick={() => setIsMenuOpen(false)}>Home</Link>
+                <Link href="/shop?isNewArrival=true" onClick={() => setIsMenuOpen(false)}>New Arrivals</Link>
+                {categories.filter((c: any) => !c.parentId).map((cat: any) => (
+                  <Link key={cat.id} href={`/shop?category=${cat.slug}`} onClick={() => setIsMenuOpen(false)}>{cat.name}</Link>
+                ))}
+                <Link href="/shop?hasDiscount=true" className="text-red-500" onClick={() => setIsMenuOpen(false)}>Sale</Link>
+                
+                <hr className="border-gray-100 my-4" />
+                
+                <div className="flex flex-col gap-4">
+                  {isLoggedIn ? (
+                    <>
+                      <Link href="/profile" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-3 text-md">
+                        <UserCircle size={18} strokeWidth={1.5} /> My Profile
+                      </Link>
+                      <Link href="/profile/orders" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-3 text-md">
+                        <Package size={18} strokeWidth={1.5} /> My Orders
+                      </Link>
+                    </>
+                  ) : (
+                    <Link href="/login" onClick={() => setIsMenuOpen(false)} className="flex items-center text-sm justify-center w-full bg-black text-white py-4 rounded-sm font-bold uppercase tracking-[0.2em]">
+                      Sign In / Register
+                    </Link>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
