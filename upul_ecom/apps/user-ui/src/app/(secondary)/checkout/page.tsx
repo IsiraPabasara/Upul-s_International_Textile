@@ -1,4 +1,5 @@
 'use client';
+import { usePageTitle } from '@/app/hooks/usePageTitle';
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
@@ -8,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { Loader2, ArrowLeft, AlertCircle, ShoppingCart, X } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 
 import { useCart } from '@/app/hooks/useCart';
 import useUser from '@/app/hooks/useUser';
@@ -43,6 +45,7 @@ const inputErrorClass =
   'w-full px-3 py-3 bg-white border border-red-500 rounded-md text-sm outline-none transition-all';
 
 export default function CheckoutPage() {
+  usePageTitle('Checkout', 'Complete your purchase');
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -57,9 +60,23 @@ export default function CheckoutPage() {
 
   const { user, isLoading: isUserLoading } = useUser({ required: false });
 
+  // Fetch active shipping cities
+  const { data: dbCities = [] } = useQuery({
+    queryKey: ['active-shipping-cities'],
+    queryFn: async () => {
+      const response = await axiosInstance.get('/api/shipping-cities');
+      return response.data.cities || [];
+    },
+  });
+
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [isAddingNewAddress, setIsAddingNewAddress] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  const [shippingCost, setShippingCost] = useState(450); // Default fallback
+  const [citySearch, setCitySearch] = useState('');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isValidCity, setIsValidCity] = useState(false); // Track if a valid city is selected
 
   const [paymentMethod, setPaymentMethod] = useState<'COD' | 'PAYHERE' | null>('COD');
   const [paymentError, setPaymentError] = useState(false);
@@ -71,8 +88,12 @@ export default function CheckoutPage() {
     type: '',
     text: '',
   });
+  const [couponCheckoutError, setCouponCheckoutError] = useState('');
 
-  const SHIPPING_COST = 450;
+  // Filter cities based on search
+  const filteredCities = dbCities.filter((c: any) => 
+    c.name.toLowerCase().includes(citySearch.toLowerCase())
+  );
 
   const subtotal = useMemo(() => {
     if (!items) return 0;
@@ -93,12 +114,14 @@ export default function CheckoutPage() {
 
   const grandTotal = useMemo(() => {
     const totalAfterDiscount = subtotal - (discountAmount || 0);
-    return Math.max(0, totalAfterDiscount) + SHIPPING_COST;
-  }, [subtotal, discountAmount, SHIPPING_COST]);
+    return Math.max(0, totalAfterDiscount) + shippingCost;
+  }, [subtotal, discountAmount, shippingCost]);
 
   const {
     register,
     handleSubmit,
+    getValues,
+    setValue,
     formState: { errors },
   } = useForm<CheckoutFormValues>({
     resolver: zodResolver(checkoutSchema),
@@ -125,14 +148,19 @@ export default function CheckoutPage() {
     const code = promoInput.trim().toUpperCase();
     if (!code) return;
 
+    // Grab the email straight from the input field state
+    const currentEmail = user?.email || getValues('email');
+
     setCouponLoading(true);
     setCouponMsg({ type: '', text: '' });
+    setCouponCheckoutError('');  // Clear any previous checkout errors
 
     try {
       const res = await axiosInstance.post('/api/coupons/validate-coupon', {
         code,
         cartTotal: getSubtotal(),
         userId: user?.id,
+        email: currentEmail,
       });
 
       if (res.data.success) {
@@ -141,6 +169,7 @@ export default function CheckoutPage() {
           type: 'success',
           text: `Coupon applied! You saved LKR ${Number(res.data.discount || 0).toLocaleString()}`,
         });
+        setPromoInput('');  // Clear the input after successful application
       }
     } catch (error: any) {
       setCouponMsg({
@@ -156,7 +185,50 @@ export default function CheckoutPage() {
     removeCoupon();
     setPromoInput('');
     setCouponMsg({ type: '', text: '' });
+    setCouponCheckoutError('');
   };
+
+  // Function to handle city selection
+  const handleCitySelect = (city: any) => {
+    setValue('city', city.name, { shouldValidate: true }); // Updates React Hook Form
+    setShippingCost(city.shippingCost); // Updates the UI Total
+    setCitySearch(city.name); // Updates the input visual
+    setIsDropdownOpen(false); // Closes dropdown
+    setIsValidCity(true); // Mark city as valid
+  };
+
+  // Function to handle saved address selection - automatically set shipping cost based on city
+  const handleSavedAddressSelect = (address: any) => {
+    setSelectedAddressId(address.id);
+    setAddressError(false);
+    
+    // Find matching city in database and update shipping cost
+    const matchingCity = dbCities.find((c: any) => c.name.toLowerCase().trim() === address.city.toLowerCase().trim());
+    if (matchingCity) {
+      setShippingCost(matchingCity.shippingCost);
+      setCitySearch(matchingCity.name);
+      setIsValidCity(true); // Mark city as valid
+    } else {
+      // If city not found in database, use default
+      setShippingCost(450);
+      setCitySearch(address.city);
+      setIsValidCity(false); // Mark city as invalid
+    }
+  };
+
+  // Update shipping cost when dbCities loads and a saved address is selected
+  useEffect(() => {
+    if (dbCities.length > 0 && selectedAddressId && user?.addresses) {
+      const selectedAddress = user.addresses.find((addr: any) => addr.id === selectedAddressId);
+      if (selectedAddress) {
+        const matchingCity = dbCities.find((c: any) => c.name.toLowerCase().trim() === selectedAddress.city.toLowerCase().trim());
+        if (matchingCity) {
+          setShippingCost(matchingCity.shippingCost);
+          setIsValidCity(true);
+        }
+      }
+    }
+  }, [dbCities, selectedAddressId, user]);
 
   const onPlaceOrder = async (data: CheckoutFormValues) => {
     if (!paymentMethod) {
@@ -189,11 +261,18 @@ export default function CheckoutPage() {
         if (!isAddingNewAddress && !finalAddressId) {
           setAddressError(true);
           toast.error('Please select a shipping address');
-          setIsProcessing(false);
+          // setIsProcessing(false);
           return;
         }
 
         if (isAddingNewAddress) {
+          // Validate that a valid city from the database has been selected
+          if (!isValidCity) {
+            toast.error('Please select a valid city from the dropdown');
+            setIsProcessing(false);
+            return;
+          }
+
           const res = await axiosInstance.post('/api/auth/add-address', {
             ...data,
             isDefault: !!data.saveAddress,
@@ -204,8 +283,10 @@ export default function CheckoutPage() {
             finalAddressId = res.data.addresses[res.data.addresses.length - 1].id;
             setSelectedAddressId(finalAddressId);
             setIsAddingNewAddress(false);
+            setCitySearch('');
+            setIsValidCity(false);
           } else {
-            setIsProcessing(false);
+            // setIsProcessing(false);
             return;
           }
         }
@@ -218,10 +299,17 @@ export default function CheckoutPage() {
           items,
           email: user.email,
           paymentMethod: paymentMethod,
-          shippingFee: SHIPPING_COST,
+          shippingFee: shippingCost,
           couponCode: couponCode,
         };
       } else {
+        // Validation for guest user
+        if (!isValidCity) {
+          toast.error('Please select a valid city from the dropdown');
+          setIsProcessing(false);
+          return;
+        }
+
         orderPayload = {
           type: 'GUEST',
           email: data.email,
@@ -229,7 +317,7 @@ export default function CheckoutPage() {
           billingAddress: finalBillingAddress,
           items,
           paymentMethod: paymentMethod,
-          shippingFee: SHIPPING_COST,
+          shippingFee: shippingCost,
           couponCode: couponCode,
         };
       }
@@ -266,11 +354,20 @@ export default function CheckoutPage() {
         router.replace(`/checkout/success?orderNumber=${res.data.orderId}&success=true`);
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Order failed');
-    } finally {
-      if (paymentMethod === 'COD') {
-        setIsProcessing(false);
+      const errorMsg = error.response?.data?.message || 'Order failed';
+      
+      // Check if error is coupon-related and display it below coupon
+      if (couponCode && errorMsg.toLowerCase().includes('coupon')) {
+        setCouponCheckoutError(errorMsg);
+        toast.error(errorMsg);
+      } else {
+        toast.error(errorMsg);
       }
+    } finally {
+      // if (paymentMethod === 'COD') {
+      //   setIsProcessing(false);
+      // }
+      setIsProcessing(false);
     }
   };
 
@@ -344,10 +441,7 @@ export default function CheckoutPage() {
                 {user.addresses?.map((addr: any) => (
                   <div
                     key={addr.id}
-                    onClick={() => {
-                      setSelectedAddressId(addr.id);
-                      setAddressError(false);
-                    }}
+                    onClick={() => handleSavedAddressSelect(addr)}
                     className={`p-4 border-2 rounded-lg cursor-pointer transition-all flex items-center gap-4 ${
                       selectedAddressId === addr.id
                         ? 'border-black bg-gray-50'
@@ -384,6 +478,8 @@ export default function CheckoutPage() {
                   onClick={() => {
                     setIsAddingNewAddress(true);
                     setAddressError(false);
+                    setCitySearch('');
+                    setIsValidCity(false);
                   }}
                   className="text-xs md:text-sm font-bold text-black underline flex items-center gap-1 mt-4 uppercase tracking-tighter"
                 >
@@ -427,11 +523,60 @@ export default function CheckoutPage() {
                     className={inputFieldClass}
                   />
                 </div>
-                <input
-                  {...register('city')}
-                  placeholder="City"
-                  className={errors.city ? inputErrorClass : inputFieldClass}
-                />
+                {/* Searchable City Dropdown */}
+                <div className="relative md:col-span-1">
+                  <input
+                    type="text"
+                    placeholder="City"
+                    className={errors.city ? inputErrorClass : inputFieldClass}
+                    value={citySearch}
+                    onChange={(e) => {
+                      setCitySearch(e.target.value);
+                      setIsDropdownOpen(true);
+                      // If they clear the input, reset shipping
+                      if(e.target.value === '') {
+                         setValue('city', '');
+                         setShippingCost(450);
+                         setIsValidCity(false);
+                      }
+                    }}
+                    onFocus={() => setIsDropdownOpen(true)}
+                    // Optional: delay blur so click event registers
+                    onBlur={() => setTimeout(() => setIsDropdownOpen(false), 200)}
+                  />
+                  
+                  {/* Dropdown Menu */}
+                  {isDropdownOpen && filteredCities.length > 0 && (
+                    <ul className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                      {filteredCities.map((city: any) => (
+                        <li
+                          key={city.name}
+                          className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm flex justify-between"
+                          onMouseDown={(e) => e.preventDefault()} // Prevents onBlur from firing before click
+                          onClick={() => handleCitySelect(city)}
+                        >
+                          <span>{city.name}</span>
+                          <span className="text-gray-500 text-xs font-bold">LKR {city.shippingCost}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {isDropdownOpen && filteredCities.length === 0 && (
+                    <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg p-3 text-sm text-gray-500">
+                      City not found. Please type a nearby major city.
+                    </div>
+                  )}
+                  
+                  {/* Hidden input to keep react-hook-form happy if needed, though setValue handles it */}
+                  <input type="hidden" {...register('city')} />
+                  
+                  {/* Warning if no valid city selected */}
+                  {isAddingNewAddress && citySearch && !isValidCity && (
+                    <p className="text-red-500 text-xs font-bold mt-2 flex items-center gap-1 uppercase tracking-tighter">
+                      Please select a valid city from the list
+                    </p>
+                  )}
+                </div>
                 <input
                   {...register('postalCode')}
                   placeholder="Postal code"
@@ -457,7 +602,11 @@ export default function CheckoutPage() {
                     </label>
                     <button
                       type="button"
-                      onClick={() => setIsAddingNewAddress(false)}
+                      onClick={() => {
+                        setIsAddingNewAddress(false);
+                        setCitySearch('');
+                        setIsValidCity(false);
+                      }}
                       className="text-xs md:text-sm text-red-500 font-bold uppercase"
                     >
                       Cancel
@@ -506,7 +655,6 @@ export default function CheckoutPage() {
             <p className="text-xs md:text-sm text-gray-500 mb-4 md:mb-6">All transactions are secure and encrypted.</p>
 
             <div className="space-y-3">
-              {/* DISABLED: PayHere payment option - will be enabled in future
               <div
                 onClick={() => { setPaymentMethod('PAYHERE'); setPaymentError(false); }}
                 className={`border-2 rounded-lg p-4 md:p-5 cursor-pointer transition-all flex justify-between items-center ${
@@ -525,9 +673,7 @@ export default function CheckoutPage() {
                 </div>
 
                 <img src="https://ik.imagekit.io/aqi4rj9dnl/mastercard-visa-cards-logos-icons-701751695036083sdqsk5ncvn%20(1).png?updatedAt=1773466068496" alt="Visa and Mastercard" className="h-4 md:h-6" />
-                
               </div>
-              */}
 
               <div
                 onClick={() => { setPaymentMethod('COD'); setPaymentError(false); }}
@@ -626,9 +772,18 @@ export default function CheckoutPage() {
                 )}
               </div>
             ) : (
-              <div className="flex justify-between items-center bg-green-50 p-3 rounded-md border border-green-200">
-                <span className="text-xs text-green-700 font-bold uppercase tracking-wider">Code <span className="underline">{couponCode}</span> applied</span>
-                <button type="button" onClick={handleRemoveCoupon} className="text-green-700 hover:text-green-900"><X size={16} /></button>
+              <div>
+                <div className={`flex justify-between items-center p-3 rounded-md border ${couponCheckoutError ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'}`}>
+                  <span className={`text-xs font-bold uppercase tracking-wider ${couponCheckoutError ? 'text-red-700' : 'text-green-700'}`}>
+                    Code <span className="underline">{couponCode}</span> {couponCheckoutError ? 'invalid' : 'applied'}
+                  </span>
+                  <button type="button" onClick={handleRemoveCoupon} className={`hover:opacity-80 ${couponCheckoutError ? 'text-red-700' : 'text-green-700'}`}>
+                    <X size={16} />
+                  </button>
+                </div>
+                {couponCheckoutError && (
+                  <p className="text-[11px] mt-2 font-bold text-red-500">{couponCheckoutError}</p>
+                )}
               </div>
             )}
           </div>
@@ -653,7 +808,7 @@ export default function CheckoutPage() {
             )}
             <div className="flex justify-between text-[11px] md:text-xs uppercase tracking-wider">
               <span className="text-gray-500">Shipping</span>
-              <span className="text-black font-bold">LKR {SHIPPING_COST.toLocaleString()}</span>
+              <span className="text-black font-bold">LKR {shippingCost.toLocaleString()}</span>
             </div>
             <div className="flex justify-between items-center pt-5 border-t border-black mb-8 lg:mb-0">
               <span className="text-sm md:text-base font-black uppercase tracking-tighter">Total</span>
