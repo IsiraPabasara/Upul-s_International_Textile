@@ -51,7 +51,33 @@ export default function ReportsPage() {
   const [categoryEndDate, setCategoryEndDate] = useState("");
   const [categoryFormat, setCategoryFormat] = useState("PDF");
 
-
+  // ==========================================
+  // 1. ORDER REPORT MUTATION
+  // ==========================================
+  const orderMutation = useMutation({
+    mutationFn: async () => {
+      const response = await axiosInstance.get("/api/orders/admin/report", {
+        params: { startDate, endDate, status: orderStatus, format: orderFormat },
+        responseType: "blob",
+      });
+      return response.data;
+    },
+    onSuccess: (data) => {
+      const url = window.URL.createObjectURL(new Blob([data]));
+      const link = document.createElement("a");
+      link.href = url;
+      const ext = orderFormat === "EXCEL" ? "xlsx" : "pdf";
+      link.setAttribute("download", `Upuls_Order_Report.${ext}`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success("Order report downloaded successfully!");
+    },
+    onError: () => {
+      toast.error("Failed to generate order report.");
+    },
+  });
+  
   // ==========================================
   // 2. INVENTORY REPORT MUTATION
   // ==========================================
