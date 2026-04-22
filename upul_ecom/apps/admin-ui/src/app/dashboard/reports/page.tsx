@@ -132,6 +132,36 @@ export default function ReportsPage() {
     },
   });
 
+  // 4. USER REPORT MUTATION
+  const userMutation = useMutation({
+    mutationFn: async () => {
+      const response = await axiosInstance.get("/api/admin/users/report", {
+        params: {
+          startDate: userRegistrationStart,
+          endDate: userRegistrationEnd,
+          role: userRole,
+          format: userFormat,
+        },
+        responseType: "blob",
+      });
+      return response.data;
+    },
+    onSuccess: (data) => {
+      const url = window.URL.createObjectURL(new Blob([data]));
+      const link = document.createElement("a");
+      link.href = url;
+      const ext = userFormat === "EXCEL" ? "xlsx" : "pdf";
+      link.setAttribute("download", `Upuls_Users_Report.${ext}`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success("User report downloaded successfully!");
+    },
+    onError: () => {
+      toast.error("Failed to generate user report.");
+    },
+  });
+
   // 5. CART FREQUENCY REPORT MUTATION
 
   const cartFrequencyMutation = useMutation({
