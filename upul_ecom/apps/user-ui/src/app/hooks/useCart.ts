@@ -136,7 +136,10 @@ export const useCart = create<CartState>()(
         }, 0);
       },
 
-      
+      getFinalTotal: () => {
+        const subtotal = get().items.reduce((acc, item) => acc + item.price * item.quantity, 0);
+        return Math.max(0, subtotal - get().discountAmount);
+      },
     }),
     {
       name: 'eshop-cart-storage',
