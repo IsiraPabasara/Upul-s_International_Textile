@@ -51,7 +51,33 @@ export default function ReportsPage() {
   const [categoryEndDate, setCategoryEndDate] = useState("");
   const [categoryFormat, setCategoryFormat] = useState("PDF");
 
-
+  // ==========================================
+  // 1. ORDER REPORT MUTATION
+  // ==========================================
+  const orderMutation = useMutation({
+    mutationFn: async () => {
+      const response = await axiosInstance.get("/api/orders/admin/report", {
+        params: { startDate, endDate, status: orderStatus, format: orderFormat },
+        responseType: "blob",
+      });
+      return response.data;
+    },
+    onSuccess: (data) => {
+      const url = window.URL.createObjectURL(new Blob([data]));
+      const link = document.createElement("a");
+      link.href = url;
+      const ext = orderFormat === "EXCEL" ? "xlsx" : "pdf";
+      link.setAttribute("download", `Upuls_Order_Report.${ext}`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success("Order report downloaded successfully!");
+    },
+    onError: () => {
+      toast.error("Failed to generate order report.");
+    },
+  });
+  
   // ==========================================
   // 2. INVENTORY REPORT MUTATION
   // ==========================================
@@ -106,6 +132,39 @@ export default function ReportsPage() {
     },
   });
 
+  // ==========================================
+  // 7. CATEGORY REPORT MUTATION
+  // ==========================================
+  const categoryMutation = useMutation({
+    mutationFn: async () => {
+      const response = await axiosInstance.get("/api/categories/report", {
+        params: { 
+          startDate: categoryStartDate, 
+          endDate: categoryEndDate, 
+          format: categoryFormat 
+        },
+        responseType: "blob",
+      });
+      return response.data;
+    },
+    onSuccess: (data) => {
+      const url = window.URL.createObjectURL(new Blob([data]));
+      const link = document.createElement("a");
+      link.href = url;
+      const ext = categoryFormat === "EXCEL" ? "xlsx" : "pdf";
+      link.setAttribute("download", `Upuls_Category_Analytics.${ext}`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success("Category analytics report downloaded successfully!");
+    },
+    onError: () => {
+      toast.error("Failed to generate Category report.");
+    },
+  });
+
+
+  
   return (
     <div className="p-4 sm:p-6 lg:p-8 bg-gray-50/50 dark:bg-slate-950 min-h-screen transition-colors duration-300">
       <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8">
