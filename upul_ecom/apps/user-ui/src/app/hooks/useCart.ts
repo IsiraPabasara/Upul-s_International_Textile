@@ -85,7 +85,15 @@ export const useCart = create<CartState>()(
         get().clearValidationErrors();
       },
 
-      
+      updatePrices: (priceUpdates) => {
+        set((state) => ({
+          items: state.items.map((item) =>
+            priceUpdates[item.sku] !== undefined
+              ? { ...item, price: priceUpdates[item.sku] }
+              : item
+          ),
+        }));
+      },
 
       removeItem: (sku) => {
         set((state) => ({ items: state.items.filter((i) => i.sku !== sku) }));
