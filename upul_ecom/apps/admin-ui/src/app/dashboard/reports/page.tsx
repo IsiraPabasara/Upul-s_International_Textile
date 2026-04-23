@@ -51,9 +51,9 @@ export default function ReportsPage() {
   const [categoryEndDate, setCategoryEndDate] = useState("");
   const [categoryFormat, setCategoryFormat] = useState("PDF");
 
-  // ==========================================
+
   // 1. ORDER REPORT MUTATION
-  // ==========================================
+
   const orderMutation = useMutation({
     mutationFn: async () => {
       const response = await axiosInstance.get("/api/orders/admin/report", {
@@ -78,9 +78,9 @@ export default function ReportsPage() {
     },
   });
   
-  // ==========================================
+
   // 2. INVENTORY REPORT MUTATION
-  // ==========================================
+
   const inventoryMutation = useMutation({
     mutationFn: async () => {
       const response = await axiosInstance.get("/api/products/inventory/report", {
@@ -105,9 +105,9 @@ export default function ReportsPage() {
     },
   });
 
-  // ==========================================
+
   // 3. PRODUCT REPORT MUTATION
-  // ==========================================
+
   const productMutation = useMutation({
     mutationFn: async () => {
       const response = await axiosInstance.get("/api/products/report", {
@@ -132,9 +132,65 @@ export default function ReportsPage() {
     },
   });
 
-  // ==========================================
+  // 4. USER REPORT MUTATION
+  const userMutation = useMutation({
+    mutationFn: async () => {
+      const response = await axiosInstance.get("/api/admin/users/report", {
+        params: {
+          startDate: userRegistrationStart,
+          endDate: userRegistrationEnd,
+          role: userRole,
+          format: userFormat,
+        },
+        responseType: "blob",
+      });
+      return response.data;
+    },
+    onSuccess: (data) => {
+      const url = window.URL.createObjectURL(new Blob([data]));
+      const link = document.createElement("a");
+      link.href = url;
+      const ext = userFormat === "EXCEL" ? "xlsx" : "pdf";
+      link.setAttribute("download", `Upuls_Users_Report.${ext}`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success("User report downloaded successfully!");
+    },
+    onError: () => {
+      toast.error("Failed to generate user report.");
+    },
+  });
+
+  // 5. CART FREQUENCY REPORT MUTATION
+
+  const cartFrequencyMutation = useMutation({
+    mutationFn: async () => {
+      const response = await axiosInstance.get("/api/cart/report", {
+        params: { format: cartFrequencyFormat },
+        responseType: "blob",
+      });
+      return response.data;
+    },
+    onSuccess: (data) => {
+      const url = window.URL.createObjectURL(new Blob([data]));
+      const link = document.createElement("a");
+      link.href = url;
+      const ext = cartFrequencyFormat === "EXCEL" ? "xlsx" : "pdf";
+      link.setAttribute("download", `Upuls_Cart_Frequency_Report.${ext}`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success("Cart Frequency report downloaded successfully!");
+    },
+    onError: () => {
+      toast.error("Failed to generate Cart Frequency report.");
+    },
+  });
+
+
   // 7. CATEGORY REPORT MUTATION
-  // ==========================================
+
   const categoryMutation = useMutation({
     mutationFn: async () => {
       const response = await axiosInstance.get("/api/categories/report", {
