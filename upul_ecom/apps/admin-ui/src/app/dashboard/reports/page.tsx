@@ -220,7 +220,7 @@ export default function ReportsPage() {
   });
 
 
-  
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 bg-gray-50/50 dark:bg-slate-950 min-h-screen transition-colors duration-300">
       <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8">
