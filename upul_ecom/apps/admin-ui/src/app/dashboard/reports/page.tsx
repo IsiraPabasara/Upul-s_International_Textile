@@ -195,7 +195,9 @@ export default function ReportsPage() {
     mutationFn: async () => {
       const response = await axiosInstance.get("/api/categories/report", {
         params: { 
-          
+          startDate: categoryStartDate, 
+          endDate: categoryEndDate, 
+          format: categoryFormat 
         },
         responseType: "blob",
       });
