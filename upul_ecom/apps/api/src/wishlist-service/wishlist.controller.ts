@@ -1,7 +1,7 @@
 import { Response, NextFunction } from "express";
 import prisma from "../../../../packages/libs/prisma";
 
-// --- 🛠️ Helper: Strip extra UI fields (brand, availability, etc.) ---
+// --- Helper: Strip extra UI fields (brand, availability, etc.) ---
 // Prisma throws 500 if we try to save fields not defined in 'type WishlistItem'
 const sanitizeItem = (item: any) => {
   return {
@@ -13,13 +13,13 @@ const sanitizeItem = (item: any) => {
   };
 };
 
-// --- 1. Merge Local Wishlist to DB (On Login) ---
+// --- Merge Local Wishlist to DB (On Login) ---
 export const mergeWishlist = async (req: any, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.id;
     const { localItems } = req.body; 
 
-    // 1. Sanitize incoming array
+    //  Sanitize incoming array
     const cleanLocalItems = Array.isArray(localItems) 
       ? localItems.map(sanitizeItem) 
       : [];
@@ -31,7 +31,7 @@ export const mergeWishlist = async (req: any, res: Response, next: NextFunction)
       });
     }
 
-    // 2. Merge Logic: prevent duplicates
+    //  Merge Logic: prevent duplicates
     const dbItemIds = new Set(wishlist.items.map((i: any) => i.productId));
     const newItems = [...wishlist.items];
 
@@ -54,12 +54,12 @@ export const mergeWishlist = async (req: any, res: Response, next: NextFunction)
   }
 };
 
-// --- 2. Toggle Item (Add/Remove) ---
+// --- Toggle Item --- (Add/Remove) 
 export const toggleWishlistItem = async (req: any, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.id;
     
-    // 1. Sanitize the single item
+    // Sanitize the single item
     const item = sanitizeItem(req.body); 
 
     let wishlist = await prisma.wishlist.findUnique({ where: { userId } });
@@ -90,7 +90,7 @@ export const toggleWishlistItem = async (req: any, res: Response, next: NextFunc
   }
 };
 
-// --- 3. Get Wishlist ---
+// --- Get Wishlist ---
 export const getWishlist = async (req: any, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.id;
