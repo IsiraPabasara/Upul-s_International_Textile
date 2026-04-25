@@ -38,12 +38,15 @@ export default function ProductCard({ product }: ProductCardProps) {
     e.preventDefault();
     e.stopPropagation();
 
+    // Ensure slug always has a value - use slug, then sku as fallback
+    const slug = product.slug || product.sku || '';
+
     const item = {
       productId: product.id,
       name: product.name,
       price: finalPrice,
       image: product.images[0]?.url || '',
-      slug: product.slug || product.sku,
+      slug: slug,
       brand: product.brand,
       sku: product.sku,
       discountType: product.discountType,
