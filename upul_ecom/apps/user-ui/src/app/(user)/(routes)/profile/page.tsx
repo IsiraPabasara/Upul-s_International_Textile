@@ -161,7 +161,7 @@ const ProfilePage = () => {
             )}
             
             <div className="space-y-4 w-full mb-8">
-              <label className="text-[10px] uppercase tracking-[0.2em] font-bold text-gray-400">
+              <label className="text-[10px] uppercase tracking-[0.2em] font-bold text-white">
                 Confirm with Password
               </label>
               <input 
@@ -180,7 +180,7 @@ const ProfilePage = () => {
                 {isDeleting ? "Processing..." : "Delete Account"}
               </button>
               <button onClick={() => { setShowDeleteConfirm(false); setDeletePassword(""); setDeleteError(""); }} disabled={isDeleting}
-                className="w-full py-4 text-xs tracking-[0.3em] uppercase font-bold text-gray-500 hover:text-white transition-colors">
+                className="w-full py-4 text-xs tracking-[0.3em] uppercase font-bold text-gray-300 hover:text-white transition-colors">
                 Cancel
               </button>
             </div>

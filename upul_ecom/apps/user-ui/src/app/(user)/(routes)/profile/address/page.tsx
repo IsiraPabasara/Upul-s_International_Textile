@@ -158,9 +158,9 @@ const AddressManager = () => {
                       onChange={(e) => {
                         setCitySearch(e.target.value);
                         setIsDropdownOpen(true);
+                        setIsValidCity(false);
                         if(e.target.value === '') {
                           setValue('city', '');
-                          setIsValidCity(false);
                         }
                       }}
                       onFocus={() => setIsDropdownOpen(true)}
@@ -191,9 +191,9 @@ const AddressManager = () => {
                     )}
                     
                     <input type="hidden" {...register("city", { required: "Required" })} />
-                    {errors.city && <p className="text-red-500 text-xs font-bold">{errors.city.message}</p>}
+                    {errors.city && <p className="text-red-500 text-xs font-bold mt-2">{errors.city.message}</p>}
                     {citySearch && !isValidCity && (
-                      <p className="text-orange-500 text-xs font-bold mt-2">Please select a valid city from the dropdown</p>
+                      <p className="text-red-500 text-xs font-bold mt-2">Please select a valid city from the dropdown</p>
                     )}
                 </div>
                 <div className="space-y-2">
@@ -205,7 +205,10 @@ const AddressManager = () => {
 
               <div className="space-y-2">
                   <label className="text-xs uppercase font-bold text-gray-400 tracking-widest">Phone</label>
-                  <input {...register("phoneNumber", { required: "Required" })} className="w-full py-3 border-b border-gray-200 outline-none focus:border-black transition-colors text-base font-medium" />
+                  <input {...register("phoneNumber", { 
+                    required: "Phone required",
+                    pattern: { value: /^\d{10}$/, message: "Phone must be 10 digits" }
+                  })} className="w-full py-3 border-b border-gray-200 outline-none focus:border-black transition-colors text-base font-medium" />
                   {errors.phoneNumber && <p className="text-red-500 text-xs font-bold">{errors.phoneNumber.message}</p>}
               </div>
 
