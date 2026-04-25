@@ -8,6 +8,12 @@ export interface WishlistItem {
   price: number;
   image: string;
   slug: string;
+  brand?: string;
+  sku?: string;
+  discountType?: 'NONE' | 'PERCENTAGE' | 'FIXED';
+  discountValue?: number;
+  availability?: boolean;
+  visible?: boolean;
 }
 
 interface WishlistState {

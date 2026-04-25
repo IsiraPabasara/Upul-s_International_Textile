@@ -21,7 +21,7 @@ const LogoutPage = () => {
 
             try {
                 // 1. Attempt Server Logout
-                await axiosInstance.get('/api/auth/logout-admin');
+                await axiosInstance.get('/api/auth/logout-user');
                 toast.success("Logged out successfully");
             } catch (error) {
                 // Even if server fails (e.g. token expired), we proceed to clear client data
