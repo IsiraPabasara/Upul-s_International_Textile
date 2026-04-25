@@ -259,9 +259,10 @@ export const generateCartFrequencyReport = async (
       (a, b) => b.totalQuantity - a.totalQuantity
     );
 
-    // ==========================================
+
+    
     // 4. GENERATE EXCEL
-    // ==========================================
+  
     if (format === "EXCEL") {
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet("Cart Frequency");
@@ -294,9 +295,9 @@ export const generateCartFrequencyReport = async (
       return res.end();
     }
 
-    // ==========================================
+  
     // 5. GENERATE PDF
-    // ==========================================
+
     if (format === "PDF") {
       const doc = new PDFDocument({ margin: 40 });
 

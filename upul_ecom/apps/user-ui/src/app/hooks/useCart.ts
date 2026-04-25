@@ -35,7 +35,7 @@ interface CartState {
   clearValidationErrors: () => void;
   updatePrices: (priceUpdates: Record<string, number>) => void;
 
-  // Getters
+  //Getters
   
   getSubtotal: () => number;
   getTotalSavings: () => number;
@@ -125,7 +125,7 @@ export const useCart = create<CartState>()(
       setValidationErrors: (errors) => set({ validationErrors: errors }),
       clearValidationErrors: () => set({ validationErrors: {} }),
 
-      // --- Helper Getters ---
+      //--- Helper Getters ---
 
       getSubtotal: () => {
         return get().items.reduce((acc, item) => acc + item.price * item.quantity, 0);
