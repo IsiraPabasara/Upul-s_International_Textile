@@ -1,7 +1,8 @@
 "use client";
 
-import { Bell, Search, Menu } from "lucide-react";
+import {Menu } from "lucide-react";
 import { useTheme } from "@/app/context/ThemeContext";
+import useAdmin from "@/app/hooks/useAdmin";
 import { useEffect, useRef } from "react";
 
 // ⭐ NEW: Add Props Interface
@@ -12,6 +13,12 @@ interface HeaderProps {
 export default function DashboardHeader({ onMenuClick }: HeaderProps) {
   const {} = useTheme();
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const { user } = useAdmin();
+
+  const adminName = user ? `${user.firstname} ${user.lastname}`.trim() : "Admin";
+  const initials = user 
+    ? `${user.firstname?.[0] || ''}${user.lastname?.[0] || ''}`.toUpperCase()
+    : "AD";
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -46,7 +53,7 @@ export default function DashboardHeader({ onMenuClick }: HeaderProps) {
       </div>
 
       {/* 2. CENTER: Search */}
-      <div className="hidden md:flex flex-1 max-w-lg mx-6">
+      {/* <div className="hidden md:flex flex-1 max-w-lg mx-6">
         <div className="relative w-full group">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <Search size={18} className="text-slate-400 group-focus-within:text-blue-500 transition-colors" />
@@ -64,23 +71,32 @@ export default function DashboardHeader({ onMenuClick }: HeaderProps) {
              <kbd className="text-xs text-slate-400 font-medium px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-sans">Ctrl K</kbd>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* 3. RIGHT: Actions & Profile */}
       <div className="flex items-center gap-3 sm:gap-4 min-w-fit justify-end">
-        <button className="relative p-2.5 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 rounded-full transition-all hover:scale-105 active:scale-95">
+        {/* <button className="relative p-2.5 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 rounded-full transition-all hover:scale-105 active:scale-95">
           <Bell size={20} />
           <span className="absolute top-2.5 right-2.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white dark:border-slate-950 animate-pulse"></span>
-        </button>
+        </button> */}
         
-        {/* ⭐ FIX: Clean Circle Profile (Initials Only) */}
-        <div className="pl-1">
-          <button className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 p-0.5 shadow-lg shadow-blue-500/20  transition-transform">
-             <div className="w-full h-full rounded-full bg-white dark:bg-slate-800 flex items-center justify-center overflow-hidden">
-                <span className="font-bold text-sm text-blue-600 dark:text-blue-400">
-                  AD
-                </span>
-             </div>
+        {/* ⭐ PROFILE: Name & Avatar */}
+        <div className="flex items-center gap-3 pl-3 border-l border-gray-200 dark:border-slate-700">
+          <div className="text-right hidden sm:block">
+            <p className="text-sm font-bold text-slate-900 dark:text-white leading-tight">
+              {adminName}
+            </p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              {user?.email || "Admin"}
+            </p>
+          </div>
+          
+          <button className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 p-0.5 shadow-lg shadow-blue-500/20 transition-transform hover:scale-110 active:scale-95">
+            <div className="w-full h-full rounded-full bg-white dark:bg-slate-800 flex items-center justify-center overflow-hidden">
+              <span className="font-bold text-sm text-blue-600 dark:text-blue-400">
+                {initials}
+              </span>
+            </div>
           </button>
         </div>
       </div>

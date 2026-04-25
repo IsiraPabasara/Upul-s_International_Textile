@@ -91,17 +91,14 @@ const Login = () => {
                 <form onSubmit={handleSubmit(onSubmit)}>
                     <div className='mb-6'>
                         <input 
-                            type='email' 
                             placeholder='E-mail'
                             className={`w-full p-4 border outline-none text-base md:text-sm placeholder:text-black/40 transition-colors font-medium ${errors.email ? 'border-red-500' : 'border-black focus:border-black'}`}
                             {...register("email", { 
-                                required: "Email is required",
-                                pattern: { value: /\S+@\S+\.\S+/, message: "Invalid email format" }
+                                required: "Email required",
+                                pattern: { value: /\S+@\S+\.\S+/, message: "Invalid format" }
                             })}
                         />
-                        {errors.email && (
-                            <p className="text-red-500 text-[10px] mt-1 font-bold uppercase tracking-widest">{errors.email.message}</p>
-                        )}
+                        {errors.email && <p className="text-red-500 text-[10px] mt-1 font-bold uppercase tracking-widest">{errors.email.message}</p>}
                     </div>
 
                     <div className='mb-6'>
