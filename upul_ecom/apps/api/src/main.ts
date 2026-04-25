@@ -4,7 +4,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import cookieParser from "cookie-parser";
-import rateLimit from 'express-rate-limit';
+// import rateLimit from 'express-rate-limit';
 import swaggerUi from 'swagger-ui-express';
 
 // Middleware and Router imports
@@ -26,36 +26,27 @@ app.set("trust proxy", 1);
  * Logic: Layered protection to prevent CPU exhaustion and infinite Axios refresh loops.
  */
 
-// Layer 1: Global Hard Ceiling (Prevents brute force/DDoS)
-const baseLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 500, 
-  message: { error: "Extreme traffic detected. Please slow down." },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-// Layer 2: Dynamic Tiered Limiter (Compatible with your Axios Interceptor)
-const dynamicLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: (req: any) => {
-    // Light check: presence of token determines the limit
-    const hasToken = req.cookies?.token || req.headers.authorization;
-    return hasToken ? 1000 : 100; 
-  },
-  handler: (req, res, _next, options) => {
-    // Use 429 specifically so Frontend Axios interceptor knows NOT to try a refresh
-    res.status(429).json({
-      error: "Too many requests, try again later!",
-      retryAfterSeconds: Math.ceil(options.windowMs / 1000)
-    });
-  },
-  // Essential: Don't block the health check or the refresh-token endpoint
-  skip: (req) => {
-    const excludedPaths = ['/api/health', '/api/auth/refresh-token'];
-    return excludedPaths.some(path => req.path.startsWith(path));
-  },
-});
+// Layer 1: Dynamic Tiered Limiter (Compatible with your Axios Interceptor)
+// const dynamicLimiter = rateLimit({
+//   windowMs: 15 * 60 * 1000,
+//   max: (req: any) => {
+//     // Light check: presence of token determines the limit
+//     const hasToken = req.cookies?.token || req.headers.authorization;
+//     return hasToken ? 1000 : 100; 
+//   },
+//   handler: (req, res, _next, options) => {
+//     // Use 429 specifically so Frontend Axios interceptor knows NOT to try a refresh
+//     res.status(429).json({
+//       error: "Too many requests, try again later!",
+//       retryAfterSeconds: Math.ceil(options.windowMs / 1000)
+//     });
+//   },
+//   // Essential: Don't block the health check or the refresh-token endpoint
+//   skip: (req) => {
+//     const excludedPaths = ['/api/health', '/api/auth/refresh-token'];
+//     return excludedPaths.some(path => req.path.startsWith(path));
+//   },
+// });
 
 /**
  * MIDDLEWARE STACK
@@ -68,8 +59,7 @@ app.use(cookieParser());
 app.use(morgan('dev')); 
 
 // Apply Rate Limiters
-app.use(baseLimiter);
-app.use(dynamicLimiter);
+// app.use(dynamicLimiter);
 
 /**
  * ROUTES

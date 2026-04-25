@@ -20,6 +20,7 @@ import sizeChartRoutes from '../size-types-service/sizetypes.routes';
 import shippingRoutes from '../shipping-service/shipping.routes';
 import userManagementRoutes from '../user-management/user-management.routes';
 import announcementRoutes from '../announcement-service/announcement.routes';
+import vtonRouter from '../vtonService/vton.routes';
 
 const router: Router = express.Router();
 
@@ -44,6 +45,8 @@ router.use('/contact', contactRoutes);
 router.use('/size-charts', sizeChartRoutes);
 router.use('/shipping-cities', shippingRoutes);
 router.use('/announcements', announcementRoutes);
+router.use('/vton', vtonRouter);
+
 
 
 
