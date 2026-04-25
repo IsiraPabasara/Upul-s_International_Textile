@@ -147,11 +147,7 @@ export const useCart = create<CartState>()(
       name: 'eshop-cart-storage',
       storage: createJSONStorage(() => localStorage),
 
-      partialize: (state) => ({
-        items: state.items,
-        couponCode: state.couponCode,
-        discountAmount: state.discountAmount,
-      }),
+      
     }
   )
 );
