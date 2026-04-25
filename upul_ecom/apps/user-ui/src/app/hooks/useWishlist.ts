@@ -36,7 +36,15 @@ export const useWishlist = create<WishlistState>()(
             : [...state.items, item],
         }));
 
-        
+        // 2. Sync with backend
+        try {
+          await axiosInstance.post('/api/wishlist/toggle', item);
+        } catch (error) {
+          // If the user is a guest, your 'isAuthenticated' middleware returns a 401. 
+          // That is totally fine! It just means we silently fail and rely on local state. 
+          console.debug("Toggle API skipped or failed (Guest mode fallback)");
+        }
+      },
 
       clearWishlist: () => set({ items: [] }),
 
