@@ -19,6 +19,10 @@ export default function SizeTypeManager() {
   const [newName, setNewName] = useState('');
   const [newValueString, setNewValueString] = useState('');
   
+  // Error States
+  const [nameError, setNameError] = useState('');
+  const [valuesError, setValuesError] = useState('');
+  
   // App States
   const [editingSizeType, setEditingSizeType] = useState<SizeType | null>(null);
 
@@ -74,6 +78,8 @@ export default function SizeTypeManager() {
     setNewName(type.name);
     // Convert the array back to a comma-separated string for the input
     setNewValueString(type.values.join(', '));
+    setNameError('');
+    setValuesError('');
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -82,6 +88,8 @@ export default function SizeTypeManager() {
     setEditingSizeType(null);
     setNewName('');
     setNewValueString('');
+    setNameError('');
+    setValuesError('');
   };
 
   // --- SUBMIT HANDLER ---
@@ -89,8 +97,28 @@ export default function SizeTypeManager() {
     e.preventDefault();
     const cleanName = newName.trim();
     
+    // Reset errors
+    setNameError('');
+    setValuesError('');
+
+    // Validation 1: Name is required
     if (!cleanName) {
+      setNameError('Standard Name is required');
       toast.error('Standard Name is required');
+      return;
+    }
+
+    // Validation 2: Minimum name length
+    if (cleanName.length < 2) {
+      setNameError('Standard Name must be at least 2 characters');
+      toast.error('Standard Name must be at least 2 characters');
+      return;
+    }
+
+    // Validation 3: Maximum name length
+    if (cleanName.length > 50) {
+      setNameError('Standard Name must not exceed 50 characters');
+      toast.error('Standard Name must not exceed 50 characters');
       return;
     }
 
@@ -99,17 +127,28 @@ export default function SizeTypeManager() {
       .map((v) => v.trim())
       .filter(Boolean); // Filters out empty strings automatically
 
+    // Validation 4: At least one value
     if (valuesArray.length === 0) {
+      setValuesError('Please add at least one valid measurement');
       toast.error('Please add at least one valid measurement');
       return;
     }
 
-    // 🟢 NEW: Duplicate check (ignores current edit)
+    // Validation 5: Check for duplicate values within the sizetype
+    const uniqueValues = new Set(valuesArray.map((v) => v.toLowerCase()));
+    if (uniqueValues.size !== valuesArray.length) {
+      setValuesError('Values must be unique (no duplicates allowed)');
+      toast.error('Values must be unique (no duplicates allowed)');
+      return;
+    }
+
+    // Validation 6: Duplicate name check (ignores current edit)
     const isDuplicate = types.some(
       (type) => type.name.toLowerCase() === cleanName.toLowerCase() && type.id !== editingSizeType?.id
     );
 
     if (isDuplicate) {
+      setNameError(`The standard "${cleanName}" already exists!`);
       toast.error(`The standard "${cleanName}" already exists!`);
       return;
     }
@@ -163,26 +202,50 @@ export default function SizeTypeManager() {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-slate-500 mb-2">
+              <label className={`block text-xs font-bold uppercase tracking-wider mb-2 transition-colors ${nameError ? 'text-rose-500' : 'text-gray-400 dark:text-slate-500'}`}>
                 Standard Name <span className="text-rose-500">*</span>
               </label>
               <input
                 value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                className="w-full p-3 bg-transparent dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-500/20 focus:border-blue-500 outline-none transition text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-500 font-medium shadow-sm"
+                onChange={(e) => {
+                  setNewName(e.target.value);
+                  if (nameError) setNameError(''); // Clear error on type
+                }}
+                className={`w-full p-3 bg-transparent dark:bg-slate-800 border rounded-xl focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-500/20 focus:border-blue-500 outline-none transition text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-500 font-medium shadow-sm ${
+                  nameError
+                    ? 'border-rose-500 focus:border-rose-500 focus:ring-rose-500/20'
+                    : 'border-gray-200 dark:border-slate-700 focus:bg-white dark:focus:bg-slate-700'
+                }`}
                 placeholder="e.g. UK Men's Shoes"
               />
+              {nameError && (
+                <p className="text-rose-500 text-xs mt-1.5 ml-1 animate-in fade-in">
+                  {nameError}
+                </p>
+              )}
             </div>
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-slate-500 mb-2">
+              <label className={`block text-xs font-bold uppercase tracking-wider mb-2 transition-colors ${valuesError ? 'text-rose-500' : 'text-gray-400 dark:text-slate-500'}`}>
                 Values (Separated by Commas) <span className="text-rose-500">*</span>
               </label>
               <input
                 value={newValueString}
-                onChange={(e) => setNewValueString(e.target.value)}
-                className="w-full p-3 bg-transparent dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-500/20 focus:border-blue-500 outline-none transition text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-500 font-medium shadow-sm"
+                onChange={(e) => {
+                  setNewValueString(e.target.value);
+                  if (valuesError) setValuesError(''); // Clear error on type
+                }}
+                className={`w-full p-3 bg-transparent dark:bg-slate-800 border rounded-xl focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-500/20 focus:border-blue-500 outline-none transition text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-500 font-medium shadow-sm ${
+                  valuesError
+                    ? 'border-rose-500 focus:border-rose-500 focus:ring-rose-500/20'
+                    : 'border-gray-200 dark:border-slate-700 focus:bg-white dark:focus:bg-slate-700'
+                }`}
                 placeholder="7, 8, 9, 10, 11..."
               />
+              {valuesError && (
+                <p className="text-rose-500 text-xs mt-1.5 ml-1 animate-in fade-in">
+                  {valuesError}
+                </p>
+              )}
             </div>
           </div>
           

@@ -20,7 +20,6 @@ import { useWishlist } from "@/app/hooks/useWishlist";
 import useUser from "@/app/hooks/useUser";
 
 // --- Helper Hook: Debounce ---
-// Delays the updating of a value until after a specified time has elapsed.
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
   useEffect(() => {
@@ -111,7 +110,7 @@ export default function Header() {
 
   // --- Announcements Logic ---
   useEffect(() => {
-    if (announcements.length <= 1) return; // Prevent interval if only 1 item
+    if (announcements.length <= 1) return; 
     
     const timer = setInterval(() => {
       setAnnouncementIndex((prev) => (prev + 1) % announcements.length);
@@ -128,21 +127,18 @@ export default function Header() {
     },
   });
 
-  // Debounce the search term to prevent API spam
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
   const { data: searchResults, isFetching: isSearching } = useQuery({
     queryKey: ["quick-search", debouncedSearchTerm],
     queryFn: async () => {
       if (!debouncedSearchTerm.trim()) return { products: [], pagination: { total: 0 } };
-      // Limit to 5 results for the quick preview
       const res = await axiosInstance.get(
         `/api/products/shop?search=${encodeURIComponent(debouncedSearchTerm)}&limit=5`, 
         { isPublic: true } as any
       );
       return res.data;
     },
-    // Only fetch if they've typed at least 2 characters
     enabled: debouncedSearchTerm.trim().length > 1,
   });
 
@@ -164,7 +160,6 @@ export default function Header() {
   // --- Reusable Quick Search Result Component ---
   const QuickSearchResultItem = ({ product }: { product: any }) => {
     const imageUrl = product.images?.[0]?.url || '/placeholder.jpg';
-    // Basic price calculation (you can adjust this based on your exact schema logic)
     const price = product.price;
     const finalPrice = product.discountType !== "NONE" 
       ? product.discountType === "PERCENTAGE" 
@@ -174,8 +169,8 @@ export default function Header() {
 
     return (
       <div 
-        onClick={() => handleProductClick(product.slug)} // Using slug for product page navigation
-        className="flex items-center gap-4 p-3 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-100 last:border-0"
+        onClick={() => handleProductClick(product.slug)} 
+        className="flex items-center gap-4 p-3 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-100 last:border-0 overflow-hidden"
       >
         <div className="w-16 h-24 bg-gray-100 rounded overflow-hidden shrink-0">
           <img src={imageUrl} alt={product.name} className="w-full h-full object-cover" />
@@ -246,7 +241,6 @@ export default function Header() {
                 </button>
               </form>
 
-              {/* Desktop Quick Search Dropdown */}
               {isSearchFocused && debouncedSearchTerm.trim().length > 1 && (
                 <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 shadow-2xl rounded-sm overflow-hidden z-[9999]">
                   {isSearching ? (
@@ -274,13 +268,14 @@ export default function Header() {
               )}
             </div>
 
-            {/* Desktop Icons */}
+            {/* Desktop & Mobile Right Icons */}
             <div className="flex items-center gap-3 md:gap-4">
               <Link href={isLoggedIn ? "/profile" : "/login"} className="hidden sm:flex items-center gap-1 hover:text-red-600 transition-all text-gray-800">
                 <User className="w-6 h-6 md:w-7 md:h-7" strokeWidth={1.2} />
               </Link>
 
-              <Link href="/wishlist" className="relative text-gray-800 hover:text-red-600 transition-colors p-1">
+              {/* Wishlist Icon - Hidden on Mobile */}
+              <Link href="/wishlist" className="hidden md:flex relative text-gray-800 hover:text-red-600 transition-colors p-1">
                 <Heart className="w-6 h-6 md:w-7 md:h-7" strokeWidth={1.2} />
                 {wishlistItems.length > 0 && (
                   <span className="absolute top-0 right-0 bg-red-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-bold">
@@ -288,6 +283,14 @@ export default function Header() {
                   </span>
                 )}
               </Link>
+
+              {/* Search Icon - Hidden on Desktop, Opens Mobile Menu */}
+              <button 
+                onClick={() => setIsMenuOpen(true)} 
+                className="md:hidden relative text-gray-800 hover:text-black transition-colors p-1"
+              >
+                <Search className="w-6 h-6" strokeWidth={1.2} />
+              </button>
 
               <button onClick={toggleCart} className="relative text-gray-800 hover:text-black transition-colors p-1">
                 <ShoppingCart className="w-6 h-6 md:w-7 md:h-7" strokeWidth={1.2} />
@@ -315,11 +318,12 @@ export default function Header() {
 
       {/* --- MOBILE MENU OVERLAY --- */}
       <div
-        className={`fixed block md:hidden inset-0 bg-white z-[100] transform transition-transform duration-300 ease-in-out ${
+        className={`fixed block md:hidden inset-0 bg-white z-[100] transform transition-transform duration-300 ease-in-out overflow-hidden overflow-x-hidden ${
           isMenuOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="flex flex-col h-full">
+        {/* Changed h-screen to h-[100dvh] to handle mobile browser UI height changes */}
+        <div className="flex flex-col h-[100dvh] overflow-hidden">
           <div className="flex items-center justify-between px-6 py-5 border-b">
             <span className="text-lg font-black tracking-widest uppercase">Menu</span>
             <button onClick={() => setIsMenuOpen(false)} className="p-1">
@@ -327,7 +331,7 @@ export default function Header() {
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-6 py-6 flex flex-col">
+          <div className="flex-1 overflow-hidden flex flex-col px-6 py-6">
             <form onSubmit={handleSearchSubmit} className="flex items-center w-full border border-gray-300 rounded-md p- mb-6 shadow-sm focus-within:border-black transition-colors bg-white">
               <input
                 type="text"
@@ -343,14 +347,14 @@ export default function Header() {
 
             {/* Mobile Inline Search Results vs Menu Links */}
             {debouncedSearchTerm.trim().length > 1 ? (
-              <div className="flex-1 overflow-y-auto border-t border-gray-100 pt-4 -mx-6 px-6">
-                <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Search Results</h3>
+              <div className="flex-1 overflow-y-auto overflow-x-hidden border-t border-gray-100 pt-4 pb-24 -mx-6">
+                <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4 px-6">Search Results</h3>
                 {isSearching ? (
                   <div className="flex justify-center py-10 text-gray-400">
                      <Loader2 className="w-6 h-6 animate-spin" />
                   </div>
                 ) : searchResults?.products?.length > 0 ? (
-                  <div className="flex flex-col">
+                  <div className="flex flex-col px-6">
                     {searchResults.products.map((product: any) => (
                       <QuickSearchResultItem key={product.id} product={product} />
                     ))}
@@ -360,15 +364,16 @@ export default function Header() {
                     >
                       View all {searchResults.pagination.total} results
                     </button>
+
                   </div>
                 ) : (
-                   <div className="text-center py-10 text-xs font-bold uppercase tracking-wide text-gray-400">
+                   <div className="text-center py-10 text-xs font-bold uppercase tracking-wide text-gray-400 px-6">
                      No products found
                    </div>
                 )}
               </div>
             ) : (
-              <div className="flex flex-col gap-4 text-md font-bold uppercase tracking-tighter">
+              <div className="flex-1 overflow-y-auto flex flex-col gap-4 text-md font-bold uppercase tracking-tighter pb-24">
                 <Link href="/" onClick={() => setIsMenuOpen(false)}>Home</Link>
                 <Link href="/shop?isNewArrival=true" onClick={() => setIsMenuOpen(false)}>New Arrivals</Link>
                 {categories.filter((c: any) => !c.parentId).map((cat: any) => (
@@ -379,6 +384,17 @@ export default function Header() {
                 <hr className="border-gray-100 my-4" />
                 
                 <div className="flex flex-col gap-4">
+                  {/* --- MOVED WISHLIST INTO MOBILE SIDEBAR --- */}
+                  <Link href="/wishlist" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-3 text-md relative">
+                    <Heart size={18} strokeWidth={1.5} /> 
+                    <span className="flex-1">My Wishlist</span>
+                    {wishlistItems.length > 0 && (
+                      <span className="bg-red-500 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold">
+                        {wishlistItems.length}
+                      </span>
+                    )}
+                  </Link>
+
                   {isLoggedIn ? (
                     <>
                       <Link href="/profile" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-3 text-md">
@@ -389,7 +405,7 @@ export default function Header() {
                       </Link>
                     </>
                   ) : (
-                    <Link href="/login" onClick={() => setIsMenuOpen(false)} className="flex items-center text-sm justify-center w-full bg-black text-white py-4 rounded-sm font-bold uppercase tracking-[0.2em]">
+                    <Link href="/login" onClick={() => setIsMenuOpen(false)} className="flex items-center text-sm justify-center w-full bg-black text-white py-4 rounded-sm font-bold uppercase tracking-[0.2em] mt-2">
                       Sign In / Register
                     </Link>
                   )}
