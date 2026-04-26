@@ -27,6 +27,8 @@ const LogoutPage = () => {
                 // Even if server fails (e.g. token expired), we proceed to clear client data
                 console.error("Server logout error (ignoring to force client clear):", error);
             } finally {
+                // 2. Clear cache to ensure header updates
+                queryClient.invalidateQueries({ queryKey: ["admin"] });
                 // 3. Redirect
                 router.replace('/login');
             }
