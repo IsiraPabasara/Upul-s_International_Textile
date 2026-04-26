@@ -12,7 +12,6 @@ import {
 
 const COLORS = ["#2563eb", "#3b82f6", "#60a5fa", "#93c5fd", "#bfdbfe"];
 
-// 🎨 Custom Label: Fixed Radii Math for clean spacing
 const renderCustomizedLabel = (props: any) => {
   const { cx, cy, midAngle, outerRadius, value, name } = props;
   const RADIAN = Math.PI / 180;
@@ -70,7 +69,7 @@ const SalesCategoryChart = ({
   isLoading,
   timeRange,
 }: Props) => {
-  // 1️⃣ LOADING STATE: Matches new design system
+  
   if (isLoading) {
     return (
       <div className="h-full w-full flex flex-col items-center justify-center space-y-4 animate-in fade-in duration-300">
@@ -82,7 +81,6 @@ const SalesCategoryChart = ({
     );
   }
 
-  // 2️⃣ NO DATA STATE
   if (!data || data.length === 0) {
     return (
       <div className="h-full w-full flex flex-col items-center justify-center text-slate-400">
@@ -95,16 +93,12 @@ const SalesCategoryChart = ({
   const isPositive = periodTrend >= 0;
 
   return (
-    // 💎 CONTAINER: Matches TopCustomers/TopProducts exactly
     <div className="flex flex-col h-full relative animate-in fade-in zoom-in duration-500">
-      {/* 🟢 CENTER DONUT CONTENT */}
-      {/* Positioned absolutely in the center of the chart */}
       <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10 pb-12">
         <span className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-800 dark:text-white tracking-tighter drop-shadow-sm">
           {(periodTotal / 1000).toFixed(1)}k
         </span>
 
-        {/* Trend Badge */}
         <div
           className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold mt-2 shadow-sm border ${
             isPositive
@@ -125,8 +119,6 @@ const SalesCategoryChart = ({
         </span>
       </div>
 
-      {/* 📊 THE CHART */}
-      {/* Added negative margin to pull it up slightly for visual balance */}
       <div className="flex-1 w-full min-h-[350px] -mt-6">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
@@ -134,7 +126,7 @@ const SalesCategoryChart = ({
               data={data}
               cx="50%"
               cy="50%"
-              innerRadius={80} // Thinner, more modern donut
+              innerRadius={80} 
               outerRadius={100}
               paddingAngle={5}
               dataKey="value"
@@ -155,8 +147,6 @@ const SalesCategoryChart = ({
         </ResponsiveContainer>
       </div>
 
-      {/* 🦶 FOOTER */}
-      {/* Matches the "Total Sold" section of other cards */}
       <div className="mt-auto pt-6 border-t border-gray-100 dark:border-slate-800 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 flex items-center justify-center">

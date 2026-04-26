@@ -17,19 +17,18 @@ interface Product {
   totalSold: number;
 }
 
-// 🧠 PHASE 3: Dynamic Cache Timer
 const getDynamicStaleTime = (range: string) => {
   switch (range) {
     case "all_time":
-      return 1000 * 60 * 10; // 10 minutes cache
+      return 1000 * 60 * 10; 
     case "yearly":
-      return 1000 * 60 * 5;  // 5 minutes cache
+      return 1000 * 60 * 5;  
     case "monthly":
-      return 1000 * 60 * 2;  // 2 minutes cache
+      return 1000 * 60 * 2; 
     case "weekly":
     case "custom":
     default:
-      return 1000 * 30;      // 30 seconds cache (fastest)
+      return 1000 * 30;     
   }
 };
 
@@ -47,8 +46,8 @@ export default function TopProductsCard() {
 
   const rangeOptions = [
     { label: "This Week", value: "weekly" },
+     { label: "This Month", value: "monthly" },
     { label: "All Time", value: "all_time" },
-    { label: "This Month", value: "monthly" },
   ];
 
   const currentProduct =
@@ -65,9 +64,7 @@ export default function TopProductsCard() {
   };
 
   return (
-    // 📱 Responsive Height: 500px on mobile, 700px on desktop
     <div className="w-full bg-white dark:bg-slate-950 rounded-[2.5rem] p-6 border border-gray-100 dark:border-slate-800 shadow-xl shadow-slate-200/40 dark:shadow-none flex flex-col relative h-[500px] lg:h-[700px] transition-all duration-300">
-      {/* Header */}
       <div className="flex justify-between items-center mb-4 lg:mb-6 z-20">
         <div>
           <h3 className="text-lg sm:text-xl lg:text-2xl font-extrabold text-slate-800 dark:text-white tracking-tight">
@@ -101,10 +98,7 @@ export default function TopProductsCard() {
           </div>
         ) : (
           <div className="h-full flex flex-col animate-in fade-in zoom-in duration-500">
-            {/* 1. IMAGE CONTAINER */}
-            {/* 📱 Mobile: aspect-square (to save height). 🖥️ Desktop: aspect-[2/3] (Tall & Elegant) */}
             <div className="relative w-full flex-1 aspect-square lg:aspect-[2/3] bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-800 rounded-[2rem] mb-4 lg:mb-6 overflow-hidden group mx-auto border border-gray-100/50 dark:border-slate-700/50 shadow-inner">
-              {/* Badge */}
               <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-md dark:bg-slate-950/90 text-slate-900 dark:text-white font-bold text-xs px-3 py-1.5 rounded-full shadow-sm z-10 border border-white/50 dark:border-slate-700 flex items-center gap-1.5">
                 <span className="text-yellow-500">🏆</span> #{currentIndex + 1}{" "}
               </div>
@@ -113,13 +107,10 @@ export default function TopProductsCard() {
                 src={currentProduct.image}
                 alt={currentProduct.name}
                 fill
-                // mix-blend-multiply hides white bg on light mode.
-                // dark:mix-blend-normal ensures it doesn't vanish on dark mode.
                 className="object-contain w-full mix-blend-multiply dark:mix-blend-normal"
               />
             </div>
 
-            {/* 2. CONTENT */}
             <div className="flex flex-col px-1 mt-auto">
               <div className="flex items-center justify-between text-xs font-bold tracking-wider uppercase mb-2">
                 <span className="text-slate-400">{currentProduct.brand}</span>
@@ -139,12 +130,10 @@ export default function TopProductsCard() {
                 {currentProduct.name}
               </h4>
 
-              {/* 📱 Product Price: Changed text-2xl lg:text-3xl to text-xl sm:text-2xl lg:text-3xl */}
               <p className="font-black text-xl sm:text-2xl lg:text-3xl text-slate-900 dark:text-white tracking-tight">
                 Rs. {currentProduct.price.toLocaleString()}
               </p>
 
-              {/* Footer */}
               <div className="mt-4 lg:mt-6 pt-4 lg:pt-5 border-t border-gray-100 dark:border-slate-800 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-900/20 text-orange-600 dark:text-orange-500 flex items-center justify-center">

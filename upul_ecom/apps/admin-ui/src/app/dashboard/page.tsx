@@ -51,6 +51,7 @@ const getDynamicStaleTime = (range: string) => {
 };
 
 export default function DashboardOverview() {
+
   // Reset zoom to 100% when page loads
   useEffect(() => {
     document.body.style.zoom = "100%";
@@ -83,7 +84,6 @@ export default function DashboardOverview() {
     staleTime: 30000,
   });
 
-  // B. Main Chart Data
   const {
     data: mainChartData,
     isLoading: mainLoading,
@@ -117,7 +117,6 @@ export default function DashboardOverview() {
     staleTime: getDynamicStaleTime(categoryRange),
   });
 
-  // 3. LOADING STATE (Full Screen Spinner)
   if (cardsLoading || !cardData) {
     return (
       <div className="h-[80vh] flex items-center justify-center">
@@ -127,10 +126,7 @@ export default function DashboardOverview() {
   }
 
   return (
-    // 📱 RESPONSIVE UPDATE: space-y-4 on mobile, space-y-6 on tablet, space-y-8 on desktop
     <div className="space-y-4 sm:space-y-6 lg:space-y-8 animate-in fade-in duration-700 pb-10">
-      {/* --- ROW 1: STAT CARDS --- */}
-      {/* 📱 RESPONSIVE UPDATE: gap-3 on mobile to prevent squeezing, gap-6 on desktop */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
         <StatCard
           title="Total Revenue"
@@ -171,8 +167,6 @@ export default function DashboardOverview() {
         />
       </div>
 
-      {/* --- ROW 2: MAIN CHARTS --- */}
-      {/* 📱 RESPONSIVE UPDATE: Fluid gaps */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
         <div className="lg:col-span-2">
           <MainAnalyticsChart
@@ -189,8 +183,6 @@ export default function DashboardOverview() {
           />
         </div>
 
-        {/* RIGHT: Category Chart (Takes 1 Column) */}
-        {/* 📱 RESPONSIVE UPDATE: Height scales based on screen size so it doesn't dominate mobile screens */}
         <div className="bg-white dark:bg-slate-950 p-5 sm:p-6 rounded-[2rem] sm:rounded-[2.5rem] border border-gray-100 dark:border-slate-800 shadow-xl shadow-slate-200/40 dark:shadow-none flex flex-col h-[400px] sm:h-[450px] lg:h-[600px] transition-all duration-300">
           <div className="flex justify-between items-center mb-4 z-20">
             <div>
@@ -226,8 +218,6 @@ export default function DashboardOverview() {
         </div>
       </div>
 
-      {/* --- ROW 3: LEADERBOARDS --- */}
-      {/* 📱 RESPONSIVE UPDATE: Fluid gaps */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
         <div className="h-auto">
           <TopProductsCard />
