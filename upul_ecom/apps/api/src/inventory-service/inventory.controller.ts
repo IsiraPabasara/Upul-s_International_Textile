@@ -3,7 +3,6 @@ import prisma from "../../../../packages/libs/prisma";
 import ExcelJS from "exceljs";
 import PDFDocument from "pdfkit";
 
-// 1. GET INVENTORY LIST (Optimized with Variant-Aware Filters) ⚡
 export const getInventory = async (
   req: Request,
   res: Response,
@@ -25,7 +24,6 @@ export const getInventory = async (
       AND: [],
     };
 
-    // 🔍 Search Logic
     if (search) {
       where.AND.push({
         OR: [
@@ -35,16 +33,12 @@ export const getInventory = async (
       });
     }
 
-    // 📉 Filter Logic: Out of Stock
-    // Fix: Check if Parent is 0 OR if ANY variant is 0
     if (stock_status === "out_of_stock") {
       where.AND.push({
         OR: [{ stock: 0 }, { variants: { some: { stock: 0 } } }],
       });
     }
 
-    // ⚡ Filter Logic: Low Stock
-    // Fix: Check if Parent is < 10 OR if ANY variant is < 10
     if (filter_type === "low_stock") {
       where.AND.push({
         OR: [
@@ -61,13 +55,11 @@ export const getInventory = async (
       });
     }
 
-    // 🔥 RUN PARALLEL QUERIES
     const [total, rawProducts, globalStats, allProductsValue] =
       await prisma.$transaction([
-        // 1. Count
+
         prisma.product.count({ where }),
 
-        // 2. List Data
         prisma.product.findMany({
           where,
           skip,
@@ -85,23 +77,20 @@ export const getInventory = async (
           },
         }),
 
-        // 3. Global Stats
         prisma.product.aggregate({
           _sum: { stock: true },
           _count: { id: true },
         }),
 
-        // 4. Fetch ALL data for accurate "Out of Stock" calculation
-        // We fetch everything to calculate the precise row-level stats
         prisma.product.findMany({
           select: { stock: true, price: true, variants: true },
         }),
+
       ]);
 
-    // 🧮 CALCULATE REAL STATS (Drill into Variants!)
     const outOfStockCount = allProductsValue.reduce((count: number, p: any) => {
       if (Array.isArray(p.variants) && p.variants.length > 0) {
-        // Count specific variants that are 0
+        //Find out how many variants are out of stock and add to count
         const emptyVariants = (p.variants as any[]).filter(
           (v: any) => v.stock === 0,
         ).length;
@@ -120,9 +109,8 @@ export const getInventory = async (
       0,
     );
 
-    // Optimize Images
     const products = rawProducts.map((p: any) => ({
-      ...p,
+      ...p, //Save every single property it has and modify only the image
       images:
         Array.isArray(p.images) && p.images.length > 0 ? [p.images[0]] : [],
     }));
@@ -146,49 +134,49 @@ export const getInventory = async (
   }
 };
 
-// ... (bulkUpdateInventory remains the same)
-// inventoryController.ts
-
 export const bulkUpdateInventory = async (
   req: Request,
   res: Response,
   next: NextFunction,
 ) => {
   try {
+    
     const { updates } = req.body;
+
     if (!updates || !Array.isArray(updates)) {
       return res.status(400).json({ message: "Invalid updates array" });
     }
 
-    // 1️⃣ CRITICAL FIX: Group updates by SKU first!
-    // This prevents overwriting data if multiple variants of the same product are updated.
     const updatesBySku: Record<string, any[]> = {};
+
     updates.forEach((update) => {
-      if (!updatesBySku[update.sku]) {
-        updatesBySku[update.sku] = [];
+      if (!updatesBySku[update.sku]) { // Check if the SKU key already exists in the updatesBySku object
+        updatesBySku[update.sku] = []; // If it doesn't exist, initialize it with an empty array
       }
-      updatesBySku[update.sku].push(update);
+      updatesBySku[update.sku].push(update); 
     });
 
     const results = await prisma.$transaction(async (tx: any) => {
-      const skuKeys = Object.keys(updatesBySku);
+
+      const skuKeys = Object.keys(updatesBySku); // Get unique SKUs that need to be updated
 
       return Promise.all(
+
         skuKeys.map(async (sku) => {
+
           const productUpdates = updatesBySku[sku]; // All updates for this SKU
 
-          // Fetch product once
           const product = await tx.product.findUnique({ where: { sku } });
           if (!product) throw new Error(`Product ${sku} not found`);
 
           let currentVariants = Array.isArray(product.variants)
-            ? [...product.variants]
+            ? [...product.variants] // Clone the variants array without modifying the original database object directly
             : [];
           let currentStock = Number(product.stock);
           let updatedData: any = {};
 
-          // Apply ALL updates for this SKU in memory first
           for (const update of productUpdates) {
+
             const stockVal = Number(update.newStock);
 
             if (update.variantSize && currentVariants.length > 0) {
@@ -196,19 +184,16 @@ export const bulkUpdateInventory = async (
                 (v: any) => v.size === update.variantSize,
               );
               if (vIndex > -1) {
-                // Update specific variant stock
                 currentVariants[vIndex] = {
                   ...currentVariants[vIndex],
                   stock: stockVal,
                 };
               }
             } else {
-              // Update main stock (simple product)
               currentStock = stockVal;
             }
           }
 
-          // Calculate final totals
           if (currentVariants.length > 0) {
             const totalStock = currentVariants.reduce(
               (sum, v: any) => sum + Number(v.stock),
@@ -226,7 +211,6 @@ export const bulkUpdateInventory = async (
             };
           }
 
-          // Write to DB once per SKU
           return tx.product.update({
             where: { sku },
             data: updatedData,
