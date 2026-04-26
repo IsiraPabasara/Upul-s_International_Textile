@@ -1,9 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import prisma from "../../../../packages/libs/prisma";
 
-// ===========================================================================
-// 1️⃣ MAIN DASHBOARD OVERVIEW (Cards, Main Chart, Categories, Recent Txns)
-// ===========================================================================
 export const getDashboardStats = async (
   req: Request,
   res: Response,
@@ -13,7 +10,6 @@ export const getDashboardStats = async (
     const { range = "weekly", startYear, endYear } = req.query;
     const today = new Date();
 
-    // 📅 DATE LOGIC
     let currentStartDate = new Date();
     let currentEndDate = new Date();
     let prevStartDate = new Date();
@@ -63,7 +59,6 @@ export const getDashboardStats = async (
       groupByType = "day";
     }
 
-    // ⚡ RUN STANDARD QUERIES
     const [
       totalRevenue,
       totalOrders,
@@ -145,7 +140,6 @@ export const getDashboardStats = async (
         select: { createdAt: true },
       }),
 
-      // Recent Transactions (Limit 5)
       prisma.order.findMany({
         take: 5,
         orderBy: { createdAt: "desc" },
@@ -155,7 +149,7 @@ export const getDashboardStats = async (
       }),
     ]);
 
-    // 🚀 CATEGORY AGGREGATION (Optimized)
+    // Get Top Seling 5 Categories with the Total
     const rawCategoryStats = await prisma.order.aggregateRaw({
       pipeline: [
         {
@@ -198,7 +192,7 @@ export const getDashboardStats = async (
             totalSales: { $sum: "$lineTotal" },
           },
         },
-        { $sort: { totalSales: -1 } },
+        { $sort: { totalSales: -1 } }, //Descending
         { $limit: 5 },
       ],
     });
@@ -210,7 +204,6 @@ export const getDashboardStats = async (
       }),
     );
 
-    // 🔢 CALCULATIONS (Trend & History)
     const calcTrend = (curr: number, prev: number) => {
       if (prev === 0) return curr > 0 ? 99 : 0;
       const rawTrend = ((curr - prev) / prev) * 100;
@@ -229,7 +222,6 @@ export const getDashboardStats = async (
       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     };
 
-    // History Logic
     const historyMap = new Map<
       string,
       { revenue: number; orders: number; products: number; label: string }
@@ -294,7 +286,6 @@ export const getDashboardStats = async (
       customers: Math.ceil(data.orders * 0.8),
     }));
 
-    // FINAL RESPONSE (Removed topSellingProducts from here)
     res.json({
       periodTotal,
       periodTrend,
