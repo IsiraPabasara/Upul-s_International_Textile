@@ -336,16 +336,19 @@ const ProfilePage = () => {
         </button>
 
         {/* Danger Zone */}
-        <div className="mt-20 pt-12 border-t border-gray-300">
-          <h3 className="text-sm tracking-[0.2em] uppercase font-bold text-black mb-6">Account Termination</h3>
-          <div className="p-8 border-2 border-gray-200 bg-gray-50/30">
-            <p className="text-sm text-gray-700 mb-6">Permanently delete your account and all associated personal data. This action cannot be undone.</p>
-            <button onClick={() => setShowDeleteConfirm(true)}
-              className="w-full py-4 text-xs uppercase tracking-[0.2em] font-bold bg-black text-white hover:bg-red-700 transition-colors">
-              Delete Account
-            </button>
-          </div>
-        </div>
+        {/* Danger Zone */}
+<div className="mt-20 pt-12 border-t border-gray-300">
+  <h3 className="text-sm tracking-[0.2em] uppercase font-bold text-black mb-6">Account Termination</h3>
+  <div className="p-8 border-2 border-gray-200 bg-gray-50/30 flex flex-col md:flex-row md:items-center justify-between gap-6">
+    <p className="text-sm text-gray-700 max-w-2xl">
+      Permanently delete your account and all associated personal data. This action cannot be undone.
+    </p>
+    <button onClick={() => setShowDeleteConfirm(true)}
+      className="w-full md:w-auto shrink-0 px-10 py-4 text-xs uppercase tracking-[0.2em] font-bold bg-black text-white hover:bg-red-700 transition-colors">
+      Delete Account
+    </button>
+  </div>
+</div>
 
       </div>
     </div>
