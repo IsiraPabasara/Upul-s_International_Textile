@@ -184,7 +184,7 @@ export default function CartSlider() {
                         : 'border-gray-100 bg-white'
                     }`}
                   >
-                    <div className="w-20 h-24 bg-gray-100 rounded-md overflow-hidden flex-shrink-0">
+                    <div className="w-20 aspect-[2/3] bg-gray-100 rounded-md overflow-hidden flex-shrink-0">
                       <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
                     </div>
 

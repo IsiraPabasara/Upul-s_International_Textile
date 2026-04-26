@@ -50,6 +50,7 @@ RUN node -e " \
     'md5': pkg.dependencies['md5'], \
     'morgan': pkg.dependencies['morgan'], \
     'pdfkit': pkg.dependencies['pdfkit'], \
+    'replicate': pkg.dependencies['replicate'], \
     'resend': pkg.dependencies['resend'], \
     'slugify': pkg.dependencies['slugify'], \
     'swagger-ui-express': pkg.dependencies['swagger-ui-express'], \
