@@ -107,11 +107,14 @@ const ForgotPassword = () => {
                             <p className='text-[13px] text-black/60 tracking-wide font-medium'>Enter your email to receive a reset code:</p>
                         </div>
                         <form onSubmit={handleSubmit((data) => requestOtpMutation.mutate({ email: data.email }))}>
-                            <input type='email' placeholder='E-mail'
-                                className={`w-full p-4 border outline-none text-sm placeholder:text-black/40 transition-colors font-medium mb-2 ${errors.email ? 'border-red-500' : 'border-black focus:border-black'}`}
-                                {...register("email", { required: "Email is required" })}
+                            <input  placeholder='E-mail'
+                                className={`w-full p-4 border outline-none text-sm placeholder:text-black/40 transition-colors font-medium ${errors.email ? 'border-red-500' : 'border-black focus:border-black'}`}
+                                {...register("email", { 
+                                    required: "Email required",
+                                    pattern: { value: /\S+@\S+\.\S+/, message: "Invalid format" }
+                                })}
                             />
-                            {errors.email && <p className='text-red-500 text-[10px] font-bold uppercase tracking-widest'>{String(errors.email.message)}</p>}
+                            {errors.email && <p className="text-red-500 text-[10px] mt-1 font-bold uppercase tracking-widest">{errors.email.message}</p>}
                             
                             <button type='submit' disabled={requestOtpMutation.isPending}
                                 className="relative w-full py-4 mt-10 text-xs tracking-[0.3em] uppercase font-black text-white border-2 border-black overflow-hidden group transition-colors duration-500 bg-black hover:text-black">

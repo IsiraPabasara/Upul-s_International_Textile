@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosInstance from '@/app/utils/axiosInstance';
 import toast from 'react-hot-toast';
@@ -11,7 +11,11 @@ import {
   Check, 
   X, 
   Truck,
-  PackageX
+  PackageX,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  Filter
 } from 'lucide-react';
 
 export default function AdminShippingPage() {
@@ -20,6 +24,15 @@ export default function AdminShippingPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editFormData, setEditFormData] = useState({ name: '', shippingCost: '' });
 
+  // Pagination & Filtering State
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all'); // 'all', 'active', 'inactive'
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
+  
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   const { data: cities = [], isLoading } = useQuery({
     queryKey: ['shipping-cities'],
     queryFn: async () => {
@@ -27,6 +40,40 @@ export default function AdminShippingPage() {
       return response.data.cities;
     },
   });
+
+  // Client-side filtering logic
+  const filteredCities = useMemo(() => {
+    if (!cities) return [];
+    
+    return cities.filter((city: any) => {
+      // 1. Text Search Filter
+      const matchesSearch = city.name.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      // 2. Status Filter
+      let matchesStatus = true;
+      if (statusFilter === 'active') matchesStatus = city.isActive === true;
+      if (statusFilter === 'inactive') matchesStatus = city.isActive === false;
+
+      // 3. Price Range Filter
+      const cost = Number(city.shippingCost);
+      const matchesMinPrice = minPrice === '' || cost >= Number(minPrice);
+      const matchesMaxPrice = maxPrice === '' || cost <= Number(maxPrice);
+
+      return matchesSearch && matchesStatus && matchesMinPrice && matchesMaxPrice;
+    });
+  }, [cities, searchTerm, statusFilter, minPrice, maxPrice]);
+
+  // Reset to first page when any filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, minPrice, maxPrice]);
+
+  // Client-side pagination calculations
+  const totalPages = Math.max(1, Math.ceil(filteredCities.length / itemsPerPage));
+  const paginatedCities = filteredCities.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   const addMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -67,6 +114,10 @@ export default function AdminShippingPage() {
     onSuccess: () => {
       toast.success('City deleted successfully');
       queryClient.invalidateQueries({ queryKey: ['shipping-cities'] });
+      
+      if (paginatedCities.length === 1 && currentPage > 1) {
+        setCurrentPage((prev) => prev - 1);
+      }
     },
     onError: () => {
       toast.error('Failed to delete city');
@@ -129,13 +180,70 @@ export default function AdminShippingPage() {
               className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold text-sm transition-colors shadow-lg shadow-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
             >
               <Plus size={18} strokeWidth={3} />
-              {addMutation.isPending ? 'Adding...' : 'Add City'}
+              {addMutation.isPending ? 'Adding...' : 'Add'}
             </button>
           </div>
         </div>
 
+        {/* SEARCH & FILTER BAR */}
+        <div className="bg-white dark:bg-slate-900 rounded-[1.5rem] shadow-sm border border-gray-100 dark:border-slate-800 p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <Filter className="text-slate-400" size={18} />
+            <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">Filter Zones</h3>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Search Input */}
+            <div className="relative">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+              <input 
+                type="text"
+                placeholder="Search city..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-slate-800 border border-transparent focus:border-blue-200 dark:focus:border-blue-800 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-200 placeholder:text-slate-400 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all"
+              />
+            </div>
+
+            {/* Status Dropdown */}
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="w-full px-4 py-2.5 bg-gray-50 dark:bg-slate-800 border border-transparent focus:border-blue-200 dark:focus:border-blue-800 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-200 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all cursor-pointer appearance-none"
+            >
+              <option value="all">All Statuses</option>
+              <option value="active">Active Only</option>
+              <option value="inactive">Inactive Only</option>
+            </select>
+
+            {/* Min Price */}
+            <div className="relative">
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">Min Rs.</span>
+              <input 
+                type="number"
+                placeholder="0" 
+                value={minPrice}
+                onChange={(e) => setMinPrice(e.target.value)}
+                className="w-full pl-14 pr-4 py-2.5 bg-gray-50 dark:bg-slate-800 border border-transparent focus:border-blue-200 dark:focus:border-blue-800 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-200 placeholder:text-slate-400 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all"
+              />
+            </div>
+
+            {/* Max Price */}
+            <div className="relative">
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">Max Rs.</span>
+              <input 
+                type="number"
+                placeholder="Any" 
+                value={maxPrice}
+                onChange={(e) => setMaxPrice(e.target.value)}
+                className="w-full pl-14 pr-4 py-2.5 bg-gray-50 dark:bg-slate-800 border border-transparent focus:border-blue-200 dark:focus:border-blue-800 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-200 placeholder:text-slate-400 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all"
+              />
+            </div>
+          </div>
+        </div>
+
         {/* CITY LIST TABLE */}
-        <div className="bg-white dark:bg-slate-900 rounded-[1.5rem] shadow-xl shadow-slate-200/40 dark:shadow-none border border-gray-100 dark:border-slate-800 overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 rounded-[1.5rem] shadow-xl shadow-slate-200/40 dark:shadow-none border border-gray-100 dark:border-slate-800 overflow-hidden flex flex-col">
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left">
               <thead className="text-xs text-slate-400 uppercase bg-gray-50/50 dark:bg-slate-900/50 border-b border-gray-100 dark:border-slate-800 tracking-wider">
@@ -147,8 +255,8 @@ export default function AdminShippingPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50 dark:divide-slate-800">
-                {cities && cities.length > 0 ? (
-                  cities.map((city: any) => (
+                {paginatedCities && paginatedCities.length > 0 ? (
+                  paginatedCities.map((city: any) => (
                     <tr key={city.id} className="hover:bg-blue-50/40 dark:hover:bg-slate-800/50 transition-colors group">
                       
                       {/* NAME COLUMN */}
@@ -192,13 +300,29 @@ export default function AdminShippingPage() {
 
                       {/* STATUS COLUMN */}
                       <td className="px-6 py-4">
-                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold border uppercase tracking-wider ${
-                          city.isActive 
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800' 
-                            : 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-900/20 dark:text-rose-400 dark:border-rose-800'
-                        }`}>
+                        <button
+                          onClick={() => {
+                            // We pass the existing name and cost to satisfy your backend requirements, 
+                            // but we flip the boolean for isActive.
+                            updateMutation.mutate({
+                              id: city.id,
+                              data: { 
+                                name: city.name, 
+                                shippingCost: city.shippingCost, 
+                                isActive: !city.isActive 
+                              }
+                            });
+                          }}
+                          disabled={updateMutation.isPending}
+                          title={`Click to mark as ${city.isActive ? 'Inactive' : 'Active'}`}
+                          className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold border uppercase tracking-wider cursor-pointer transition-all hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none ${
+                            city.isActive 
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 hover:shadow-sm dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800 dark:hover:bg-emerald-900/40' 
+                              : 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100 hover:shadow-sm dark:bg-rose-900/20 dark:text-rose-400 dark:border-rose-800 dark:hover:bg-rose-900/40'
+                          }`}
+                        >
                           {city.isActive ? 'Active' : 'Inactive'}
-                        </span>
+                        </button>
                       </td>
 
                       {/* ACTIONS COLUMN */}
@@ -264,8 +388,20 @@ export default function AdminShippingPage() {
                     <td colSpan={4} className="px-6 py-16 text-center">
                       <div className="flex flex-col items-center justify-center text-slate-400">
                         <PackageX size={48} className="mb-4 opacity-20" />
-                        <p className="font-medium text-slate-500">No shipping zones configured.</p>
-                        <p className="text-xs mt-1">Add your first city above to get started.</p>
+                        <p className="font-medium text-slate-500">
+                          No cities found matching your filters.
+                        </p>
+                        <button 
+                          onClick={() => {
+                            setSearchTerm('');
+                            setStatusFilter('all');
+                            setMinPrice('');
+                            setMaxPrice('');
+                          }}
+                          className="text-blue-500 hover:text-blue-600 font-semibold text-sm mt-2 transition-colors"
+                        >
+                          Clear all filters
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -273,6 +409,34 @@ export default function AdminShippingPage() {
               </tbody>
             </table>
           </div>
+
+          {/* PAGINATION FOOTER */}
+          {filteredCities.length > 0 && (
+            <div className="flex items-center justify-between px-6 py-4 bg-gray-50/50 dark:bg-slate-900/50 border-t border-gray-100 dark:border-slate-800">
+              <span className="text-sm text-slate-500 dark:text-slate-400 font-medium">
+                Showing <span className="font-bold text-slate-700 dark:text-slate-200">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-bold text-slate-700 dark:text-slate-200">{Math.min(currentPage * itemsPerPage, filteredCities.length)}</span> of <span className="font-bold text-slate-700 dark:text-slate-200">{filteredCities.length}</span> cities
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="p-2 rounded-lg bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <span className="text-sm font-semibold text-slate-700 dark:text-slate-200 min-w-[3rem] text-center">
+                  {currentPage} / {totalPages}
+                </span>
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className="p-2 rounded-lg bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
       </div>

@@ -53,8 +53,8 @@ const Login = () => {
                 localStorage.removeItem("rememberedEmail");
             }
 
-            // IMPORTANT: Invalidate the user query to update Header and other components
-            await queryClient.invalidateQueries({ queryKey: ["user"] });
+            // IMPORTANT: Invalidate the admin query to update Header and other components
+            await queryClient.invalidateQueries({ queryKey: ["admin"] });
 
            
 

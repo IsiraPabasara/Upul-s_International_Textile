@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import axiosInstance from "@/app/utils/axiosInstance";
-import toast from "react-hot-toast"; 
+import toast from "react-hot-toast"; // 🟢 Added Toast for premium feel
 import {
   FileText,
   Download,
@@ -51,9 +51,9 @@ export default function ReportsPage() {
   const [categoryEndDate, setCategoryEndDate] = useState("");
   const [categoryFormat, setCategoryFormat] = useState("PDF");
 
-
+  // ==========================================
   // 1. ORDER REPORT MUTATION
-
+  // ==========================================
   const orderMutation = useMutation({
     mutationFn: async () => {
       const response = await axiosInstance.get("/api/orders/admin/report", {
@@ -77,10 +77,10 @@ export default function ReportsPage() {
       toast.error("Failed to generate order report.");
     },
   });
-  
 
+  // ==========================================
   // 2. INVENTORY REPORT MUTATION
-
+  // ==========================================
   const inventoryMutation = useMutation({
     mutationFn: async () => {
       const response = await axiosInstance.get("/api/products/inventory/report", {
@@ -105,9 +105,9 @@ export default function ReportsPage() {
     },
   });
 
-
+  // ==========================================
   // 3. PRODUCT REPORT MUTATION
-
+  // ==========================================
   const productMutation = useMutation({
     mutationFn: async () => {
       const response = await axiosInstance.get("/api/products/report", {
@@ -132,7 +132,9 @@ export default function ReportsPage() {
     },
   });
 
+  // ==========================================
   // 4. USER REPORT MUTATION
+  // ==========================================
   const userMutation = useMutation({
     mutationFn: async () => {
       const response = await axiosInstance.get("/api/admin/users/report", {
@@ -162,8 +164,9 @@ export default function ReportsPage() {
     },
   });
 
+  // ==========================================
   // 5. CART FREQUENCY REPORT MUTATION
-
+  // ==========================================
   const cartFrequencyMutation = useMutation({
     mutationFn: async () => {
       const response = await axiosInstance.get("/api/cart/report", {
@@ -188,9 +191,36 @@ export default function ReportsPage() {
     },
   });
 
+  // ==========================================
+  // 6. COUPON REPORT MUTATION
+  // ==========================================
+  const couponMutation = useMutation({
+    mutationFn: async () => {
+      const response = await axiosInstance.get("/api/coupons/report", {
+        params: { status: couponStatus, type: couponType, format: couponFormat },
+        responseType: "blob",
+      });
+      return response.data;
+    },
+    onSuccess: (data) => {
+      const url = window.URL.createObjectURL(new Blob([data]));
+      const link = document.createElement("a");
+      link.href = url;
+      const ext = couponFormat === "EXCEL" ? "xlsx" : "pdf";
+      link.setAttribute("download", `Upuls_Coupon_Report.${ext}`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success("Coupon report downloaded successfully!");
+    },
+    onError: () => {
+      toast.error("Failed to generate Coupon report.");
+    },
+  });
 
+  // ==========================================
   // 7. CATEGORY REPORT MUTATION
-
+  // ==========================================
   const categoryMutation = useMutation({
     mutationFn: async () => {
       const response = await axiosInstance.get("/api/categories/report", {
@@ -218,8 +248,6 @@ export default function ReportsPage() {
       toast.error("Failed to generate Category report.");
     },
   });
-
-
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 bg-gray-50/50 dark:bg-slate-950 min-h-screen transition-colors duration-300">

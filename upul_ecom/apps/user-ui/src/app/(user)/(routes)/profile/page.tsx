@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from 'next/navigation';
 import { usePageTitle } from "@/app/hooks/usePageTitle";
-import { LogOut, User, MapPin, Package, ArrowRight, Mail, MailOpen } from "lucide-react";
+import { LogOut, User, MapPin, Package, ArrowRight, Mail, MailOpen, Eye, EyeOff } from "lucide-react";
 import useUser from "@/app/hooks/useUser";
 import axiosInstance from "@/app/utils/axiosInstance";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
@@ -22,6 +22,7 @@ const ProfilePage = () => {
   const [deletePassword, setDeletePassword] = useState("");
   const [deleteError, setDeleteError] = useState("");
   const [isTogglingNewsletter, setIsTogglingNewsletter] = useState(false);
+  const [showDeletePassword, setShowDeletePassword] = useState(false);
   
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -36,6 +37,14 @@ const ProfilePage = () => {
     enabled: !!user && !isLoading,
   });
 
+  // Disable background scrolling when modals are open
+  useEffect(() => {
+    document.documentElement.style.overflow = (showLogoutConfirm || showDeleteConfirm) ? 'hidden' : '';
+    
+    return () => {
+      document.documentElement.style.overflow = '';
+    };
+  }, [showLogoutConfirm, showDeleteConfirm]);
   const handleLogout = async () => {
     setIsLoggingOut(true);
     try {
@@ -128,17 +137,20 @@ const ProfilePage = () => {
       {/* Logout Modal */}
       {showLogoutConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div className="absolute inset-0 bg-white/90 backdrop-blur-md" onClick={() => !isLoggingOut && setShowLogoutConfirm(false)} />
-          <div className="relative bg-black text-white p-12 max-w-md w-full shadow-2xl text-center">
+          {/* Blackish background */}
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => !isLoggingOut && setShowLogoutConfirm(false)} />
+          
+          {/* White Modal */}
+          <div className="relative bg-white text-black p-12 max-w-md w-full shadow-2xl text-center border border-gray-100">
             <h3 className="text-sm tracking-[0.2em] uppercase font-bold mb-4">Confirm Logout</h3>
-            <p className="text-sm text-gray-400 mb-10 leading-relaxed">Are you sure you want to end your session?</p>
+            <p className="text-sm text-gray-600 mb-10 leading-relaxed">Are you sure you want to end your session?</p>
             <div className="flex flex-col gap-4">
               <button onClick={handleLogout} disabled={isLoggingOut}
-                className="w-full py-4 text-xs tracking-[0.3em] uppercase font-bold bg-white text-black hover:bg-gray-200 transition-colors">
+                className="w-full py-4 text-xs tracking-[0.3em] uppercase font-bold bg-black text-white hover:bg-gray-800 transition-colors">
                 {isLoggingOut ? "Processing..." : "Logout"}
               </button>
               <button onClick={() => setShowLogoutConfirm(false)} disabled={isLoggingOut}
-                className="w-full py-4 text-xs tracking-[0.3em] uppercase font-bold text-gray-500 hover:text-white transition-colors">
+                className="w-full py-4 text-xs tracking-[0.3em] uppercase font-bold text-gray-500 hover:text-black transition-colors">
                 Cancel
               </button>
             </div>
@@ -149,29 +161,43 @@ const ProfilePage = () => {
       {/* Delete Account Modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div className="absolute inset-0 bg-white/90 backdrop-blur-md" onClick={() => !isDeleting && setShowDeleteConfirm(false)} />
-          <div className="relative bg-black text-white p-12 max-w-md w-full shadow-2xl">
+          {/* Blackish background */}
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => !isDeleting && setShowDeleteConfirm(false)} />
+          
+          {/* White Modal */}
+          <div className="relative bg-white text-black p-12 max-w-md w-full shadow-2xl border border-gray-100">
             <h3 className="text-sm tracking-[0.2em] uppercase font-bold mb-2">Delete Account</h3>
-            <p className="text-xs text-red-400 mb-6 leading-relaxed">This action cannot be undone. Your account and personal data will be permanently removed.</p>
+            <p className="text-xs text-red-600 mb-6 leading-relaxed">This action cannot be undone. Your account and personal data will be permanently removed.</p>
             
             {deleteError && (
-              <div className="mb-6 p-4 bg-red-500/20 border border-red-500 rounded text-sm text-red-200">
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded text-sm text-red-600">
                 {deleteError}
               </div>
             )}
             
             <div className="space-y-4 w-full mb-8">
-              <label className="text-[10px] uppercase tracking-[0.2em] font-bold text-gray-400">
+              <label className="text-[10px] uppercase tracking-[0.2em] font-bold text-black">
                 Confirm with Password
               </label>
-              <input 
-                type="password"
-                value={deletePassword}
-                onChange={(e) => { setDeletePassword(e.target.value); setDeleteError(""); }}
-                placeholder="Enter your password"
-                disabled={isDeleting}
-                className="w-full py-3 border-b border-gray-200 outline-none focus:border-red-600 transition-colors text-base bg-black text-white placeholder-gray-600"
-              />
+              <div className="relative w-full">
+                <input 
+                  type={showDeletePassword ? "text" : "password"}
+                  value={deletePassword}
+                  onChange={(e) => { setDeletePassword(e.target.value); setDeleteError(""); }}
+                  placeholder="Enter your password"
+                  disabled={isDeleting}
+                  className="w-full py-3 pr-10 border-b border-gray-300 outline-none focus:border-red-600 transition-colors text-base bg-transparent text-black placeholder-gray-400"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowDeletePassword(!showDeletePassword)}
+                  disabled={isDeleting}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black transition-colors disabled:opacity-50"
+                  aria-label={showDeletePassword ? "Hide password" : "Show password"}
+                >
+                  {showDeletePassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
 
             <div className="flex flex-col gap-4">
@@ -179,8 +205,8 @@ const ProfilePage = () => {
                 className="w-full py-4 text-xs tracking-[0.3em] uppercase font-bold bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50">
                 {isDeleting ? "Processing..." : "Delete Account"}
               </button>
-              <button onClick={() => { setShowDeleteConfirm(false); setDeletePassword(""); setDeleteError(""); }} disabled={isDeleting}
-                className="w-full py-4 text-xs tracking-[0.3em] uppercase font-bold text-gray-500 hover:text-white transition-colors">
+              <button onClick={() => { setShowDeleteConfirm(false); setDeletePassword(""); setDeleteError(""); setShowDeletePassword(false); }} disabled={isDeleting}
+                className="w-full py-4 text-xs tracking-[0.3em] uppercase font-bold text-gray-500 hover:text-black transition-colors">
                 Cancel
               </button>
             </div>
@@ -305,21 +331,24 @@ const ProfilePage = () => {
 
         {/* Mobile Logout */}
         <button onClick={() => setShowLogoutConfirm(true)}
-            className="md:hidden mt-20 w-full py-5 border-red-100 text-white text-xs uppercase tracking-[0.2em] font-bold bg-black">
+            className="md:hidden mt-20 w-full py-4 text-xs uppercase tracking-[0.2em] font-bold bg-black text-white hover:bg-gray-800 transition-colors">
             Sign Out
         </button>
 
         {/* Danger Zone */}
-        <div className="mt-20 pt-12 border-t border-gray-300">
-          <h3 className="text-sm tracking-[0.2em] uppercase font-bold text-black-600 mb-6">Account Ternination</h3>
-          <div className="p-8 border-2 border-gray-200 bg-gray-50/30">
-            <p className="text-sm text-gray-700 mb-6">Permanently delete your account and all associated personal data. This action cannot be undone.</p>
-            <button onClick={() => setShowDeleteConfirm(true)}
-              className="w-full py-4 text-xs uppercase tracking-[0.2em] font-bold bg-black text-white hover:bg-red-700 transition-colors">
-              Delete Account
-            </button>
-          </div>
-        </div>
+        {/* Danger Zone */}
+<div className="mt-20 pt-12 border-t border-gray-300">
+  <h3 className="text-sm tracking-[0.2em] uppercase font-bold text-black mb-6">Account Termination</h3>
+  <div className="p-8 border-2 border-gray-200 bg-gray-50/30 flex flex-col md:flex-row md:items-center justify-between gap-6">
+    <p className="text-sm text-gray-700 max-w-2xl">
+      Permanently delete your account and all associated personal data. This action cannot be undone.
+    </p>
+    <button onClick={() => setShowDeleteConfirm(true)}
+      className="w-full md:w-auto shrink-0 px-10 py-4 text-xs uppercase tracking-[0.2em] font-bold bg-black text-white hover:bg-red-700 transition-colors">
+      Delete Account
+    </button>
+  </div>
+</div>
 
       </div>
     </div>
