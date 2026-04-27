@@ -16,8 +16,8 @@ type FormData = {
 const ForgotPassword = () => {
     const [step, setStep] = useState<"email" | "otp" | "reset">("email");
     const [serverError, setServerError] = useState<string | null>(null);
-    const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [otp, setOtp] = useState(["", "", "", ""]);
+    const [focusedIndex, setFocusedIndex] = useState<number | null>(null); // Track focus
     const [userEmail, setUserEmail] = useState<string | null>(null);
     const [canResend, setCanResend] = useState(true);
     const [timer, setTimer] = useState(60);
@@ -27,7 +27,6 @@ const ForgotPassword = () => {
     const router = useRouter();
     const { register, handleSubmit, formState: { errors } } = useForm<FormData>();
 
-    // Resend Timer
     useEffect(() => {
         let interval: NodeJS.Timeout;
         if (!canResend && timer > 0) {
@@ -51,14 +50,9 @@ const ForgotPassword = () => {
             setServerError(null);
             setCanResend(false);
             setTimer(60);
-            if (step === "otp") {
-                setSuccessMessage("OTP has been resent.");
-                setTimeout(() => setSuccessMessage(null), 5000);
-            }
         },
         onError: (error: AxiosError) => {
-            const errorMessage = (error.response?.data as { message?: string })?.message || "Failed to send OTP.";
-            setServerError(errorMessage);
+            setServerError((error.response?.data as any)?.message || "Failed to send OTP.");
         }
     });
 
@@ -71,9 +65,7 @@ const ForgotPassword = () => {
             setStep("reset");
             setServerError(null);
         },
-        onError: (error: AxiosError) => {
-            setServerError("Invalid OTP. Please try again.");
-        }
+        onError: () => setServerError("Invalid OTP. Please try again.")
     });
 
     const resetPasswordMutation = useMutation({
@@ -85,9 +77,7 @@ const ForgotPassword = () => {
             toast.success("Password reset successfully!");
             router.push("/login");
         },
-        onError: (error: AxiosError) => {
-            setServerError("Could not reset password. Please try again.");
-        }
+        onError: () => setServerError("Could not reset password.")
     });
 
     const handleOtpChange = (index: number, value: string) => {
@@ -105,26 +95,27 @@ const ForgotPassword = () => {
     };
 
     return (
-        <>
-        <div className='w-full min-h-screen bg-white flex flex-col items-center justify-center font-sans py-20'>
+        <div className='w-full min-h-[70vh] bg-white flex flex-col items-center justify-center font-sans py-20'>
             <div className='w-full max-w-[450px] px-8'>
 
-                {/* EMAIL STEP */}
                 {step === "email" && (
                     <>
                         <div className="mb-14 text-center">
-                            <h2 className='text-2xl tracking-[0.4em] uppercase mb-6 text-[#111] font-light'>Reset</h2>
-                            <p className='text-[13px] text-gray-400 tracking-wide'>Enter your email to receive a reset code:</p>
+                            <h2 className='text-2xl tracking-[0.4em] uppercase mb-6 text-black font-semibold'>Reset</h2>
+                            <p className='text-[13px] text-black/60 tracking-wide font-medium'>Enter your email to receive a reset code:</p>
                         </div>
                         <form onSubmit={handleSubmit((data) => requestOtpMutation.mutate({ email: data.email }))}>
-                            <input type='email' placeholder='E-mail'
-                                className='w-full p-4 border border-gray-200 outline-none text-base md:text-sm placeholder:text-gray-400 focus:border-black transition-colors mb-2'
-                                {...register("email", { required: "Email is required" })}
+                            <input  placeholder='E-mail'
+                                className={`w-full p-4 border outline-none text-sm placeholder:text-black/40 transition-colors font-medium ${errors.email ? 'border-red-500' : 'border-black focus:border-black'}`}
+                                {...register("email", { 
+                                    required: "Email required",
+                                    pattern: { value: /\S+@\S+\.\S+/, message: "Invalid format" }
+                                })}
                             />
-                            {errors.email && <p className='text-red-500 text-[11px] uppercase'>{String(errors.email.message)}</p>}
+                            {errors.email && <p className="text-red-500 text-[10px] mt-1 font-bold uppercase tracking-widest">{errors.email.message}</p>}
                             
                             <button type='submit' disabled={requestOtpMutation.isPending}
-                                className="relative w-full py-4 mt-10 text-xs tracking-[0.3em] uppercase font-bold text-white border border-black overflow-hidden group bg-black hover:text-black transition-colors duration-500">
+                                className="relative w-full py-4 mt-10 text-xs tracking-[0.3em] uppercase font-black text-white border-2 border-black overflow-hidden group transition-colors duration-500 bg-black hover:text-black">
                                 <span className="absolute inset-0 bg-white transform -translate-x-full group-hover:translate-x-0 transition-transform duration-500 ease-out"></span>
                                 <span className="relative z-10">{requestOtpMutation.isPending ? "Sending..." : "Send Code"}</span>
                             </button>
@@ -132,59 +123,68 @@ const ForgotPassword = () => {
                     </>
                 )}
 
-                {/* OTP STEP */}
                 {step === "otp" && (
                     <div className="text-center">
                         <div className="mb-14">
-                            <h2 className='text-2xl tracking-[0.4em] uppercase mb-6 text-[#111] font-light'>Verify</h2>
-                            <p className='text-[13px] text-gray-400 tracking-wide'>Enter the 4-digit code sent to your email.</p>
+                            <h2 className='text-2xl tracking-[0.4em] uppercase mb-6 text-black font-semibold'>Verify</h2>
+                            <p className='text-[13px] text-black/60 tracking-wide font-medium'>Enter the 4-digit code sent to your email.</p>
                         </div>
                         <div className='flex justify-center gap-4 mb-10'>
                             {otp.map((digit, index) => (
-                                <input key={index} type='text' ref={(el) => { if (el) inputRefs.current[index] = el; }}
-                                    maxLength={1} value={digit}
-                                    className='w-14 h-14 text-center border border-gray-200 outline-none text-lg focus:border-black'
+                                <input 
+                                    key={index} 
+                                    type='text' 
+                                    ref={(el) => { if (el) inputRefs.current[index] = el; }}
+                                    maxLength={1} 
+                                    value={digit}
+                                    onFocus={() => setFocusedIndex(index)}
+                                    onBlur={() => setFocusedIndex(null)}
+                                    className={`w-14 h-14 text-center border outline-none text-lg font-bold transition-all duration-200 
+                                        ${focusedIndex === index 
+                                            ? 'border-black border-2 scale-105 shadow-sm' 
+                                            : 'border-black/20 text-black/60'
+                                        } 
+                                        ${digit && focusedIndex !== index ? 'border-black/40' : ''}`}
                                     onChange={(e) => handleOtpChange(index, e.target.value)}
                                     onKeyDown={(e) => handleOtpKeyDown(index, e)}
                                 />
                             ))}
                         </div>
                         <button onClick={() => verifyOtpMutation.mutate()} disabled={verifyOtpMutation.isPending}
-                            className="relative w-full py-4 text-xs tracking-[0.3em] uppercase font-bold text-white border border-black overflow-hidden group bg-black hover:text-black transition-colors duration-500">
+                            className="relative w-full py-4 text-xs tracking-[0.3em] uppercase font-black text-white border-2 border-black overflow-hidden group transition-colors duration-500 bg-black hover:text-black">
                             <span className="absolute inset-0 bg-white transform -translate-x-full group-hover:translate-x-0 transition-transform duration-500 ease-out"></span>
                             <span className="relative z-10">{verifyOtpMutation.isPending ? "Verifying..." : "Verify Code"}</span>
                         </button>
-                        <div className='mt-10 min-h-[24px]'>
+                        <div className='mt-10'>
                             {canResend ? (
-                                <button onClick={() => requestOtpMutation.mutate({ email: userEmail! })} className='text-[11px] text-black font-bold uppercase tracking-[0.2em] hover:underline underline-offset-4'>Resend Code</button>
+                                <button onClick={() => requestOtpMutation.mutate({ email: userEmail! })} className='text-[11px] text-black font-bold uppercase tracking-widest underline underline-offset-4'>Resend Code</button>
                             ) : (
-                                <p className='text-[11px] text-gray-400 uppercase tracking-[0.2em]'>Resend in {timer}s</p>
+                                <p className='text-[11px] text-black/40 uppercase tracking-widest font-bold'>Resend in {timer}s</p>
                             )}
                         </div>
                     </div>
                 )}
 
-                {/* RESET PASSWORD STEP */}
                 {step === "reset" && (
                     <>
                         <div className="mb-14 text-center">
-                            <h2 className='text-2xl tracking-[0.4em] uppercase mb-6 text-[#111] font-light'>New Password</h2>
-                            <p className='text-[13px] text-gray-400 tracking-wide'>Set your new account password:</p>
+                            <h2 className='text-2xl tracking-[0.4em] uppercase mb-6 text-black font-semibold'>New Password</h2>
+                            <p className='text-[13px] text-black/60 tracking-wide font-medium'>Set your new account password:</p>
                         </div>
                         <form onSubmit={handleSubmit((data) => resetPasswordMutation.mutate({ password: data.password }))}>
                             <div className="relative mb-2">
                                 <input type={passwordVisible ? "text" : "password"} placeholder='New Password'
-                                    className='w-full p-4 border border-gray-200 outline-none text-base md:text-sm placeholder:text-gray-400 focus:border-black'
+                                    className={`w-full p-4 border outline-none text-sm placeholder:text-black/40 transition-colors font-medium ${errors.password ? 'border-red-500' : 'border-black focus:border-black'}`}
                                     {...register("password", { required: "Required", minLength: { value: 6, message: "Min 6 characters" } })}
                                 />
-                                <button type='button' onClick={() => setPasswordVisible(!passwordVisible)} className='absolute right-4 top-1/2 -translate-y-1/2 text-gray-400'>
-                                    {passwordVisible ? <Eye size={18} /> : <EyeOff size={18} />}
+                                <button type='button' onClick={() => setPasswordVisible(!passwordVisible)} className='absolute right-4 top-1/2 -translate-y-1/2 text-black/40 hover:text-black transition-colors'>
+                                    {passwordVisible ? <EyeOff size={18} /> : <Eye size={18} />}
                                 </button>
                             </div>
-                            {errors.password && <p className='text-red-500 text-[11px] uppercase'>{String(errors.password.message)}</p>}
+                            {errors.password && <p className='text-red-500 text-[10px] font-bold uppercase tracking-widest'>{String(errors.password.message)}</p>}
                             
                             <button type='submit' disabled={resetPasswordMutation.isPending}
-                                className="relative w-full py-4 mt-10 text-xs tracking-[0.3em] uppercase font-bold text-white border border-black overflow-hidden group bg-black hover:text-black transition-colors duration-500">
+                                className="relative w-full py-4 mt-10 text-xs tracking-[0.3em] uppercase font-black text-white border-2 border-black overflow-hidden group transition-colors duration-500 bg-black hover:text-black">
                                 <span className="absolute inset-0 bg-white transform -translate-x-full group-hover:translate-x-0 transition-transform duration-500 ease-out"></span>
                                 <span className="relative z-10">{resetPasswordMutation.isPending ? "Updating..." : "Update Password"}</span>
                             </button>
@@ -192,28 +192,26 @@ const ForgotPassword = () => {
                     </>
                 )}
 
-                {/* Footer and Feedback */}
-                <div className="mt-0 text-center space-y-4">
-                    {successMessage && <p className='text-green-600 text-[11px] uppercase tracking-widest font-bold'>{successMessage}</p>}
-                    {serverError && <p className='text-red-500 text-[11px] uppercase tracking-widest font-bold'>{serverError}</p>}
-                    
-                    <div className="pt-4">
-                        <Link href="/login" className='text-[12px] text-gray-500 hover:text-black uppercase tracking-widest transition-colors'>
-                            ← Back to Login
-                        </Link>
-                    </div>
+                <div className="mt-8 text-center space-y-4">
+                    {serverError && (
+                        <div className="p-3 border border-red-500 bg-red-50">
+                            <p className='text-red-600 text-[11px] font-black uppercase tracking-widest'>{serverError}</p>
+                        </div>
+                    )}
+                    <Link href="/login" className='block text-[11px] text-black font-bold uppercase tracking-widest hover:text-black/50 transition-colors underline underline-offset-4 decoration-black'>
+                        ← Back to Login
+                    </Link>
                 </div>
             </div>
-        </div>
 
-        <style jsx>{`
-            @media (max-width: 768px) {
-                input {
-                    font-size: 16px !important;
+            <style jsx>{`
+                @media (max-width: 768px) {
+                    input {
+                        font-size: 16px !important;
+                    }
                 }
-            }
-        `}</style>
-    </>
+            `}</style>
+        </div>
     )
 }
 
