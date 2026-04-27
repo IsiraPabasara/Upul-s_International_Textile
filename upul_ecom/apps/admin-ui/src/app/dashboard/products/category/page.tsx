@@ -50,6 +50,7 @@ export default function CategoryManager() {
   // Input State
   const [inputValue, setInputValue] = useState("");
   const [editingItem, setEditingItem] = useState<Category | null>(null);
+  const [inputError, setInputError] = useState<string | null>(null);
 
   // --- 1. FETCH ---
   const { data: serverData, isLoading } = useQuery({
@@ -78,11 +79,14 @@ export default function CategoryManager() {
     onSuccess: (res) => {
       toast.success("Category added successfully");
       setInputValue("");
+      setInputError(null);
       if (res.data) setCategories(prev => [...prev, res.data]);
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       queryClient.invalidateQueries({ queryKey: ['categories-selector'] });
     },
-    onError: (err: any) => toast.error(err.response?.data?.error || "Failed to add category")
+    onError: (err: any) => {
+      setInputError(err.response?.data?.error || "Failed to add category");
+    }
   });
 
   // --- 3. UPDATE MUTATION ✏️ ---
@@ -94,10 +98,13 @@ export default function CategoryManager() {
       toast.success("Category renamed");
       setInputValue("");
       setEditingItem(null); 
+      setInputError(null);
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       queryClient.invalidateQueries({ queryKey: ['categories-selector'] });
     },
-    onError: () => toast.error("Failed to rename category")
+    onError: (err: any) => {
+      setInputError(err.response?.data?.error || "Failed to rename category");
+    }
   });
 
   // --- 4. DELETE MUTATION ---
@@ -151,11 +158,13 @@ export default function CategoryManager() {
   const handleEditClick = (cat: Category) => {
     setEditingItem(cat);
     setInputValue(cat.name);
+    setInputError(null);
   };
 
   const handleCancelEdit = () => {
     setEditingItem(null);
     setInputValue("");
+    setInputError(null);
   };
 
   const sensors = useSensors(
@@ -267,49 +276,67 @@ export default function CategoryManager() {
               : "bg-gray-50/80 dark:bg-slate-800/50 border-gray-100 dark:border-slate-800"
           }`}
         >
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-            <input
-              type="text"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              placeholder={editingItem ? `Rename "${editingItem.name}"...` : `Add new category to "${currentParentId ? path[path.length-1].name : 'Root'}"...`}
-              
-              className={`w-full sm:flex-1 shrink-0 min-h-[48px] sm:min-h-[52px] h-[48px] sm:h-[52px] px-4 rounded-xl text-sm sm:text-base font-semibold text-gray-900 dark:text-white outline-none transition-all shadow-sm
-                ${editingItem 
-                  ? "bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-700/50 focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 placeholder:text-amber-300 dark:placeholder:text-amber-700" 
-                  : "bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 placeholder:text-gray-400 dark:placeholder:text-slate-500"
-                }`}
-            />
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start">
             
-            {editingItem ? (
-              <div className="flex gap-2 shrink-0">
+            {/* Wrapper for Input + Error Message */}
+            <div className="w-full sm:flex-1 shrink-0 flex flex-col gap-1.5">
+              <input
+                type="text"
+                value={inputValue}
+                onChange={(e) => {
+                  setInputValue(e.target.value);
+                  if (inputError) setInputError(null);
+                }}
+                placeholder={editingItem ? `Rename "${editingItem.name}"...` : `Add new category to "${currentParentId ? path[path.length-1].name : 'Root'}"...`}
+                className={`w-full min-h-[48px] sm:min-h-[52px] h-[48px] sm:h-[52px] px-4 rounded-xl text-sm sm:text-base font-semibold outline-none transition-all shadow-sm
+                  ${inputError 
+                    ? "bg-red-50 dark:bg-red-900/10 border-red-400 dark:border-red-500/50 text-red-900 dark:text-red-200 focus:ring-4 focus:ring-red-500/20 placeholder:text-red-300"
+                    : editingItem 
+                      ? "bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-700/50 text-gray-900 dark:text-white focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 placeholder:text-amber-300 dark:placeholder:text-amber-700" 
+                      : "bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 placeholder:text-gray-400 dark:placeholder:text-slate-500"
+                  }`}
+              />
+              
+              {/* Error Message Display */}
+              {inputError && (
+                <span className="text-sm font-bold text-red-500 dark:text-red-400 animate-in slide-in-from-top-1 px-1">
+                  {inputError}
+                </span>
+              )}
+            </div>
+            
+            {/* Action Buttons */}
+            <div className="flex gap-2 shrink-0 w-full sm:w-auto">
+              {editingItem ? (
+                <>
+                  <button 
+                    type="submit"
+                    disabled={updateMutation.isPending || !inputValue.trim()}
+                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 min-h-[48px] sm:min-h-[52px] h-[48px] sm:h-[52px] px-6 sm:px-8 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold transition-all shadow-md hover:shadow-lg disabled:opacity-50 active:scale-95"
+                  >
+                    {updateMutation.isPending ? <Loader2 size={18} strokeWidth={2.5} className="animate-spin" /> : <Save size={18} strokeWidth={2.5} />}
+                    <span className="hidden sm:block">Update</span>
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={handleCancelEdit}
+                    className="min-h-[48px] sm:min-h-[52px] h-[48px] sm:h-[52px] w-[48px] sm:w-[52px] flex items-center justify-center bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white rounded-xl transition-all shadow-sm active:scale-95 shrink-0"
+                    title="Cancel Edit"
+                  >
+                    <X size={20} strokeWidth={2.5} />
+                  </button>
+                </>
+              ) : (
                 <button 
                   type="submit"
-                  disabled={updateMutation.isPending || !inputValue.trim()}
-                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 min-h-[48px] sm:min-h-[52px] h-[48px] sm:h-[52px] px-6 sm:px-8 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold transition-all shadow-md hover:shadow-lg disabled:opacity-50 active:scale-95"
+                  disabled={createMutation.isPending || !inputValue.trim()}
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 min-h-[48px] sm:min-h-[52px] h-[48px] sm:h-[52px] px-6 sm:px-8 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-all shadow-md hover:shadow-lg disabled:opacity-50 active:scale-95"
                 >
-                  {updateMutation.isPending ? <Loader2 size={18} strokeWidth={2.5} className="animate-spin" /> : <Save size={18} strokeWidth={2.5} />}
-                  <span className="hidden sm:block">Update</span>
+                  {createMutation.isPending ? <Loader2 size={18} strokeWidth={2.5} className="animate-spin" /> : <Plus size={18} strokeWidth={2.5} />}
+                  Add Category
                 </button>
-                <button 
-                  type="button" 
-                  onClick={handleCancelEdit}
-                  className="min-h-[48px] sm:min-h-[52px] h-[48px] sm:h-[52px] w-[48px] sm:w-[52px] flex items-center justify-center bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white rounded-xl transition-all shadow-sm active:scale-95 shrink-0"
-                  title="Cancel Edit"
-                >
-                  <X size={20} strokeWidth={2.5} />
-                </button>
-              </div>
-            ) : (
-              <button 
-                type="submit"
-                disabled={createMutation.isPending || !inputValue.trim()}
-                className="w-full sm:w-auto shrink-0 flex items-center justify-center gap-2 min-h-[48px] sm:min-h-[52px] h-[48px] sm:h-[52px] px-6 sm:px-8 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-all shadow-md hover:shadow-lg disabled:opacity-50 active:scale-95"
-              >
-                {createMutation.isPending ? <Loader2 size={18} strokeWidth={2.5} className="animate-spin" /> : <Plus size={18} strokeWidth={2.5} />}
-                Add Category
-              </button>
-            )}
+              )}
+            </div>
           </div>
         </form>
 

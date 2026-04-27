@@ -21,17 +21,40 @@ export const createCategory = async (
   try {
     const { name, parentId, sortOrder } = req.body;
 
-    // 🛡️ SANITIZATION
     const safeParentId =
       parentId === "null" || parentId === "" ? null : parentId;
 
-    // 🐌 SLUG GENERATION (The Fix)
-    const slug = generateSlug(name);
+    // 🛑 1. CHECK FOR DUPLICATE NAME AT THE SAME LEVEL
+    const existingCategory = await prisma.category.findFirst({
+      where: {
+        name: { equals: name, mode: "insensitive" }, // Case-insensitive check
+        ...(safeParentId
+          ? { parentId: safeParentId }
+          : { OR: [{ parentId: { isSet: false } }, { parentId: null }] }),
+      },
+    });
+
+    if (existingCategory) {
+      return res
+        .status(400)
+        .json({ error: "A category with this name already exists at this level." });
+    }
+
+    // 🐌 2. SLUG GENERATION (Prevent global @unique slug collisions)
+    let slug = generateSlug(name);
+    if (safeParentId) {
+      // Append a chunk of the parentId so "Shirts" under "Men" and "Women" have different slugs
+      slug = `${slug}-${safeParentId.slice(-6)}`;
+    } else {
+      // If root, just in case, append a tiny random string if it clashes
+      const slugExists = await prisma.category.findFirst({ where: { slug } });
+      if (slugExists) slug = `${slug}-${Math.random().toString(36).substring(2, 6)}`;
+    }
 
     const category = await prisma.category.create({
       data: {
         name,
-        slug, // 👈 ADD THIS LINE
+        slug,
         sortOrder: Number(sortOrder),
         parent: safeParentId ? { connect: { id: safeParentId } } : undefined,
       },
@@ -39,16 +62,14 @@ export const createCategory = async (
 
     return res.status(201).json(category);
   } catch (error) {
-    // Check for unique constraint (Duplicate Name OR Slug)
     if ((error as any).code === "P2002") {
       return res
         .status(400)
-        .json({ error: "A category with this name already exists." });
+        .json({ error: "A category with this slug or name globally exists." });
     }
     return next(error);
   }
 };
-
 export const getCategories = async (req: Request, res: Response) => {
   const { parentId, roots } = req.query;
 
@@ -130,11 +151,40 @@ export const updateCategory = async (
     const { id } = req.params;
     const { name, sortOrder } = req.body;
 
+    // Get the current category to know its parentId
+    const currentCategory = await prisma.category.findUnique({ where: { id } });
+    if (!currentCategory) return res.status(404).json({ error: "Not found" });
+
     const data: any = {};
-    if (name) {
+    
+    if (name && name !== currentCategory.name) {
+      // 🛑 1. CHECK FOR DUPLICATE NAME AT THE SAME LEVEL
+      const existingCategory = await prisma.category.findFirst({
+        where: {
+          id: { not: id }, // Exclude the one we are updating
+          name: { equals: name, mode: "insensitive" },
+          ...(currentCategory.parentId
+            ? { parentId: currentCategory.parentId }
+            : { OR: [{ parentId: { isSet: false } }, { parentId: null }] }),
+        },
+      });
+
+      if (existingCategory) {
+        return res
+          .status(400)
+          .json({ error: "A category with this name already exists at this level." });
+      }
+
       data.name = name;
-      data.slug = slugify(name, { lower: true, strict: true });
+      
+      // 🐌 2. Update Slug safely
+      let slug = slugify(name, { lower: true, strict: true });
+      if (currentCategory.parentId) {
+        slug = `${slug}-${currentCategory.parentId.slice(-6)}`;
+      }
+      data.slug = slug;
     }
+
     if (sortOrder !== undefined) {
       data.sortOrder = parseInt(sortOrder);
     }
