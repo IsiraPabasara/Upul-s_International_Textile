@@ -17,7 +17,7 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
   const { type, userId, addressId, address, billingAddress, items, email, paymentMethod, couponCode} = req.body;
 
   try {
-    // --- 1. PREPARE COMMON DATA ---
+    // --- COMMON DATA ---
     let shippingAddress;
     let customerEmail;
     let customerId: string | null = null;
