@@ -173,7 +173,7 @@ export default function AdminOrderDetails() {
       </div>
     );
 
-  // 🟢 CLEANED UP: Only terminates on Delivered, Cancelled, Returned, or Refunded
+  //  CLEANED UP: Only terminates on Delivered, Cancelled, Returned, or Refunded
   const isOrderTerminated = ["CANCELLED", "RETURNED", "DELIVERED", "REFUNDED"].includes(
     order.status,
   );
