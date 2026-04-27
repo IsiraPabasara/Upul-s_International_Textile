@@ -26,7 +26,7 @@ const Signup = () => {
     const [canResend, setCanResend] = useState(true);
     const [timer, setTimer] = useState(60);
     const [otp, setOtp] = useState(["", "", "", ""]);
-    const [focusedIndex, setFocusedIndex] = useState<number | null>(null); // NEW: Track active box
+    const [focusedIndex, setFocusedIndex] = useState<number | null>(null); 
     const [userData, setUserData] = useState<FormData | null>(null);
     
     const router = useRouter();
@@ -136,7 +136,7 @@ const Signup = () => {
                         </div>
 
                         <div>
-                            <input type='email' placeholder='E-mail'
+                            <input placeholder='E-mail'
                                 className={`w-full p-4 border outline-none text-sm placeholder:text-black/40 transition-colors font-medium ${errors.email ? 'border-red-500' : 'border-black focus:border-black'}`}
                                 {...register("email", { 
                                     required: "Email required",

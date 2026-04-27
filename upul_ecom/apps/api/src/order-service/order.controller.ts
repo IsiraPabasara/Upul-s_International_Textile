@@ -13,11 +13,11 @@ const generateOrderNumber = () => {
 
 // Inside createOrder function:
 export const createOrder = async (req: Request, res: Response, next: NextFunction) => {
-  // 🟢 1. Destructure billingAddress and shippingFee from req.body
+  // 1. Destructure billingAddress and shippingFee from req.body
   const { type, userId, addressId, address, billingAddress, items, email, paymentMethod, couponCode} = req.body;
 
   try {
-    // --- 1. PREPARE COMMON DATA ---
+    // --- COMMON DATA ---
     let shippingAddress;
     let customerEmail;
     let customerId: string | null = null;
@@ -37,7 +37,7 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
       customerEmail = email;
     }
 
-    // 🟢 2. Determine final billing address (fallback to shipping if null)
+    //  2. Determine final billing address (fallback to shipping if null)
     const finalBillingAddress = billingAddress || shippingAddress;
 
     // --- 2. CALCULATE TOTALS (No Stock Deduction Yet) ---
@@ -85,7 +85,7 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
       appliedCouponCode = coupon.code;
     }
     
-    // � SECURE SHIPPING CALCULATION
+    // SECURE SHIPPING CALCULATION
     // Frontend sends shippingFee, but we recalculate it server-side to prevent fraud
     let finalShippingFee = 450; // Default fallback
     if (shippingAddress && shippingAddress.city) {
@@ -97,13 +97,11 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
       }
     }
     
-    // 🟢 ADD SHIPPING FEE TO GRAND TOTAL
+    //  ADD SHIPPING FEE TO GRAND TOTAL
     const grandTotal = Math.max(0, calculatedTotal - finalDiscount) + finalShippingFee;
     const orderNumber = generateOrderNumber();
 
-    // ==========================================
-    // 🟢 PATH A: PAYHERE (REDIS CACHE STRATEGY)
-    // ==========================================
+    //  PATH A: PAYHERE (REDIS CACHE STRATEGY)
     if (paymentMethod === 'PAYHERE') {
       const merchantId = process.env.PAYHERE_MERCHANT_ID;
       const secret = process.env.PAYHERE_SECRET;
@@ -117,10 +115,10 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
         customerId,
         customerEmail,
         shippingAddress,
-        billingAddress: finalBillingAddress, // 🟢 3. Add to Redis payload
+        billingAddress: finalBillingAddress, //  3. Add to Redis payload
         finalItems,
         grandTotal,
-        shippingFee: finalShippingFee, // 🔒 Use the server-calculated shipping fee
+        shippingFee: finalShippingFee, //  Use the server-calculated shipping fee
         finalDiscount,
         appliedCouponCode,
         type // USER or GUEST
@@ -163,9 +161,8 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
       });
     }
 
-    // ==========================================
-    // 🔵 PATH B: COD (IMMEDIATE DB CREATION)
-    // ==========================================
+     
+    //  PATH B: COD (IMMEDIATE DB CREATION)
     // Create a unique key based on the user (or email) and the total amount.
     // This "locks" this specific order for 30 seconds.
     const lockKey = `order_lock:cod:${customerId || email}:${grandTotal.toFixed(0)}`;
@@ -215,7 +212,7 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
           items: finalItems,
           totalAmount: grandTotal,
           discountAmount: finalDiscount,
-          shippingFee: finalShippingFee, // 🔒 Store the server-calculated shipping fee
+          shippingFee: finalShippingFee, // Store the server-calculated shipping fee
           couponCode: appliedCouponCode,
           status: 'PENDING',
           paymentMethod: 'COD'

@@ -9,19 +9,27 @@ export default function WishlistPage() {
   usePageTitle('Wishlist', 'Your saved items');
   const { items } = useWishlist();
 
+  // Filter items: only show available, visible products
+  const visibleItems = items.filter(item => 
+    item && 
+    item.productId && 
+    item.availability !== false && 
+    item.visible !== false
+  );
+
   return (
     <div className="min-h-screen bg-white pt-8 md:pt-4 md:pb-1">
       <div className="border-b border-gray-100 bg-gray-50/50">
         <div className="max-w-7xl mx-auto px-4 py-7 text-center">
           <h1 className="text-3xl font-outfit font-extrabold text-gray-900 mb-2">My Wishlist</h1>
           <p className="text-gray-500 font-outfit">
-            {items.length} {items.length === 1 ? 'item' : 'items'} saved
+            {visibleItems.length} {visibleItems.length === 1 ? 'item' : 'items'} saved
           </p>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-12">
-        {items.length === 0 ? (
+        {visibleItems.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <h2 className="text-xl font-bold mb-2">Your wishlist is empty</h2>
             <p className="text-gray-500 mb-6 max-w-sm mx-auto">
@@ -36,12 +44,13 @@ export default function WishlistPage() {
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {items.map((item: any) => (
+            {visibleItems.map((item: any) => (
               <ProductCard 
                 key={item.productId} 
                 product={{
                     id: item.productId,
-                    sku: item.sku || item.slug, // Fallback if old data
+                    sku: item.sku || item.slug || '', // Fallback if old data
+                    slug: item.slug || item.sku || '', // Ensure slug always has a value
                     name: item.name,
                     price: item.price,
                     brand: item.brand || 'UPUL INT', // Fallback

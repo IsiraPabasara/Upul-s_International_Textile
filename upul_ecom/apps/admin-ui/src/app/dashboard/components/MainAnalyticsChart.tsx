@@ -13,7 +13,6 @@ import {
 import { Calendar } from "lucide-react";
 import CustomSelect from "./CustomSelect";
 
-// 🎨 UPDATED Custom Tooltip Component (Full Labels)
 const CustomTooltip = ({ active, payload, label, activeMetric }: any) => {
   if (active && payload && payload.length) {
     const value = payload[0].value.toLocaleString();
@@ -24,19 +23,16 @@ const CustomTooltip = ({ active, payload, label, activeMetric }: any) => {
           {label}
         </p>
         <div className="flex items-baseline gap-1.5">
-          {/* Prefix for Revenue */}
           {activeMetric === "revenue" && (
             <span className="text-lg font-bold text-slate-800 dark:text-white">
               Rs.
             </span>
           )}
 
-          {/* The Value Number */}
           <span className="text-2xl font-black text-slate-800 dark:text-white">
             {value}
           </span>
 
-          {/* Suffixes - Now using Full Words */}
           {activeMetric === "orders" && (
             <span className="text-sm font-bold text-slate-500 dark:text-slate-400">
               Orders
@@ -131,7 +127,6 @@ const MainAnalyticsChart = ({
 
   return (
     <div className="w-full bg-white dark:bg-slate-950 p-6 sm:p-8 rounded-[2.5rem] border border-gray-100 dark:border-slate-800 shadow-xl shadow-slate-200/40 dark:shadow-none relative transition-all duration-300">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4 z-20 relative">
         <div>
           <h3 className="text-lg sm:text-xl lg:text-2xl font-extrabold text-slate-800 dark:text-white flex items-center gap-3">
@@ -183,7 +178,6 @@ const MainAnalyticsChart = ({
         </div>
       </div>
 
-      {/* 📊 Chart Area */}
       <div className="h-[300px] sm:h-[400px] w-full">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data}>

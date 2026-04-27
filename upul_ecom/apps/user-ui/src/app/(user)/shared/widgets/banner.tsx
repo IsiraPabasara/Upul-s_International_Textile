@@ -208,9 +208,9 @@ const Hero = ({ desktopImages = [], mobileImages = [] }: HeroProps) => {
               <div className="absolute inset-0 bg-black/3 md:bg-black/5"></div>
             </div>
 
-            <div className="relative z-10 h-full max-w-8xl mx-auto flex flex-col justify-between px-5 pb-16 pt-32">
+            <div className="relative z-10 h-full max-w-8xl mx-auto flex flex-col justify-between px-5 pb-8 pt-12 sm:pb-12 sm:pt-16 md:pb-16 md:pt-20 lg:pt-24 xl:pt-32">
               <div className="flex justify-between items-start">
-                <p className="text-xs sm:text-[0.3rem] md:text-[0.6rem] lg:text-sm md:mb-10 xl:mb-0 xl:text-base font-bold uppercase tracking-[0.2em] border-l-2 border-white pl-4 max-w-[200px] md:max-w-[300px]">
+                <p className="text-xs sm:text-xs md:text-sm lg:text-base xl:text-lg font-bold uppercase tracking-[0.2em] border-l-2 border-white pl-4 max-w-[200px] md:max-w-[300px] md:mb-10 xl:mb-0">
                   Redefining modern silhouette through structure and chaos.
                 </p>
               </div>
