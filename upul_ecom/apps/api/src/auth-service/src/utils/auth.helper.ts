@@ -18,6 +18,22 @@ export const validateRegistrationData = (data: any) => {
     if(!emailRegex.test(email)) {
         throw new ValidationError("Invalid email format!")
     }
+
+    const phoneRegex = /^\d{10}$/;
+    if (!phoneRegex.test(phonenumber)) {
+        throw new ValidationError("Phone number must be exactly 10 digits!")
+    }
+
+    if (password.length < 6) {
+        throw new ValidationError("Password must be at least 6 characters!")
+    }
+
+    const hasNumbers = /\d/.test(password);
+    const hasCharacters = /[a-zA-Z]/.test(password);
+    
+    if (!hasNumbers || !hasCharacters) {
+        throw new ValidationError("Password not strong enough!")
+    }
 };
 
 export const checkOtpRestrictions = async (email: string) => {

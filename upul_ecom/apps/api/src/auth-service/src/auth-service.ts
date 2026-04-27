@@ -28,12 +28,17 @@ export const userRegistration = async (req: Request, res: Response, next: NextFu
     try {
         validateRegistrationData(req.body);
 
-        const {firstname, email} = req.body;
+        const {firstname, email, phonenumber} = req.body;
 
         const existingUser = await prisma.users.findUnique({where: {email}});
 
         if(existingUser) {
             throw new ValidationError("User already exists with this email!");
+        }
+
+        const existingPhone = await prisma.users.findUnique({where: {phonenumber}});
+        if(existingPhone) {
+            throw new ValidationError("Phone number already registered. Please use a different phone number!");
         }
 
         await checkOtpRestrictions(email); 
@@ -76,12 +81,6 @@ export const verifyUser = async(req: Request, res: Response, next: NextFunction)
        const existingEmail = await prisma.users.findUnique({where: {email}}); 
        if(existingEmail) {
         return next(new ValidationError("User already exists with this email!"));
-       }
-
-       // Check if phone number already exists
-       const existingPhone = await prisma.users.findUnique({where: {phonenumber}});
-       if(existingPhone) {
-        return next(new ValidationError("Phone number already registered. Please use a different phone number!"));
        }
 
        await verifyOtp(email, otp, next);
