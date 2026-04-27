@@ -651,17 +651,6 @@ export default function ProductPage() {
                 </div>
               </div>
             )}
-            
-            {/* Out of Stock Message */}
-            {remainingStock === 0 && (
-              <div className="p-6 bg-red-50 border-2 border-red-200 rounded-lg flex items-center gap-4 justify-center">
-                <AlertCircle size={28} className="text-red-500 flex-shrink-0" />
-                <div>
-                  <p className="text-lg font-bold text-red-700">Out of Stock</p>
-                  <p className="text-sm text-red-600 mt-1">This product is currently unavailable</p>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Actions */}
