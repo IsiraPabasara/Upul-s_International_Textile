@@ -26,7 +26,7 @@ const Signup = () => {
     const [canResend, setCanResend] = useState(true);
     const [timer, setTimer] = useState(60);
     const [otp, setOtp] = useState(["", "", "", ""]);
-    const [focusedIndex, setFocusedIndex] = useState<number | null>(null); // NEW: Track active box
+    const [focusedIndex, setFocusedIndex] = useState<number | null>(null); 
     const [userData, setUserData] = useState<FormData | null>(null);
     
     const router = useRouter();
