@@ -27,6 +27,13 @@ export const validateRegistrationData = (data: any) => {
     if (password.length < 6) {
         throw new ValidationError("Password must be at least 6 characters!")
     }
+
+    const hasNumbers = /\d/.test(password);
+    const hasCharacters = /[a-zA-Z]/.test(password);
+    
+    if (!hasNumbers || !hasCharacters) {
+        throw new ValidationError("Password not strong enough!")
+    }
 };
 
 export const checkOtpRestrictions = async (email: string) => {
