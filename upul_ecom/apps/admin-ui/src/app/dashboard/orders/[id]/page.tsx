@@ -21,6 +21,7 @@ import {
   Check,
   AlertTriangle,
   PackageOpen,
+  DollarSign,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import OrderTimeline from "../components/OrderTimeline";
@@ -69,6 +70,8 @@ const getStatusColor = (status: string) => {
     case "CANCELLED":
     case "RETURNED":
       return "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800";
+    case "REFUNDED":
+      return "bg-cyan-50 text-cyan-700 border-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-400 dark:border-cyan-800";
     default:
       return "bg-gray-50 text-gray-700 border-gray-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700";
   }
@@ -107,6 +110,18 @@ export default function AdminOrderDetails() {
     },
     onError: (err: any) =>
       toast.error(err.response?.data?.message || "Update failed"),
+  });
+
+  const refundMutation = useMutation({
+    mutationFn: async () => {
+      await axiosInstance.post(`/api/orders/admin/${id}/refund`);
+    },
+    onSuccess: () => {
+      toast.success("Order refunded successfully! Stock has been restored.");
+      queryClient.invalidateQueries({ queryKey: ["admin-order", id] });
+    },
+    onError: (err: any) =>
+      toast.error(err.response?.data?.message || "Refund failed"),
   });
 
   const handleUpdateStatus = (newStatus: string) => {
@@ -158,8 +173,8 @@ export default function AdminOrderDetails() {
       </div>
     );
 
-  // 🟢 CLEANED UP: Only terminates on Delivered, Cancelled, or Returned
-  const isOrderTerminated = ["CANCELLED", "RETURNED", "DELIVERED"].includes(
+  // 🟢 CLEANED UP: Only terminates on Delivered, Cancelled, Returned, or Refunded
+  const isOrderTerminated = ["CANCELLED", "RETURNED", "DELIVERED", "REFUNDED"].includes(
     order.status,
   );
 
@@ -471,27 +486,65 @@ export default function AdminOrderDetails() {
                 </div>
               </div>
             ) : (
-              <div className="bg-gray-50 dark:bg-slate-900/50 p-5 sm:p-6 lg:p-8 rounded-[1.5rem] sm:rounded-[2rem] border border-gray-200 dark:border-slate-800 text-center sticky top-6">
-                {order.status === "DELIVERED" ? (
-                  <PackageCheck
-                    size={32}
-                    className="mx-auto text-emerald-500 mb-3"
-                  />
+              <div className="bg-gray-50 dark:bg-slate-900/50 p-5 sm:p-6 lg:p-8 rounded-[1.5rem] sm:rounded-[2rem] border border-gray-200 dark:border-slate-800 sticky top-6">
+                {order.status === "DELIVERED" && order.paymentMethod === "PAYHERE" ? (
+                  <>
+                    <div className="text-center mb-4">
+                      <PackageCheck
+                        size={32}
+                        className="mx-auto text-emerald-500 mb-3"
+                      />
+                      <h3 className="text-sm sm:text-base font-bold text-slate-600 dark:text-slate-300">
+                        Order Completed
+                      </h3>
+                      <p className="text-[10px] sm:text-xs text-slate-400 dark:text-slate-500 mt-1">
+                        Package delivered successfully.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        if (
+                          confirm(
+                            "Refund this order? Customer will receive money back and stock will be restored.",
+                          )
+                        )
+                          refundMutation.mutate();
+                      }}
+                      disabled={refundMutation.isPending}
+                      className="w-full py-3 text-sm font-bold text-cyan-600 hover:text-cyan-700 bg-cyan-50 hover:bg-cyan-100 dark:bg-cyan-900/20 dark:hover:bg-cyan-900/30 dark:text-cyan-400 dark:hover:text-cyan-300 rounded-xl border border-transparent flex items-center justify-center gap-2 transition-colors"
+                    >
+                      {refundMutation.isPending ? (
+                        <Loader2 className="animate-spin" size={16} />
+                      ) : (
+                        <DollarSign size={16} />
+                      )}{" "}
+                      Process Refund
+                    </button>
+                  </>
                 ) : (
-                  <AlertTriangle
-                    size={32}
-                    className="mx-auto text-slate-400 dark:text-slate-500 mb-3"
-                  />
+                  <div className="text-center">
+                    {order.status === "REFUNDED" ? (
+                      <DollarSign
+                        size={32}
+                        className="mx-auto text-cyan-500 mb-3"
+                      />
+                    ) : (
+                      <AlertTriangle
+                        size={32}
+                        className="mx-auto text-slate-400 dark:text-slate-500 mb-3"
+                      />
+                    )}
+                    <h3 className="text-sm sm:text-base font-bold text-slate-600 dark:text-slate-300">
+                      {order.status === "REFUNDED"
+                        ? "Order Refunded"
+                        : "Order Closed"}
+                    </h3>
+                    <p className="text-[10px] sm:text-xs text-slate-400 dark:text-slate-500 mt-1">
+                      This order is {order.status.toLowerCase()}. Actions are
+                      disabled.
+                    </p>
+                  </div>
                 )}
-                <h3 className="text-sm sm:text-base font-bold text-slate-600 dark:text-slate-300">
-                  {order.status === "DELIVERED"
-                    ? "Order Completed"
-                    : "Order Closed"}
-                </h3>
-                <p className="text-[10px] sm:text-xs text-slate-400 dark:text-slate-500 mt-1">
-                  This order is {order.status.toLowerCase()}. Actions are
-                  disabled.
-                </p>
               </div>
             )}
           </div>
