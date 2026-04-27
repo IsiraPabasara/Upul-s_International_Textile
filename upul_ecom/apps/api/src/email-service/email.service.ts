@@ -169,7 +169,7 @@ export const sendOrderProcessing = async (order: any) => {
   try {
     const trackingLink = getTrackingLink(order);
 
-    const html = wrapHtml(`Processing Started ⚙️`, `
+    const html = wrapHtml(`Processing Started`, `
       <p>Good news! We have verified your order <strong>#${order.orderNumber}</strong> and it is now being packed.</p>
       <p>You will receive another email as soon as it is handed over to our courier partner.</p>
       
@@ -194,7 +194,7 @@ export const sendShippingUpdate = async (order: any) => {
   try {
     const trackingLink = getTrackingLink(order);
 
-    const html = wrapHtml(`Your Order Has Shipped! 🚚`, `
+    const html = wrapHtml(`Your Order Has Shipped!`, `
       <p>Great news! Your order <strong>#${order.orderNumber}</strong> has been handed over to Domex.</p>
       
       <div style="background-color: #f0f7ff; padding: 25px; border-radius: 8px; text-align: center; margin: 25px 0; border: 1px solid #dcebfb;">
@@ -224,7 +224,7 @@ export const sendOrderDelivered = async (order: any) => {
   try {
     const trackingLink = getTrackingLink(order);
 
-    const html = wrapHtml(`Order Delivered ✅`, `
+    const html = wrapHtml(`Order Delivered`, `
       <p>Your order <strong>#${order.orderNumber}</strong> has been marked as delivered.</p>
       <p>We hope you enjoy your purchase! Thank you for choosing Upul Tailors.</p>
       
@@ -247,7 +247,7 @@ export const sendOrderDelivered = async (order: any) => {
 // --- 5. Customer: Order Returned ---
 export const sendOrderReturned = async (order: any) => {
   try {
-    const html = wrapHtml(`Order Returned ↩️`, `
+    const html = wrapHtml(`Order Returned`, `
       <p>Your order <strong>#${order.orderNumber}</strong> has been processed as returned.</p>
       <p>If you requested this return, your refund (if applicable) is being processed.</p>
     `);
@@ -291,7 +291,7 @@ export const sendOrderRefunded = async (order: any) => {
   try {
     const refundAmount = order.refundAmount || order.totalAmount;
     
-    const html = wrapHtml(`Order Refunded 💳`, `
+    const html = wrapHtml(`Order Refunded`, `
       <p>Your refund for order <strong>#${order.orderNumber}</strong> has been processed successfully.</p>
       
       <div style="background-color: #f0fff4; padding: 25px; border-radius: 8px; margin: 25px 0; border: 1px solid #c6f6d5; text-align: center;">
@@ -363,7 +363,7 @@ export const sendContactFormAlert = async (data: { name?: string, phone?: string
 
     await queueEmail({
       to: process.env.ADMIN_EMAIL || 'upultailors.site@gmail.com', 
-      subject: `📬 New Contact Message from ${data.email}`,
+      subject: `New Contact Message from ${data.email}`,
       html,
       emailType: 'admin-alert',
     });
@@ -390,7 +390,7 @@ export const sendNewsletterWelcome = async (email: string) => {
 
     await queueEmail({
       to: email,
-      subject: `Welcome to the UPUL'S International VIP List! ✨`,
+      subject: `Welcome to the UPUL'S International VIP List!`,
       html,
       emailType: 'newsletter-welcome',
     });
