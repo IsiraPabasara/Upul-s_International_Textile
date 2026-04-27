@@ -323,6 +323,7 @@ export default function ProductPage() {
   const [selectedSize, setSelectedSize] = useState<string>('');
   const [isBuyingNow, setIsBuyingNow] = useState(false);
   const [showSizeChart, setShowSizeChart] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
   // Note: ensure your addItem function accepts a second 'openCart' boolean argument
   const { items, addItem } = useCart(); 
@@ -381,6 +382,7 @@ export default function ProductPage() {
 
   useEffect(() => {
     setQuantity(1);
+    setValidationErrors([]);
   }, [selectedSize]);
 
   // --- DISABLE BACKGROUND SCROLL WHEN SIZE CHART OPENS ---
@@ -419,8 +421,18 @@ export default function ProductPage() {
   const canAddToCart = product.availability && remainingStock > 0 && (!hasVariants || (hasVariants && selectedSize));
 
   // --- HANDLERS ---
-  const handleIncreaseQty = () => { if (quantity < remainingStock) setQuantity(prev => prev + 1); };
-  const handleDecreaseQty = () => { if (quantity > 1) setQuantity(prev => prev - 1); };
+  const handleIncreaseQty = () => { 
+    if (quantity < remainingStock) {
+      setQuantity(prev => prev + 1);
+      setValidationErrors([]);
+    }
+  };
+  const handleDecreaseQty = () => { 
+    if (quantity > 1) {
+      setQuantity(prev => prev - 1);
+      setValidationErrors([]);
+    }
+  };
 
   const createCartItem = () => {
     const cartSku = (hasVariants && selectedSize) ? `${product.sku}-${selectedSize}` : product.sku;
@@ -456,6 +468,7 @@ export default function ProductPage() {
     if (hasVariants && !selectedSize) { toast.error('Please select a size first'); return; }
     if (quantity > remainingStock) { toast.error(`Limit reached for this item.`); return; }
 
+    setValidationErrors([]);
     setIsBuyingNow(true);
     const newItem = createCartItem();
     
@@ -480,11 +493,13 @@ export default function ProductPage() {
         if (data.isValid) {
             router.push('/checkout');
         } else {
-            toast.error('Stock issue detected. Please check your cart.');
+            const errors = data.errors || ['Stock or price mismatch detected. Please review your cart.'];
+            setValidationErrors(Array.isArray(errors) ? errors : [errors]);
             setIsBuyingNow(false);
         }
-    } catch (error) {
-        toast.error('Something went wrong. Try again.');
+    } catch (error: any) {
+        const errorMessage = error?.response?.data?.errors || ['Something went wrong. Try again.'];
+        setValidationErrors(Array.isArray(errorMessage) ? errorMessage : [errorMessage]);
         setIsBuyingNow(false);
     }
   };
@@ -599,7 +614,7 @@ export default function ProductPage() {
 
           {/* Size Selector */}
           <div className="space-y-6">
-            {hasVariants && (
+            {hasVariants && remainingStock > 0 && (
               <div>
                 <div className="flex justify-between items-end mb-3">
                   <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Select Size</h3>
@@ -633,6 +648,17 @@ export default function ProductPage() {
                       {v.size}
                     </button>
                   ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Out of Stock Message */}
+            {remainingStock === 0 && (
+              <div className="p-6 bg-red-50 border-2 border-red-200 rounded-lg flex items-center gap-4 justify-center">
+                <AlertCircle size={28} className="text-red-500 flex-shrink-0" />
+                <div>
+                  <p className="text-lg font-bold text-red-700">Out of Stock</p>
+                  <p className="text-sm text-red-600 mt-1">This product is currently unavailable</p>
                 </div>
               </div>
             )}
@@ -676,6 +702,23 @@ export default function ProductPage() {
                     <><Zap size={18} fill="currentColor" /> Buy Now</>
                 )}
             </button>
+
+            {/* Validation Error Display */}
+            {validationErrors.length > 0 && (
+                <div className="mt-3 p-4 bg-red-50 border border-red-200 rounded-lg space-y-2">
+                    <div className="flex items-start gap-3">
+                        <AlertCircle size={18} className="text-red-500 flex-shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                            <p className="font-semibold text-red-700 text-sm mb-2">Validation Error</p>
+                            <ul className="space-y-1">
+                                {validationErrors.map((error, idx) => (
+                                    <li key={idx} className="text-red-600 text-sm">• {error}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            )}
           </div>
 
           {/* Details Accordion */}
