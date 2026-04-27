@@ -34,7 +34,7 @@ export default function BrandSelector({ selectedBrand, onChange }: BrandSelector
   const { data: brands = [], isLoading } = useQuery<Brand[]>({
     queryKey: ['brands'],
     queryFn: async () => {
-      const res = await axiosInstance.get('/api/brands', { isPublic: true });
+      const res = await axiosInstance.get('/api/brands', { isPublic: true }); // Can be fetched without a jwt token
       return res.data;
     },
   });
@@ -89,6 +89,7 @@ export default function BrandSelector({ selectedBrand, onChange }: BrandSelector
                 <p className="text-xs">Add them in the Brand Manager.</p>
               </div>
             ) : (
+              //A and B are 2 adjacent brands
               brands
                 .sort((a, b) => a.name.localeCompare(b.name))
                 .map((brand) => (

@@ -14,7 +14,6 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import axiosInstance from "@/app/utils/axiosInstance";
 
-// --- TYPES ---
 interface SizeType {
   id: string;
   name: string;
