@@ -39,7 +39,6 @@ export const sendEmail = async (to: string, subject: string, templateName: strin
             html: html,
         });
 
-        // 3. Resend doesn't always "throw" an error, so we check for it explicitly
         if (error) {
             console.error("Resend API Error:", error);
             return false;
