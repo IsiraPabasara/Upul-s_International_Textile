@@ -66,7 +66,7 @@ export default function CartSlider() {
   const subtotal = getSubtotal();
   const totalSavings = getTotalSavings();
 
-  // --- 1. FIXED: Handle Remove Item (Local + DB) ---
+  // --- 1. Handle Remove Item (Local + DB) ---
   const handleRemoveItem = async (sku: string) => {
     // 1. Update Local State Immediately (Optimistic UI)
     removeItem(sku);
@@ -75,11 +75,9 @@ export default function CartSlider() {
     // 2. Update Database if User is Logged In
     if (user) {
       try {
-        // Assuming your route is DELETE /api/cart/:sku based on your controller
         await axiosInstance.delete(`/api/cart/${sku}`); 
       } catch (error) {
         console.error('Failed to remove item from DB', error);
-        // Optional: toast.error("Could not sync deletion");
       }
     }
   };
@@ -191,7 +189,7 @@ export default function CartSlider() {
                     <div className="flex-1 flex flex-col justify-between">
                       <div className="flex justify-between items-start">
                         <h3 className="font-semibold text-sm line-clamp-2">{item.name}</h3>
-                        {/* 2. FIXED: Use the new handleRemoveItem function */}
+                        {/* 2. Use the new handleRemoveItem function */}
                         <button onClick={() => handleRemoveItem(item.sku)} className="text-gray-400 hover:text-red-500 transition-colors">
                           <Trash2 size={16} />
                         </button>
