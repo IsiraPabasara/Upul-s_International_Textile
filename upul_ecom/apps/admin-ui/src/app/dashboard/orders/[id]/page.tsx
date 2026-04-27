@@ -82,6 +82,7 @@ export default function AdminOrderDetails() {
   const queryClient = useQueryClient();
 
   const [trackingInput, setTrackingInput] = useState("");
+  const [trackingError, setTrackingError] = useState(false); // NEW: Track validation error state
   const [isPhoneCopied, setIsPhoneCopied] = useState(false);
 
   const { data: order, isLoading } = useQuery({
@@ -107,6 +108,7 @@ export default function AdminOrderDetails() {
       toast.success("Order status updated!");
       queryClient.invalidateQueries({ queryKey: ["admin-order", id] });
       setTrackingInput("");
+      setTrackingError(false); // Reset error on success
     },
     onError: (err: any) =>
       toast.error(err.response?.data?.message || "Update failed"),
@@ -125,11 +127,15 @@ export default function AdminOrderDetails() {
   });
 
   const handleUpdateStatus = (newStatus: string) => {
-    if (newStatus === "SHIPPED" && !trackingInput && !order.trackingNumber) {
+    // NEW: Validation check specifically for empty tracking input
+    if (newStatus === "SHIPPED" && !trackingInput.trim() && !order.trackingNumber) {
+      setTrackingError(true);
       toast.error("Please enter a Domex tracking number first");
       return;
     }
-    statusMutation.mutate({ status: newStatus, tracking: trackingInput });
+    
+    setTrackingError(false);
+    statusMutation.mutate({ status: newStatus, tracking: trackingInput.trim() });
   };
 
   if (isLoading)
@@ -173,7 +179,6 @@ export default function AdminOrderDetails() {
       </div>
     );
 
-  //  CLEANED UP: Only terminates on Delivered, Cancelled, Returned, or Refunded
   const isOrderTerminated = ["CANCELLED", "RETURNED", "DELIVERED", "REFUNDED"].includes(
     order.status,
   );
@@ -404,26 +409,48 @@ export default function AdminOrderDetails() {
                       <label className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase mb-1.5 block ml-1">
                         Domex Tracking ID
                       </label>
-                      <div className="flex flex-col sm:flex-row gap-2">
-                        <input
-                          type="text"
-                          placeholder="Enter ID..."
-                          value={trackingInput}
-                          onChange={(e) => setTrackingInput(e.target.value)}
-                          className="w-full p-2.5 sm:p-3 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
-                        />
-                        <button
-                          onClick={() => handleUpdateStatus("SHIPPED")}
-                          disabled={statusMutation.isPending}
-                          className="w-full sm:w-auto shrink-0 px-4 py-2.5 sm:py-3 text-xs sm:text-sm bg-indigo-600 hover:bg-indigo-700 transition-colors text-white rounded-xl font-bold flex items-center justify-center gap-2"
-                        >
-                          {statusMutation.isPending ? (
-                            <Loader2 className="animate-spin" size={16} />
-                          ) : (
-                            <Truck size={16} />
-                          )}{" "}
-                          Ship
-                        </button>
+                      <div className="flex flex-col w-full">
+                        <div className="flex flex-col sm:flex-row gap-2">
+                          <input
+                            type="text"
+                            placeholder="Enter ID..."
+                            value={trackingInput}
+                            onChange={(e) => {
+                              setTrackingInput(e.target.value);
+                              // Clear error immediately upon typing
+                              if (e.target.value.trim()) setTrackingError(false); 
+                            }}
+                            disabled={order.status !== "PROCESSING"}
+                            className={`w-full p-2.5 sm:p-3 bg-white dark:bg-slate-900 border rounded-xl text-xs sm:text-sm focus:ring-2 outline-none transition-all
+                              ${trackingError 
+                                ? "border-red-500 focus:ring-red-500/20 text-red-900 dark:text-red-400" 
+                                : "border-gray-200 dark:border-slate-700 focus:ring-indigo-500/20"}
+                              ${order.status !== "PROCESSING" ? "opacity-60 cursor-not-allowed bg-gray-100 dark:bg-slate-800" : ""}
+                            `}
+                          />
+                          <button
+                            onClick={() => handleUpdateStatus("SHIPPED")}
+                            disabled={statusMutation.isPending || order.status !== "PROCESSING"}
+                            className={`w-full sm:w-auto shrink-0 px-4 py-2.5 sm:py-3 text-xs sm:text-sm transition-colors text-white rounded-xl font-bold flex items-center justify-center gap-2 ${
+                              order.status !== "PROCESSING" || statusMutation.isPending
+                                ? "bg-indigo-300 dark:bg-indigo-900/50 cursor-not-allowed"
+                                : "bg-indigo-600 hover:bg-indigo-700"
+                            }`}
+                          >
+                            {statusMutation.isPending ? (
+                              <Loader2 className="animate-spin" size={16} />
+                            ) : (
+                              <Truck size={16} />
+                            )}{" "}
+                            Ship
+                          </button>
+                        </div>
+                        {/* Error Validation Message */}
+                        {trackingError && (
+                          <span className="text-red-500 text-[10px] sm:text-xs font-bold mt-2 ml-1 flex items-center gap-1 animate-in fade-in slide-in-from-top-1">
+                            <AlertTriangle size={12} /> Tracking ID is required
+                          </span>
+                        )}
                       </div>
                     </div>
                   )}

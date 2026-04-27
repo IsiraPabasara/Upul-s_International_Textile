@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { usePageTitle } from '@/app/hooks/usePageTitle';
@@ -28,10 +28,22 @@ const AddressManager = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   
+  // Custom Delete Modal State
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [addressToDelete, setAddressToDelete] = useState<string | null>(null);
+
   // City dropdown state
   const [citySearch, setCitySearch] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isValidCity, setIsValidCity] = useState(false);
+
+  // Disable background scrolling when delete modal is open
+  useEffect(() => {
+    document.documentElement.style.overflow = showDeleteConfirm ? 'hidden' : '';
+    return () => {
+      document.documentElement.style.overflow = '';
+    };
+  }, [showDeleteConfirm]);
 
   // Fetch shipping cities
   const { data: dbCities = [] } = useQuery({
@@ -68,7 +80,12 @@ const AddressManager = () => {
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => axiosInstance.delete(`/api/auth/delete-address/${id}`),
-    onSuccess: () => { invalidateUser(); toast.success("Address removed"); },
+    onSuccess: () => { 
+      invalidateUser(); 
+      toast.success("Address removed"); 
+      setShowDeleteConfirm(false);
+      setAddressToDelete(null);
+    },
   });
 
   const setDefaultMutation = useMutation({
@@ -105,6 +122,35 @@ const AddressManager = () => {
 
   return (
     <div className="w-full min-h-screen bg-white font-outfit pb-32">
+      
+      {/* Delete Address Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          {/* Blackish background */}
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => !deleteMutation.isPending && setShowDeleteConfirm(false)} />
+          
+          {/* White Modal */}
+          <div className="relative bg-white text-black p-12 max-w-md w-full shadow-2xl text-center border border-gray-100">
+            <h3 className="text-sm tracking-[0.2em] uppercase font-bold mb-4">Delete Address</h3>
+            <p className="text-sm text-gray-600 mb-10 leading-relaxed">Are you sure you want to remove this address? This action cannot be undone.</p>
+            <div className="flex flex-col gap-4">
+              <button 
+                onClick={() => addressToDelete && deleteMutation.mutate(addressToDelete)} 
+                disabled={deleteMutation.isPending}
+                className="w-full py-4 text-xs tracking-[0.3em] uppercase font-bold bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50">
+                {deleteMutation.isPending ? "Deleting..." : "Delete"}
+              </button>
+              <button 
+                onClick={() => { setShowDeleteConfirm(false); setAddressToDelete(null); }} 
+                disabled={deleteMutation.isPending}
+                className="w-full py-4 text-xs tracking-[0.3em] uppercase font-bold text-gray-500 hover:text-black transition-colors">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-6xl mx-auto px-6 pt-20">
         
         <Link href="/profile" className="inline-flex items-center gap-2 text-xs tracking-[0.2em] uppercase text-gray-500 hover:text-black transition-colors mb-12">
@@ -222,8 +268,8 @@ const AddressManager = () => {
 
               <div className="flex gap-6 pt-10">
                 <button type="submit" disabled={addMutation.isPending || updateMutation.isPending}
-                  className="flex-1 bg-black text-white py-5 text-xs uppercase tracking-[0.2em] font-bold hover:bg-gray-900 transition-colors">
-                  {selectedAddressId ? "Update Address" : "Save Address"}
+                  className="flex-1 bg-black text-white py-5 text-xs uppercase tracking-[0.2em] font-bold hover:bg-gray-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                  {addMutation.isPending || updateMutation.isPending ? "Saving..." : selectedAddressId ? "Update Address" : "Save Address"}
                 </button>
                 <button type="button" onClick={() => { setIsEditing(false); setCitySearch(''); setIsValidCity(false); }} 
                   className="px-12 py-5 border-2 border-black text-xs uppercase tracking-[0.2em] font-bold hover:bg-gray-50 transition-colors">
@@ -251,13 +297,15 @@ const AddressManager = () => {
                     <p className="text-sm font-mono text-gray-400 mt-4 tracking-wide">{addr.phoneNumber}</p>
                 </div>
 
-                {/* 👇 MODIFIED: Removed 'opacity-0' and 'group-hover' classes */}
                 <div className="flex gap-6 border-t border-gray-100 pt-6">
                     <button onClick={() => handleEditClick(addr)} className="text-[10px] uppercase font-bold tracking-[0.1em] flex items-center gap-1 hover:text-gray-500">
                         <Edit2 size={12} /> Edit
                     </button>
                     {!addr.isDefault && (
-                        <button onClick={() => { if(confirm("Delete?")) deleteMutation.mutate(addr.id)}} className="text-[10px] uppercase font-bold tracking-[0.1em] flex items-center gap-1 text-red-600 hover:text-red-800">
+                        <button 
+                            onClick={() => { setAddressToDelete(addr.id); setShowDeleteConfirm(true); }} 
+                            className="text-[10px] uppercase font-bold tracking-[0.1em] flex items-center gap-1 text-red-600 hover:text-red-800"
+                        >
                             <Trash2 size={12} /> Delete
                         </button>
                     )}
