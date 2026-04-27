@@ -12,7 +12,7 @@ interface SizeChart {
 }
 
 interface Props {
-  selectedChartUrl?: string; // 🟢 Prop is correctly named
+  selectedChartUrl?: string; 
   onChange: (url: string) => void;
 }
 
@@ -20,12 +20,12 @@ export default function SizeChartSelector({
   selectedChartUrl,
   onChange,
 }: Props) {
+
   const [isOpen, setIsOpen] = useState(false);
   const [charts, setCharts] = useState<SizeChart[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Handle clicking outside to close the dropdown
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -39,16 +39,14 @@ export default function SizeChartSelector({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // 🟢 2. Fetch Size Charts using Axios
   useEffect(() => {
     const fetchCharts = async () => {
       try {
-        setIsLoading(true);
-        // Uses your axios instance and the correct endpoint
-        const res = await axiosInstance.get("/api/size-charts");
 
-        // Axios automatically parses JSON into res.data
+        setIsLoading(true);
+        const res = await axiosInstance.get("/api/size-charts");
         setCharts(res.data);
+
       } catch (error) {
         console.error("Failed to fetch size charts:", error);
       } finally {
@@ -59,7 +57,6 @@ export default function SizeChartSelector({
     fetchCharts();
   }, []);
 
-  // 🟢 Find by URL
   const selectedData = charts.find((c) => c.imageUrl === selectedChartUrl);
 
   return (
@@ -90,11 +87,10 @@ export default function SizeChartSelector({
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          {/* Show clear button if something is selected */}
           {selectedData && (
             <div
               onClick={(e) => {
-                e.stopPropagation(); // Prevent dropdown from opening when clearing
+                e.stopPropagation(); 
                 onChange("");
               }}
               className="p-1 hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-400 hover:text-red-500 rounded-full transition-colors"
@@ -110,10 +106,9 @@ export default function SizeChartSelector({
         </div>
       </button>
 
-      {/* Dropdown Menu */}
       {isOpen && (
         <div className="absolute z-[100] w-full mt-2 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl shadow-xl py-2 animate-in fade-in zoom-in-95 duration-200 max-h-[300px] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-200 dark:[&::-webkit-scrollbar-thumb]:bg-slate-700 [&::-webkit-scrollbar-thumb]:rounded-full">
-          {/* Option: None */}
+
           <button
             type="button"
             onClick={() => {
@@ -121,7 +116,7 @@ export default function SizeChartSelector({
               setIsOpen(false);
             }}
             className={`w-full text-left px-4 py-3 text-sm font-bold transition-colors flex items-center gap-3 ${
-              !selectedChartUrl // 🟢 FIXED: Changed from !selectedChart
+              !selectedChartUrl 
                 ? "bg-blue-50 dark:bg-slate-800 text-blue-700 dark:text-white"
                 : "text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-white"
             }`}
@@ -132,23 +127,21 @@ export default function SizeChartSelector({
             No Size Chart
           </button>
 
-          {/* List out fetched charts */}
           {charts.length > 0 ? (
             charts.map((chart) => (
               <button
                 key={chart.id}
                 type="button"
                 onClick={() => {
-                  onChange(chart.imageUrl); // 🟢 FIXED: Pass the URL, not the ID!
+                  onChange(chart.imageUrl); 
                   setIsOpen(false);
                 }}
                 className={`w-full text-left px-4 py-3 text-sm font-bold transition-colors flex items-center gap-3 ${
-                  selectedChartUrl === chart.imageUrl // 🟢 FIXED: Compare URL, not ID!
+                  selectedChartUrl === chart.imageUrl 
                     ? "bg-blue-50 dark:bg-slate-800 text-blue-700 dark:text-white"
                     : "text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-white"
                 }`}
               >
-                {/* Tiny Image Thumbnail */}
                 <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-slate-800 overflow-hidden shrink-0 border border-gray-200 dark:border-slate-700">
                   {chart.imageUrl ? (
                     <img

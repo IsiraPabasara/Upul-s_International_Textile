@@ -393,9 +393,7 @@ export default function ProductForm({
             </div>
           </div>
 
-          {/* 2. VARIANTS */}
           <div className="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-[2rem] shadow-sm border border-gray-100 dark:border-slate-800 transition-colors">
-            {/* Header */}
             <div className="flex items-center gap-3 sm:gap-4 mb-6 sm:mb-8 pb-4 border-b border-gray-100 dark:border-slate-800">
               <div className="p-2 sm:p-2.5 bg-purple-50 dark:bg-purple-900/20 rounded-xl text-purple-600 dark:text-purple-400 shrink-0">
                 <Layers
@@ -415,7 +413,6 @@ export default function ProductForm({
             </div>
 
             <div className="space-y-6 sm:space-y-8">
-              {/* Primary Color Selector */}
               <div>
                 <label className="label mb-1.5 sm:mb-2 ml-1 text-sm sm:text-base font-semibold text-gray-900 dark:text-white flex items-center gap-1">
                   Primary Color <span className="text-red-500">*</span>
@@ -438,7 +435,6 @@ export default function ProductForm({
 
               <div className="border-t border-gray-100 dark:border-slate-800/50" />
 
-              {/* Multiple Sizes Toggle Card */}
               <div className="flex items-center justify-between p-4 sm:p-5 bg-gray-50/50 dark:bg-slate-800/30 hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors rounded-2xl border border-gray-100 dark:border-slate-700">
                 <div className="flex flex-col gap-0.5 sm:gap-1">
                   <span className="text-sm sm:text-base font-bold text-gray-900 dark:text-white">
@@ -449,7 +445,6 @@ export default function ProductForm({
                   </span>
                 </div>
 
-                {/* Premium Toggle Switch - FIXED OVERFLOW */}
                 <label className="relative inline-flex items-center cursor-pointer shrink-0">
                   <input
                     type="checkbox"
@@ -457,12 +452,11 @@ export default function ProductForm({
                     onChange={(e) => setHasVariants(e.target.checked)}
                     className="sr-only peer"
                   />
-                  {/* 🟢 FIXED: Changed sm:w-12 to sm:w-[52px] so the thumb fits perfectly inside the track */}
+
                   <div className="w-11 sm:w-[52px] h-6 sm:h-7 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 sm:after:h-6 sm:after:w-6 after:transition-all dark:border-gray-600 peer-checked:bg-purple-600 shadow-inner"></div>
                 </label>
               </div>
 
-              {/* Dynamic Content Area (Stock vs Variants) */}
               <div className="animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-300">
                 {hasVariants ? (
                   <>

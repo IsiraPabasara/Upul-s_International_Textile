@@ -24,6 +24,7 @@ export default function ColorSelector({
   onChange,
   disabled,
 }: ColorSelectorProps) {
+
   const queryClient = useQueryClient();
   const [isAdding, setIsAdding] = useState(false);
   const [newName, setNewName] = useState("");
@@ -48,7 +49,6 @@ export default function ColorSelector({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showPicker]);
 
-  // Fetch Colors
   const { data: colors = [], isLoading } = useQuery<Color[]>({
     queryKey: ["colors"],
     queryFn: async () => {
@@ -57,7 +57,6 @@ export default function ColorSelector({
     },
   });
 
-  // Add Color Mutation
   const addColorMutation = useMutation({
     mutationFn: (newColor: { name: string; hexCode: string }) =>
       axiosInstance.post("/api/colors", newColor),
@@ -74,14 +73,14 @@ export default function ColorSelector({
     },
   });
 
-  // 🟢 NEW: Delete Color Mutation
   const deleteColorMutation = useMutation({
     mutationFn: (id: string) => axiosInstance.delete(`/api/colors/${id}`),
     onSuccess: (_, deletedId) => {
+
       queryClient.invalidateQueries({ queryKey: ["colors"] });
 
-      // If the user deleted the color they currently had selected, deselect it
       const deletedColor = colors.find((c) => c.id === deletedId);
+
       if (deletedColor && deletedColor.name === selectedColor) {
         onChange("");
       }
@@ -94,6 +93,7 @@ export default function ColorSelector({
   });
 
   const handleAddColor = () => {
+
     const trimmedName = newName.trim();
 
     if (!trimmedName) {
@@ -104,6 +104,7 @@ export default function ColorSelector({
     const isDuplicateName = colors.some(
       (c) => c.name.toLowerCase() === trimmedName.toLowerCase(),
     );
+
     const isDuplicateHex = colors.some(
       (c) => c.hexCode.toLowerCase() === newHex.toLowerCase(),
     );
@@ -162,7 +163,6 @@ export default function ColorSelector({
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="flex gap-3 w-full">
               <div className="relative shrink-0" ref={pickerRef}>
-                {/* Visual Swatch Button */}
                 <button
                   type="button"
                   onClick={() => setShowPicker(!showPicker)}
@@ -172,12 +172,10 @@ export default function ColorSelector({
                   <span className="sr-only">Choose color</span>
                 </button>
 
-                {/* Floating Popover */}
                 {showPicker && (
                   <div className="absolute top-full left-0 mt-2 z-50 p-3 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-800 animate-in zoom-in-95 duration-200">
                     <HexColorPicker color={newHex} onChange={setNewHex} />
 
-                    {/* Handy Hex Input Area */}
                     <div className="mt-3 flex items-center gap-2 px-1">
                       <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
                         HEX
@@ -243,6 +241,7 @@ export default function ColorSelector({
               />
             ))
           : colors.map((color) => {
+
               const isSelected = selectedColor === color.name;
               const hex = color.hexCode.replace("#", "");
               const isDark = parseInt(hex, 16) < 0xffffff / 2;
@@ -262,11 +261,10 @@ export default function ColorSelector({
                   }
                 `}
                 >
-                  {/* 🟢 NEW: Delete Button */}
                   <button
                     type="button"
                     onClick={(e) => {
-                      e.stopPropagation(); // Prevents the swatch from being selected
+                      e.stopPropagation(); // Do not pass the click to the parent element hehinds it 
                       if (
                         window.confirm(
                           `Are you sure you want to delete ${color.name}?`,

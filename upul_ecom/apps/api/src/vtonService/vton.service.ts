@@ -1,7 +1,7 @@
 import Replicate from "replicate";
 
 const replicate = new Replicate({
-  auth: "r8_Ep7SwCSIpWJZCE2tNBg0S3PhTKpFmXM4RANPI",
+  auth: process.env.REPLICATE_API_TOKEN,
 });
 
 // 🛠️ THE CORE AI SERVICE (Used by both B2C and Admin routes)
