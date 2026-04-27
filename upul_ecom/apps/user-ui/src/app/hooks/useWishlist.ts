@@ -46,15 +46,13 @@ export const useWishlist = create<WishlistState>()(
         try {
           await axiosInstance.post('/api/wishlist/toggle', item);
         } catch (error) {
-          // If the user is a guest, your 'isAuthenticated' middleware returns a 401.
-          // That is totally fine! It just means we silently fail and rely on local state.
           console.debug("Toggle API skipped or failed (Guest mode fallback)");
         }
       },
 
       clearWishlist: () => set({ items: [] }),
 
-      // Call this ONLY right after the user successfully logs in
+      // Calling this ONLY right after the user successfully logs in
       syncWithUser: async () => {
         const localItems = get().items; 
         
@@ -70,11 +68,11 @@ export const useWishlist = create<WishlistState>()(
         await get().fetchWishlist();
       },
 
-      // Call this whenever the app loads AND the user is already authenticated
+      // Calling this whenever the app loads AND the user is already authenticated
       fetchWishlist: async () => {
         try {
             const { data } = await axiosInstance.get('/api/wishlist');
-            set({ items: data }); // Overwrites stale local storage with fresh DB data
+            set({ items: data }); // Overwrites stale local storage with DB data
         } catch (error) {
             console.error("Failed to fetch wishlist from DB:", error);
         }
