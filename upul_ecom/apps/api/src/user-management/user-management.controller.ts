@@ -424,9 +424,7 @@ export const bulkUpdateUserRoles = async (
   }
 };
 
-// ==========================================
-// GENERATE USER REPORT (PDF/Excel)
-// ==========================================
+
 export const generateUserReport = async (
   req: any,
   res: Response,
@@ -480,9 +478,7 @@ export const generateUserReport = async (
       date: new Date(user.createdAt).toLocaleDateString(),
     }));
 
-    // ==========================================
-    // GENERATE EXCEL
-    // ==========================================
+
     if (format === "EXCEL") {
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet("Users");
@@ -512,13 +508,13 @@ export const generateUserReport = async (
         if (roleCell.value === "Admin" || roleCell.value === "ADMIN") {
           roleCell.font = {
             bold: true,
-            color: { argb: "FF2563EB" }, // Tailwind Blue-600
+            color: { argb: "FF2563EB" }, 
           };
         }
       });
 
       // --- SUMMARY SECTION (Right-Aligned Totals) ---
-      worksheet.addRow({}); // Add a blank breathing room row
+      worksheet.addRow({}); 
 
       const summaryRow = worksheet.addRow({
         role: "Total Users:", // Put the label in the role column
@@ -528,16 +524,12 @@ export const generateUserReport = async (
       summaryRow.font = { bold: true };
       summaryRow.getCell("role").alignment = { horizontal: "right" }; // Hug the text to the right
 
-      // --- AUTO-FIT COLUMN WIDTHS ---
-      // This MUST be the last thing we do before writing the file!
-      // --- AUTO-FIT COLUMN WIDTHS ---
-      // This MUST be the last thing we do before writing the file!
+      
       worksheet.columns.forEach((column) => {
         if (!column) return;
 
         let maxLength = 0;
 
-        // 🟢 THE FIX: Notice the question mark right before the parenthesis!
         column.eachCell?.({ includeEmpty: true }, (cell) => {
           const columnLength = cell.value ? cell.value.toString().length : 10;
           if (columnLength > maxLength) {
@@ -545,11 +537,9 @@ export const generateUserReport = async (
           }
         });
 
-        // Apply the max width + 2 spaces of padding (capped at 50 so it doesn't break)
         column.width = maxLength < 10 ? 10 : Math.min(maxLength + 2, 50);
       });
 
-      // --- SEND THE FILE TO THE BROWSER ---
       res.header(
         "Content-Type",
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -560,9 +550,8 @@ export const generateUserReport = async (
       return res.end();
     }
 
-    // ==========================================
     // GENERATE PDF
-    // ==========================================
+  
     if (format === "PDF") {
       const doc = new PDFDocument({ margin: 40 }); // Tighter margin to match Products
 
@@ -678,7 +667,6 @@ export const generateUserReport = async (
         }
         doc.text(emailStr, colX.email, y);
 
-        // 🟢 THE FIX: Truncate long phone numbers and soft-deleted timestamps
         let phoneStr = user.phone || "-";
         if (phoneStr.includes("_deleted")) {
           // Splits at "_deleted" and keeps just the first part + "_deleted"

@@ -4,7 +4,6 @@ import { deleteFromImageKit } from "../imagekit-service/imagekit.controller";
 import ExcelJS from "exceljs";
 import PDFDocument from "pdfkit";
 
-// Helper function to generate unique slug
 const generateUniqueSlug = async (name: string): Promise<string> => {
   const baseSlug = name
     .toLowerCase()
@@ -29,16 +28,13 @@ export const createProduct = async (
   try {
     const data = req.body;
 
-    // 1. Generate SKU if missing
     let finalSKU = data.sku;
     if (!finalSKU) {
       finalSKU = await generateNextSku();
     }
 
-    // 2. Generate Unique Slug
     const finalSlug = await generateUniqueSlug(data.name);
 
-    // 3. Check for Duplicates
     const existing = await prisma.product.findUnique({
       where: { sku: finalSKU },
     });
@@ -48,7 +44,6 @@ export const createProduct = async (
         .json({ message: "Error generating unique SKU, please try again." });
     }
 
-    // 4. CALCULATE STOCK LOGIC
     let finalStock = 0;
     if (
       data.variants &&
@@ -63,7 +58,6 @@ export const createProduct = async (
       finalStock = Number(data.stock || 0);
     }
 
-    // 5. Create Product
     const product = await prisma.product.create({
       data: {
         name: data.name,
@@ -77,7 +71,6 @@ export const createProduct = async (
 
         brand: data.brand || null,
 
-        // 🟢 Just save the raw string directly
         country: data.country || null,
 
         images: data.images,
@@ -218,7 +211,7 @@ export const updateProductBySku = async (
       price,
       stock,
       categoryId,
-      country, // 🟢 Changed from countryId to country
+      country,
       images,
       variants,
       discountType,
@@ -252,7 +245,6 @@ export const updateProductBySku = async (
         price: Number(price),
         brand: brand || null,
 
-        // 🟢 FIXED: Removed 'data.' prefix and used 'country' from destructuring
         country: country || null,
 
         sizeChartUrl: sizeChartUrl || null,
@@ -353,7 +345,6 @@ export const getProductCountries = async (
   next: NextFunction,
 ) => {
   try {
-    // 🟢 Fetching from your new Country model
     const countries = await prisma.country.findMany({
       orderBy: { name: "asc" },
     });
@@ -363,7 +354,6 @@ export const getProductCountries = async (
   }
 };
 
-// 📋 GENERATE PRODUCT LIST REPORT (PDF/Excel)
 export const generateProductReport = async (
   req: Request,
   res: Response,
@@ -372,7 +362,6 @@ export const generateProductReport = async (
   try {
     const { visibility, format } = req.query;
 
-    // 1. Build the Prisma WHERE clause for visibility filter
     const whereClause: any = {};
 
     if (visibility === "ACTIVE") {
@@ -381,30 +370,25 @@ export const generateProductReport = async (
       whereClause.visible = false;
     }
 
-    // 2. Fetch product data from DB, including the linked Category
     const dbProducts = await prisma.product.findMany({
       where: whereClause,
       include: {
-        category: true, // Need this to get the actual category name!
+        category: true,
       },
       orderBy: { createdAt: "desc" },
     });
 
-    // 3. Format the data and calculate final prices
     const formattedProducts = dbProducts.map((item: any) => {
       const basePrice = Number(item.price) || 0;
       let finalPrice = basePrice;
 
-      // Calculate discounted price based on your schema's discount logic
       const discountVal = Number(item.discountValue) || 0;
       if (item.discountType === "PERCENTAGE" && discountVal > 0) {
         finalPrice = basePrice - basePrice * (discountVal / 100);
       } else if (item.discountType !== "NONE" && discountVal > 0) {
-        // Assuming the other enum value is a fixed amount deduction
         finalPrice = basePrice - discountVal;
       }
 
-      // Ensure price never drops below 0 just in case
       finalPrice = Math.max(0, finalPrice);
 
       return {
@@ -418,14 +402,10 @@ export const generateProductReport = async (
       };
     });
 
-    // ==========================================
-    // 4. GENERATE EXCEL
-    // ==========================================
     if (format === "EXCEL") {
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet("Product List");
 
-      // Define your columns
       worksheet.columns = [
         { header: "SKU", key: "sku", width: 15 },
         { header: "Product Name", key: "productName", width: 40 },
@@ -436,55 +416,41 @@ export const generateProductReport = async (
         { header: "Status", key: "status", width: 12 },
       ];
 
-      // Make the header row bold
       worksheet.getRow(1).font = { bold: true };
 
-      // Add all product data
       worksheet.addRows(formattedProducts);
 
-      // Add all product data
       worksheet.addRows(formattedProducts);
 
-      // ==========================================
-      // --- EXCEL CONDITIONAL STYLING ---
-      // ==========================================
       worksheet.eachRow((row, rowNumber) => {
-        // Skip the header row (row 1)
         if (rowNumber === 1) return;
 
-        // Grab the specific cells in this row using the keys we defined
         const basePriceCell = row.getCell("basePrice");
         const finalPriceCell = row.getCell("discountedPrice");
         const statusCell = row.getCell("status");
 
-        // Grab the raw numbers to compare
         const base = Number(basePriceCell.value);
         const final = Number(finalPriceCell.value);
 
-        // 1. Strikethrough base price if discounted!
         if (base > final) {
           basePriceCell.font = {
             strike: true,
-            color: { argb: "FF9CA3AF" }, // ARGB hex for the Tailwind Gray
+            color: { argb: "FF9CA3AF" }, 
           };
 
-          // Make the final price bold to make it pop!
           finalPriceCell.font = {
             bold: true, 
           };
         }
 
-        // 2. Gray out the Draft status just like we did in the PDF
         if (statusCell.value === "Draft") {
           statusCell.font = {
             color: { argb: "FF9CA3AF" },
-            italic: true, // Added italic just for extra style in Excel
+            italic: true,
           };
         }
       });
-      // ==========================================
 
-      // Format currency columns
       worksheet.getColumn("basePrice").numFmt = '"Rs." #,##0.00';
       worksheet.getColumn("discountedPrice").numFmt = '"Rs." #,##0.00';
 
@@ -498,18 +464,14 @@ export const generateProductReport = async (
       return res.end();
     }
 
-    // ==========================================
-    // 5. GENERATE PDF
-    // ==========================================
     if (format === "PDF") {
-      const doc = new PDFDocument({ margin: 40 }); // Slightly tighter margin for more space
+      const doc = new PDFDocument({ margin: 40 });
 
       res.header("Content-Type", "application/pdf");
       res.attachment("Upuls_Product_Catalog.pdf");
 
       doc.pipe(res);
 
-      // --- CUSTOM LOGO DRAWING (Top Left) ---
       const logoX = 40;
       const logoY = 40;
 
@@ -543,9 +505,8 @@ export const generateProductReport = async (
         .fillColor("#6b7280")
         .text("I N T E R N A T I O N A L", logoX, logoY + 40);
 
-      doc.fillColor("black").lineWidth(1); // Reset
+      doc.fillColor("black").lineWidth(1);
 
-      // --- PDF Header Titles (Top Right) ---
       doc.y = 50;
       doc
         .fontSize(16)
@@ -553,7 +514,6 @@ export const generateProductReport = async (
         .text("Product Catalog Report", { align: "right" });
       doc.moveDown(1.5);
 
-      // --- Filter Meta Data ---
       const displayStatus =
         visibility === "ACTIVE"
           ? "Active Only"
@@ -567,8 +527,6 @@ export const generateProductReport = async (
       doc.text(`Total Products: ${formattedProducts.length}`);
       doc.moveDown();
 
-      // --- Column Setup ---
-      // Tweaked heavily to fit 7 columns on an A4 page
       const colX = {
         sku: 40,
         product: 100,
@@ -580,7 +538,7 @@ export const generateProductReport = async (
       };
 
       const drawHeaders = () => {
-        doc.fontSize(9).font("Helvetica-Bold"); // Slightly smaller text to fit
+        doc.fontSize(9).font("Helvetica-Bold");
         const headerY = doc.y;
 
         doc.text("SKU", colX.sku, headerY);
@@ -592,14 +550,13 @@ export const generateProductReport = async (
         doc.text("Status", colX.status, headerY);
 
         doc.y = headerY + 15;
-        doc.moveTo(40, doc.y).lineTo(570, doc.y).stroke(); // Wider line
+        doc.moveTo(40, doc.y).lineTo(570, doc.y).stroke(); 
         doc.y += 10;
         doc.font("Helvetica");
       };
 
       drawHeaders();
 
-      // --- Table Rows ---
       formattedProducts.forEach((item: any) => {
         let y = doc.y;
 
@@ -609,7 +566,7 @@ export const generateProductReport = async (
           y = doc.y;
         }
 
-        doc.fontSize(8); // Smaller font for dense data
+        doc.fontSize(8); 
         doc.text(item.sku, colX.sku, y);
 
         const name = item.productName || "N/A";
@@ -627,18 +584,15 @@ export const generateProductReport = async (
           brand.length > 10 ? brand.substring(0, 8) + ".." : brand;
         doc.text(shortBrand, colX.brand, y);
 
-        // Strikethrough base price if it's discounted!
         if (item.basePrice > item.discountedPrice) {
-          doc.fillColor("#9ca3af"); // Gray
+          doc.fillColor("#9ca3af"); 
 
-          // 🟢 Added { strike: true } as the 4th parameter!
           doc.text(`${item.basePrice.toLocaleString()}`, colX.basePrice, y, {
             strike: true,
           });
 
           doc.fillColor("black"); // Reset color
         } else {
-          // 🟢 Added { strike: false } just to be completely safe so it doesn't leak to normal prices
           doc.text(`${item.basePrice.toLocaleString()}`, colX.basePrice, y, {
             strike: false,
           });
@@ -652,16 +606,13 @@ export const generateProductReport = async (
         );
         doc.font("Helvetica");
 
-        // Green for active, Gray for draft
         if (item.status === "Draft") doc.fillColor("#9ca3af");
         doc.text(item.status, colX.status, y);
         doc.fillColor("black");
 
         doc.y = y + 20;
       });
-
-      // No Grand Totals needed for a product catalog!
-
+      
       doc.end();
       return;
     }

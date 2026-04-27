@@ -53,8 +53,8 @@ const Login = () => {
                 localStorage.removeItem("rememberedEmail");
             }
 
-            // IMPORTANT: Invalidate the user query to update Header and other components
-            await queryClient.invalidateQueries({ queryKey: ["user"] });
+            // IMPORTANT: Invalidate the admin query to update Header and other components
+            await queryClient.invalidateQueries({ queryKey: ["admin"] });
 
            
 
@@ -140,12 +140,12 @@ const Login = () => {
                             className='block text-[11px] text-black font-bold uppercase tracking-widest hover:text-black/50 transition-colors underline underline-offset-4 decoration-black'>
                             Forgot your password?
                         </Link>
-                        <p className='text-[13px] text-black font-medium tracking-tight'>
+                        {/*<p className='text-[13px] text-black font-medium tracking-tight'>
                             Don't have an account? 
                             <Link href="/signup" className='text-black font-black uppercase text-[11px] tracking-widest border-b-2 border-black hover:text-black/50 hover:border-black/50 transition-all ml-2'>
                                 Sign up
                             </Link>
-                        </p>
+                        </p>*/}
                     </div>
 
                     {serverError && (

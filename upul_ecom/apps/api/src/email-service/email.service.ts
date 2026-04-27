@@ -7,19 +7,85 @@ const ADMIN_URL = process.env.ADMIN_URL || 'https://admin.upuls.lk';
 // --- Helpers ---
 
 const wrapHtml = (title: string, content: string) => `
-  <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
-    <div style="background-color: #000000; padding: 20px; text-align: center;">
-      <h1 style="color: #ffffff; margin: 0; font-size: 24px; letter-spacing: 2px;">UPUL TAILORS (PVT) LTD</h1>
-    </div>
-    <div style="padding: 30px;">
-      <h2 style="color: #333333; margin-top: 0;">${title}</h2>
-      ${content}
-    </div>
-    <div style="background-color: #f8f9fa; padding: 20px; text-align: center; font-size: 12px; color: #888888;">
-      <p style="margin: 0;">Thank you for shopping with us.</p>
-      <p style="margin: 5px 0 0;">Questions? Reply to this email.</p>
-    </div>
-  </div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${title}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f6f6f6;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        h1.brand-title {
+            color: #333333;
+            font-size: 24px;
+            margin-top: 0;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 15px;
+        }
+        h2.email-title {
+            color: #1a73e8;
+            font-size: 20px;
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+        p {
+            color: #555555;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+        .footer {
+            font-size: 12px;
+            color: #999999;
+            margin-top: 30px;
+            text-align: center;
+            border-top: 1px solid #eeeeee;
+            padding-top: 20px;
+        }
+        @media only screen and (max-width: 600px) {
+            .container {
+                padding: 20px;
+                margin: 20px auto;
+            }
+        }
+    </style>
+</head>
+<body style="background-color: #f6f6f6; margin: 0; padding: 20px 0; font-family: Arial, sans-serif;">
+    <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f6f6f6;">
+        <tr>
+            <td align="center">
+                <div class="container" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; padding: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); text-align: left;">
+                    
+                    <h1 class="brand-title" style="color: #333333; font-size: 24px; margin-top: 0; margin-bottom: 20px; border-bottom: 2px solid #f0f0f0; padding-bottom: 15px;">UPUL TAILORS (PVT) LTD</h1>
+                    <h2 class="email-title" style="color: #333333; font-size: 20px; margin-top: 0; margin-bottom: 15px;">${title}</h2>
+                    
+                    <div style="color: #555555; font-size: 16px; line-height: 1.5;">
+                        ${content}
+                    </div>
+
+                    <div class="footer" style="font-size: 12px; color: #999999; margin-top: 30px; text-align: center; border-top: 1px solid #eeeeee; padding-top: 20px;">
+                        <p style="margin: 0 0 5px; font-size: 12px; color: #999999;">Thank you for shopping with us. Questions? Reply to this email.</p>
+                        &copy; ${new Date().getFullYear()} Upul Tailors (PVT) LTD. All rights reserved.
+                    </div>
+                </div>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
 `;
 
 const getTrackingLink = (order: any) => {
@@ -29,8 +95,8 @@ const getTrackingLink = (order: any) => {
 };
 
 const getButtonHtml = (link: string, text: string = "View Order") => `
-  <div style="text-align: center; margin-top: 30px;">
-    <a href="${link}" style="background-color: #000; color: #fff; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">${text}</a>
+  <div style="text-align: center; margin: 30px 0;">
+    <a href="${link}" style="background-color: #000000; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; font-size: 16px;">${text}</a>
   </div>
 `;
 
@@ -38,13 +104,13 @@ const getButtonHtml = (link: string, text: string = "View Order") => `
 export const sendOrderConfirmation = async (order: any) => {
   try {
     const subtotal = order.items.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
-    const shippingFee = order.shippingFee || 450; // Use from order, fallback to default
+    const shippingFee = order.shippingFee || 450;
     const discountAmount = order.discountAmount || 0;
 
     const itemsHtml = order.items.map((item: any) => `
-      <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding: 10px 0;">
-        <span>${item.name} <span style="color: #888; font-size: 12px;">x${item.quantity}</span></span>
-        <span style="font-weight: bold;">LKR ${(item.price * item.quantity).toLocaleString()}</span>
+      <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #eeeeee; padding: 12px 0; color: #555555;">
+        <span>${item.name} <span style="color: #999999; font-size: 14px; margin-left: 5px;">x${item.quantity}</span></span>
+        <span style="font-weight: bold; color: #333333;">LKR ${(item.price * item.quantity).toLocaleString()}</span>
       </div>
     `).join('');
 
@@ -54,29 +120,29 @@ export const sendOrderConfirmation = async (order: any) => {
       <p>Hi there,</p>
       <p>Thank you for your order! We have received it and will verify it shortly via phone call.</p>
       
-      <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
-        <h3 style="margin-top: 0; border-bottom: 2px solid #ddd; padding-bottom: 5px;">INVOICE</h3>
+      <div style="background-color: #f9f9f9; padding: 20px; border-radius: 8px; margin: 25px 0; border: 1px solid #eeeeee;">
+        <h3 style="margin-top: 0; color: #333333; font-size: 18px; border-bottom: 2px solid #e0e0e0; padding-bottom: 10px;">INVOICE</h3>
         
         ${itemsHtml}
         
-        <div style="padding-top: 15px; font-size: 14px; color: #555;">
-          <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+        <div style="padding-top: 15px; font-size: 15px; color: #555555;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
             <span>Subtotal</span>
-            <span>LKR ${subtotal.toLocaleString()}</span>
+            <span style="color: #333333;">LKR ${subtotal.toLocaleString()}</span>
           </div>
           ${discountAmount > 0 ? `
-          <div style="display: flex; justify-content: space-between; margin-bottom: 5px; color: #d32f2f;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 8px; color: #d32f2f;">
             <span>Discount</span>
             <span>- LKR ${discountAmount.toLocaleString()}</span>
           </div>
           ` : ''}
-          <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
             <span>Shipping</span>
-            <span>LKR ${shippingFee.toLocaleString()}</span>
+            <span style="color: #333333;">LKR ${shippingFee.toLocaleString()}</span>
           </div>
         </div>
 
-        <div style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 18px; font-weight: bold; border-top: 2px solid #000; padding-top: 10px; color: #000;">
+        <div style="display: flex; justify-content: space-between; margin-top: 15px; font-size: 18px; font-weight: bold; border-top: 2px solid #cccccc; padding-top: 15px; color: #000000;">
           <span>Total (${order.paymentMethod === 'PAYHERE' ? 'PAID' : 'COD'})</span>
           <span>LKR ${order.totalAmount.toLocaleString()}</span>
         </div>
@@ -103,8 +169,8 @@ export const sendOrderProcessing = async (order: any) => {
   try {
     const trackingLink = getTrackingLink(order);
 
-    const html = wrapHtml(`Processing Started ⚙️`, `
-      <p>Good news! We have verified your order <b>#${order.orderNumber}</b> and it is now being packed.</p>
+    const html = wrapHtml(`Processing Started`, `
+      <p>Good news! We have verified your order <strong>#${order.orderNumber}</strong> and it is now being packed.</p>
       <p>You will receive another email as soon as it is handed over to our courier partner.</p>
       
       ${getButtonHtml(trackingLink)}
@@ -128,14 +194,14 @@ export const sendShippingUpdate = async (order: any) => {
   try {
     const trackingLink = getTrackingLink(order);
 
-    const html = wrapHtml(`Your Order Has Shipped! 🚚`, `
-      <p>Great news! Your order <b>#${order.orderNumber}</b> has been handed over to Domex.</p>
+    const html = wrapHtml(`Your Order Has Shipped!`, `
+      <p>Great news! Your order <strong>#${order.orderNumber}</strong> has been handed over to Domex.</p>
       
-      <div style="background: #eefbee; padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0;">
-        <p style="margin: 0; color: #555; font-size: 12px; text-transform: uppercase; font-weight: bold;">Tracking Number</p>
-        <p style="margin: 5px 0 0 0; font-size: 24px; font-weight: 900; color: #000;">${order.trackingNumber}</p>
+      <div style="background-color: #f0f7ff; padding: 25px; border-radius: 8px; text-align: center; margin: 25px 0; border: 1px solid #dcebfb;">
+        <p style="margin: 0; color: #555555; font-size: 13px; text-transform: uppercase; font-weight: bold; letter-spacing: 1px;">Tracking Number</p>
+        <p style="margin: 10px 0 0 0; font-size: 28px; font-weight: bold; color: #1a73e8;">${order.trackingNumber}</p>
       </div>
-      <p>You can track your package on the Domex website.</p>
+      <p>You can track your package directly on the Domex website using the tracking number above.</p>
 
       ${getButtonHtml(trackingLink)}
     `);
@@ -158,8 +224,8 @@ export const sendOrderDelivered = async (order: any) => {
   try {
     const trackingLink = getTrackingLink(order);
 
-    const html = wrapHtml(`Order Delivered ✅`, `
-      <p>Your order <b>#${order.orderNumber}</b> has been marked as delivered.</p>
+    const html = wrapHtml(`Order Delivered`, `
+      <p>Your order <strong>#${order.orderNumber}</strong> has been marked as delivered.</p>
       <p>We hope you enjoy your purchase! Thank you for choosing Upul Tailors.</p>
       
       ${getButtonHtml(trackingLink, "Leave a Review")}
@@ -181,8 +247,8 @@ export const sendOrderDelivered = async (order: any) => {
 // --- 5. Customer: Order Returned ---
 export const sendOrderReturned = async (order: any) => {
   try {
-    const html = wrapHtml(`Order Returned ↩️`, `
-      <p>Your order <b>#${order.orderNumber}</b> has been processed as returned.</p>
+    const html = wrapHtml(`Order Returned`, `
+      <p>Your order <strong>#${order.orderNumber}</strong> has been processed as returned.</p>
       <p>If you requested this return, your refund (if applicable) is being processed.</p>
     `);
 
@@ -203,7 +269,7 @@ export const sendOrderReturned = async (order: any) => {
 export const sendOrderCancelled = async (order: any) => {
   try {
     const html = wrapHtml(`Order Cancelled #${order.orderNumber}`, `
-      <p style="color: #d32f2f;">Your order has been cancelled.</p>
+      <p style="color: #d32f2f; font-weight: bold;">Your order has been cancelled.</p>
       <p>If you have already paid or believe this is an error, please contact us immediately.</p>
     `);
 
@@ -225,12 +291,12 @@ export const sendOrderRefunded = async (order: any) => {
   try {
     const refundAmount = order.refundAmount || order.totalAmount;
     
-    const html = wrapHtml(`Order Refunded 💳`, `
-      <p>Your refund for order <b>#${order.orderNumber}</b> has been processed successfully.</p>
+    const html = wrapHtml(`Order Refunded`, `
+      <p>Your refund for order <strong>#${order.orderNumber}</strong> has been processed successfully.</p>
       
-      <div style="background: #e8f5e9; padding: 15px; border-radius: 5px; margin: 20px 0;">
-        <p style="margin: 0; color: #2e7d32; font-weight: bold;">Refund Amount</p>
-        <p style="margin: 10px 0 0; font-size: 24px; font-weight: bold; color: #1b5e20;">LKR ${refundAmount.toLocaleString()}</p>
+      <div style="background-color: #f0fff4; padding: 25px; border-radius: 8px; margin: 25px 0; border: 1px solid #c6f6d5; text-align: center;">
+        <p style="margin: 0; color: #2f855a; font-weight: bold; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Refund Amount</p>
+        <p style="margin: 10px 0 0; font-size: 28px; font-weight: bold; color: #22543d;">LKR ${refundAmount.toLocaleString()}</p>
       </div>
 
       <p>The refund has been credited to your original payment method. Please allow 3-5 business days for the amount to appear in your account.</p>
@@ -254,13 +320,13 @@ export const sendOrderRefunded = async (order: any) => {
 export const sendShopNewOrderNotification = async (order: any) => {
   try {
     const html = wrapHtml(`New Order Received #${order.orderNumber}`, `
-      <p style="font-size: 16px;"><b>Customer:</b> ${order.shippingAddress.firstname} ${order.shippingAddress.lastname}</p>
-      <p style="font-size: 16px;"><b>Amount:</b> LKR ${order.totalAmount.toLocaleString()}</p>
-      <p style="font-size: 16px;"><b>Phone:</b> <a href="tel:${order.shippingAddress.phoneNumber}">${order.shippingAddress.phoneNumber}</a></p>
-      
-      <div style="margin-top: 20px;">
-        <a href="${ADMIN_URL}/admin/orders/${order.id}" style="color: blue; text-decoration: underline;">Open Admin Panel</a>
+      <div style="background-color: #f9f9f9; padding: 20px; border-radius: 8px; border: 1px solid #eeeeee;">
+        <p style="margin-top: 0;"><strong>Customer:</strong> ${order.shippingAddress.firstname} ${order.shippingAddress.lastname}</p>
+        <p><strong>Amount:</strong> LKR ${order.totalAmount.toLocaleString()}</p>
+        <p style="margin-bottom: 0;"><strong>Phone:</strong> <a href="tel:${order.shippingAddress.phoneNumber}" style="color: #1a73e8; text-decoration: none;">${order.shippingAddress.phoneNumber}</a></p>
       </div>
+      
+      ${getButtonHtml(`${ADMIN_URL}/admin/orders/${order.id}`, "Open Admin Panel")}
     `);
 
     await queueEmail({
@@ -282,20 +348,22 @@ export const sendContactFormAlert = async (data: { name?: string, phone?: string
   try {
     const html = wrapHtml(`New Contact Form Submission`, `
       <p>You have received a new message from the contact form on upuls.lk:</p>
-      <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
-        <p><strong>Name:</strong> ${data.name || 'Not provided'}</p>
+      
+      <div style="background-color: #f9f9f9; padding: 20px; border-radius: 8px; margin: 25px 0; border: 1px solid #eeeeee;">
+        <p style="margin-top: 0;"><strong>Name:</strong> ${data.name || 'Not provided'}</p>
         <p><strong>Phone:</strong> ${data.phone || 'Not provided'}</p>
-        <p><strong>Email:</strong> ${data.email}</p>
-        <hr style="border: none; border-top: 1px solid #ddd; margin: 15px 0;" />
-        <p><strong>Message:</strong></p>
-        <p style="white-space: pre-wrap;">${data.comment}</p>
+        <p><strong>Email:</strong> <a href="mailto:${data.email}" style="color: #1a73e8; text-decoration: none;">${data.email}</a></p>
+        <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 20px 0;" />
+        <p style="margin-bottom: 5px;"><strong>Message:</strong></p>
+        <p style="white-space: pre-wrap; margin-top: 0; color: #333333; font-style: italic;">${data.comment}</p>
       </div>
+      
       <p><em>Reply directly to this email to respond to the customer.</em></p>
     `);
 
     await queueEmail({
       to: process.env.ADMIN_EMAIL || 'upultailors.site@gmail.com', 
-      subject: `📬 New Contact Message from ${data.email}`,
+      subject: `New Contact Message from ${data.email}`,
       html,
       emailType: 'admin-alert',
     });
@@ -313,18 +381,16 @@ export const sendNewsletterWelcome = async (email: string) => {
       <p>Thank you for subscribing to our newsletter! You're now on the VIP list for UPUL'S International.</p>
       <p>You'll be the first to know about our newest arrivals, exclusive offers, and the latest trends in casual wear.</p>
       
-      <div style="text-align: center; margin-top: 30px;">
-        <a href="${FRONTEND_URL}/shop" style="background-color: #000; color: #fff; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">Shop New Arrivals</a>
-      </div>
+      ${getButtonHtml(`${FRONTEND_URL}/shop`, "Shop New Arrivals")}
       
-      <p style="font-size: 10px; color: #888; margin-top: 40px; text-align: center;">
-        If you wish to unsubscribe, you can <a href="${FRONTEND_URL}/unsubscribe?email=${email}">click here</a>.
+      <p style="font-size: 11px; color: #999999; margin-top: 40px; text-align: center;">
+        If you wish to unsubscribe, you can <a href="${FRONTEND_URL}/unsubscribe?email=${email}" style="color: #999999; text-decoration: underline;">click here</a>.
       </p>
     `);
 
     await queueEmail({
       to: email,
-      subject: `Welcome to the UPUL'S International VIP List! ✨`,
+      subject: `Welcome to the UPUL'S International VIP List!`,
       html,
       emailType: 'newsletter-welcome',
     });
@@ -340,9 +406,9 @@ export const sendPromotionalBroadcast = async (email: string, subject: string, c
     const html = wrapHtml(subject, `
       ${customHtml}
       
-      <div style="margin-top: 50px; border-top: 1px solid #eee; padding-top: 20px; text-align: center; font-size: 11px; color: #888;">
-        <p>You are receiving this because you subscribed to UPUL'S International.</p>
-        <p>If you no longer wish to receive these emails, you can <a href="${FRONTEND_URL}/unsubscribe?email=${email}" style="color: #666;">unsubscribe here</a>.</p>
+      <div style="margin-top: 50px; border-top: 1px solid #eeeeee; padding-top: 20px; text-align: center; font-size: 11px; color: #999999;">
+        <p style="margin: 0 0 5px 0;">You are receiving this because you subscribed to UPUL'S International.</p>
+        <p style="margin: 0;">If you no longer wish to receive these emails, you can <a href="${FRONTEND_URL}/unsubscribe?email=${email}" style="color: #999999; text-decoration: underline;">unsubscribe here</a>.</p>
       </div>
     `);
 

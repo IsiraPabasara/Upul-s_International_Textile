@@ -85,8 +85,9 @@ export default function ProductForm({
   onSubmit,
   isLoading,
 }: Props) {
+
   const isEditMode = !!initialData;
-  const resetKey = 0; // Used as key for re-mounting components
+  const resetKey = 0;
   const [selectedRawFiles, setSelectedRawFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [hasVariants, setHasVariants] = useState(false);
@@ -106,14 +107,12 @@ export default function ProductForm({
     defaultValues: INITIAL_DATA,
   });
 
-  // Watchers
   const watchedName = watch("name");
   const watchedColors = watch("colors");
   const watchedPrice = watch("price");
   const watchedDiscountType = watch("discountType");
   const currentImages = watch("images") || [];
 
-  // Logic: Auto-Preview Name
   const primaryColor = watchedColors?.[0] || "";
   const namePreview =
     primaryColor &&
@@ -121,7 +120,6 @@ export default function ProductForm({
       ? `${watchedName} ${primaryColor}`
       : watchedName;
 
-  // Logic: Discount Calc
   const getDiscountedPrice = () => {
     const price = Number(watchedPrice) || 0;
     const val = Number(watch("discountValue")) || 0;
@@ -139,25 +137,31 @@ export default function ProductForm({
   }, [initialData, reset]);
 
   const onFormSubmit: SubmitHandler<ProductFormValues> = async (data) => {
+
     if (!data.categoryId) {
       toast.error("Please select a category");
       return;
     }
+
     const totalImages = currentImages.length + selectedRawFiles.length;
+
     if (totalImages > MAX_IMAGES) {
       toast.error(`Max ${MAX_IMAGES} images allowed.`);
       return;
     }
+
     if (hasVariants && data.variants.length === 0) {
       toast.error("Please add at least one size variant.");
       return;
     }
+
     if (!hasVariants && Number(data.stock) < 0) {
       toast.error("Stock cannot be negative.");
       return;
     }
 
     try {
+
       setIsUploading(true);
 
       // Upload Logic
@@ -171,7 +175,6 @@ export default function ProductForm({
       const finalImages = [...currentImages, ...newUploadedImages];
       const cleanData = { ...data, images: finalImages };
 
-      // Name Append Logic
       if (cleanData.colors?.length > 0) {
         const colorToAppend = cleanData.colors[0];
         if (
@@ -181,7 +184,6 @@ export default function ProductForm({
         }
       }
 
-      // Stock Logic
       if (hasVariants) {
         cleanData.stock = cleanData.variants.reduce(
           (acc, curr) => acc + Number(curr.stock),
@@ -223,7 +225,7 @@ export default function ProductForm({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Instantly clear image validation errors when files are added
+  // If there is no images uploaded this will came and when the user added the images it it immediatly vanishes
   useEffect(() => {
     const totalImages = currentImages.length + selectedRawFiles.length;
     if (totalImages > 0 && totalImages <= MAX_IMAGES && errors.images) {
@@ -239,14 +241,13 @@ export default function ProductForm({
   return (
     <form
       onSubmit={handleSubmit(onFormSubmit, (errors) =>
-        console.log("🚨 BLOCKED BY VALIDATION ERRORS:", errors),
+        console.log("BLOCKED BY VALIDATION ERRORS:", errors),
       )}
       className="pb-20"
     >
       <div className="grid grid-cols-1 xl:grid-cols-5 gap-8 items-start">
-        {/* === LEFT COLUMN === */}
+
         <div className="xl:col-span-3 space-y-8">
-          {/* 1. GENERAL INFORMATION */}
           <div className="bg-white dark:bg-slate-900 p-5 sm:p-6 sm:pb-10 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-800 ">
             <div className="flex items-center gap-3 mb-6 sm:mb-8 pb-4 border-b border-gray-100 dark:border-slate-800">
               <div className="p-2 sm:p-2.5 bg-blue-50 dark:bg-blue-900/20 rounded-xl text-blue-600 dark:text-blue-400 shrink-0">
@@ -267,7 +268,6 @@ export default function ProductForm({
             </div>
 
             <div className="space-y-5 sm:space-y-6">
-              {/* Product Name */}
               <div>
                 <label className="label mb-1.5 sm:mb-2 ml-1 text-sm sm:text-base font-semibold">
                   Product Name <span className="text-red-500 ml-0.5">*</span>
@@ -302,7 +302,6 @@ export default function ProductForm({
                 )}
               </div>
 
-              {/* Description */}
               <div>
                 <label className="label mb-1.5 sm:mb-2 ml-1 text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
                   Description <span className="text-red-500 ml-0.5">*</span>
@@ -316,8 +315,8 @@ export default function ProductForm({
                         "Please provide a more detailed description (min 10 characters)",
                     },
                   })}
-                  rows={4}
-                  className={`input-field resize-none text-sm sm:text-base leading-relaxed py-2.5 sm:py-3 min-h-[100px] sm:min-h-[120px] w-full [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-200 dark:[&::-webkit-scrollbar-thumb]:bg-slate-700 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-gray-300 dark:hover:[&::-webkit-scrollbar-thumb]:bg-slate-600 transition-colors ${errors.description ? "border-red-500 focus:ring-red-500/20" : ""}`}
+                  rows={3}
+                  className={`input-field resize-none text-sm sm:text-base leading-relaxed py-2.5 sm:py-3 min-h-[200px] sm:min-h-[200px] w-full [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-200 dark:[&::-webkit-scrollbar-thumb]:bg-slate-700 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-gray-300 dark:hover:[&::-webkit-scrollbar-thumb]:bg-slate-600 transition-colors ${errors.description ? "border-red-500 focus:ring-red-500/20" : ""}`}
                   placeholder="Product description..."
                 />
                 {errors.description && (
@@ -347,7 +346,6 @@ export default function ProductForm({
                 />
               </div>
 
-              {/* SKU & Brand Row */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6 pt-1 sm:pt-2">
                 <div className="w-full">
                   <div className="flex justify-between items-center mb-1.5 sm:mb-2 ml-1 h-5">

@@ -5,7 +5,7 @@ import { addToCart, getCart, mergeCart, removeCartItem, updateCartItem, verifyCa
 
 const router = Router();
 
-// Report Routes (Put this BEFORE /:sku to prevent route collision)
+// 📋 Report Routes (Put this BEFORE /:sku to prevent route collision)
 router.get('/report', generateCartFrequencyReport);
 
 router.post('/verify', verifyCart);

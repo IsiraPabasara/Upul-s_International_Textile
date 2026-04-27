@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import axiosInstance from '@/app/utils/axiosInstance';
 import { useParams, useRouter, notFound } from 'next/navigation';
 import { 
-  Minus, Plus, ShoppingBag, CheckCircle, AlertCircle, Heart, Loader2, Zap, ChevronDown, ChevronUp, Truck, RotateCcw, FileText 
+  Minus, Plus, ShoppingBag, CheckCircle, AlertCircle, Heart, Loader2, Zap, ChevronDown, ChevronUp, Truck, RotateCcw, FileText, X 
 } from 'lucide-react';
 import Link from 'next/link';
 import { useCart } from '@/app/hooks/useCart';
@@ -42,7 +42,8 @@ interface Product {
   availability: boolean;
   visible: boolean;
   category?: CategoryNode;
-  sizeType?: string; 
+  sizeType?: string;
+  sizeChartUrl?: string;
 }
 
 // --- Components ---
@@ -321,6 +322,7 @@ export default function ProductPage() {
   const [quantity, setQuantity] = useState(1);
   const [selectedSize, setSelectedSize] = useState<string>('');
   const [isBuyingNow, setIsBuyingNow] = useState(false);
+  const [showSizeChart, setShowSizeChart] = useState(false);
 
   // Note: ensure your addItem function accepts a second 'openCart' boolean argument
   const { items, addItem } = useCart(); 
@@ -380,6 +382,18 @@ export default function ProductPage() {
   useEffect(() => {
     setQuantity(1);
   }, [selectedSize]);
+
+  // --- DISABLE BACKGROUND SCROLL WHEN SIZE CHART OPENS ---
+  useEffect(() => {
+    if (showSizeChart) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showSizeChart]);
 
   if (isLoading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin" /></div>;
   if (!product) notFound();
@@ -494,9 +508,36 @@ export default function ProductPage() {
       try { await axiosInstance.post('/api/wishlist/toggle', item, { isPublic: true }); } catch (err) {}
   };
 
-
   return (
     <div className="bg-white min-h-screen pb-20 mt-8 md:mt-2 md:pt-5">
+      
+      {/* === SIZE CHART MODAL === */}
+      {showSizeChart && product.sizeChartUrl && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200 h-screen w-screen">
+          <div 
+            className="absolute inset-0" 
+            onClick={() => setShowSizeChart(false)} 
+          />
+          <div className="relative bg-white rounded-2xl overflow-hidden max-w-2xl w-full shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="font-bold text-gray-900">Size Guide</h3>
+              <button 
+                onClick={() => setShowSizeChart(false)}
+                className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-2 overflow-auto max-h-[80vh]">
+              <img 
+                src={product.sizeChartUrl} 
+                alt="Size Chart" 
+                className="w-full h-auto object-contain"
+              />
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Breadcrumb */}
       <div className="max-w-7xl mx-auto px-4 pt-4 pb-1 md:pt-0 md:pb-0 md:py-4 text-xs md:text-sm text-gray-500">
@@ -560,7 +601,20 @@ export default function ProductPage() {
           <div className="space-y-6">
             {hasVariants && (
               <div>
-                <h3 className="text-sm font-bold text-gray-900 mb-3 uppercase tracking-wide">Select Size</h3>
+                <div className="flex justify-between items-end mb-3">
+                  <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Select Size</h3>
+                  
+                  {/* === SIZE CHART TRIGGER === */}
+                  {product.sizeChartUrl && (
+                    <button 
+                      onClick={() => setShowSizeChart(true)}
+                      className="text-xs font-semibold text-gray-500 hover:text-black flex items-center gap-1.5 transition-all group underline-offset-4 hover:underline"
+                    >
+                      <FileText size={14} className="group-hover:scale-110 transition-transform" />
+                      View Size Chart
+                    </button>
+                  )}
+                </div>
                 <div className="flex flex-wrap gap-2">
                   {product.variants
                     .filter(v => v.size) // Filter empty sizes
@@ -573,9 +627,7 @@ export default function ProductPage() {
                         ${selectedSize === v.size 
                             ? 'bg-black text-white border-black shadow-md' 
                             : 'bg-white text-gray-900 border-gray-200 hover:border-black'}
-                        ${v.stock === 0 
-                            ? 'opacity-40 cursor-not-allowed bg-gray-50 text-gray-400 decoration-slice line-through border-gray-100 hover:border-gray-100' 
-                            : ''}
+                        ${v.stock === 0 ? 'opacity-40 cursor-not-allowed bg-gray-50 text-gray-400 line-through border-gray-100' : ''}
                       `}
                     >
                       {v.size}

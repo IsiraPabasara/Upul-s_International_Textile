@@ -8,6 +8,12 @@ export interface WishlistItem {
   price: number;
   image: string;
   slug: string;
+  brand?: string;
+  sku?: string;
+  discountType?: 'NONE' | 'PERCENTAGE' | 'FIXED';
+  discountValue?: number;
+  availability?: boolean;
+  visible?: boolean;
 }
 
 interface WishlistState {
@@ -36,7 +42,7 @@ export const useWishlist = create<WishlistState>()(
             : [...state.items, item],
         }));
 
-        // 2. Sync with backend
+        // 2. Sync with backend 
         try {
           await axiosInstance.post('/api/wishlist/toggle', item);
         } catch (error) {
@@ -58,7 +64,7 @@ export const useWishlist = create<WishlistState>()(
             }
         }
         
-        //  Fetch the newly merged list
+        // Fetch the newly merged list
         await get().fetchWishlist();
       },
 

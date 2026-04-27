@@ -15,19 +15,18 @@ interface Customer {
   ordersCount: number;
 }
 
-// 🧠 PHASE 3: Dynamic Cache Timer
 const getDynamicStaleTime = (range: string) => {
   switch (range) {
     case "all_time":
-      return 1000 * 60 * 10; // 10 minutes cache
+      return 1000 * 60 * 10; 
     case "yearly":
-      return 1000 * 60 * 5;  // 5 minutes cache
+      return 1000 * 60 * 5;  
     case "monthly":
-      return 1000 * 60 * 2;  // 2 minutes cache
+      return 1000 * 60 * 2;  
     case "weekly":
     case "custom":
     default:
-      return 1000 * 30;      // 30 seconds cache (fastest)
+      return 1000 * 30;    
   }
 };
 
@@ -48,7 +47,6 @@ export default function TopCustomersCard() {
     { label: "This Month", value: "monthly" },
   ];
 
-  // 🎨 Helper: Rank Icons with Dark Mode Glows
   const getRankIcon = (index: number) => {
     if (index === 0)
       return (
@@ -77,7 +75,6 @@ export default function TopCustomersCard() {
 
   return (
     <>
-      {/* 🛠 Custom Scrollbar Styles for this Component */}
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 6px;
@@ -94,9 +91,7 @@ export default function TopCustomersCard() {
         }
       `}</style>
 
-      {/* CARD CONTAINER */}
       <div className="w-full bg-white dark:bg-slate-950 rounded-[2.5rem] p-6 border border-gray-100 dark:border-slate-800 shadow-sm flex flex-col h-[500px] lg:h-[700px] transition-all duration-300">
-        {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <div>
             <h3 className="text-lg sm:text-xl lg:text-2xl font-extrabold text-slate-800 dark:text-white tracking-tight">
@@ -115,7 +110,6 @@ export default function TopCustomersCard() {
           </div>
         </div>
 
-        {/* List Content */}
         <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-3">
           {isLoading ? (
             <div className="h-full flex items-center justify-center">
@@ -132,10 +126,7 @@ export default function TopCustomersCard() {
                 key={customer.id}
                 className="flex items-center gap-4 p-4 rounded-3xl bg-gray-50 dark:bg-slate-900 border border-transparent hover:border-blue-200 dark:hover:border-blue-500/30 hover:bg-white dark:hover:bg-slate-800 transition-all duration-200 group cursor-default shadow-sm hover:shadow-md dark:shadow-none"
               >
-                {/* 1. Rank Icon */}
                 <div className="flex-shrink-0">{getRankIcon(index)}</div>
-
-                {/* 2. Avatar */}
                 <div className="flex-shrink-0 relative">
                   <div className="w-12 h-12 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center text-lg font-bold text-blue-600 dark:text-blue-400 shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden">
                     {customer.image ? (
@@ -148,13 +139,11 @@ export default function TopCustomersCard() {
                       customer.name.charAt(0).toUpperCase()
                     )}
                   </div>
-                  {/* Online Dot (Decoration) */}
                   {index < 3 && (
                     <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full"></span>
                   )}
                 </div>
 
-                {/* 3. Name & Email */}
                 <div className="flex-1 min-w-0">
                   <h4 className="font-bold text-slate-800 dark:text-white truncate text-base lg:text-lg group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                     {customer.name}
@@ -164,7 +153,6 @@ export default function TopCustomersCard() {
                   </p>
                 </div>
 
-                {/* 4. Stats */}
                 <div className="text-right flex flex-col items-end">
                   <p className="font-extrabold text-slate-900 dark:text-white text-base lg:text-lg">
                     Rs. {(customer.totalSpent / 1000).toFixed(1)}k

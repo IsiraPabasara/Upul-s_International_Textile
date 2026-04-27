@@ -20,11 +20,11 @@ import {
 } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 
-// --- TYPES ---
 interface Variant {
   size: string;
   stock: number | string;
 }
+
 interface Product {
   id: string;
   name: string;
@@ -33,6 +33,7 @@ interface Product {
   variants: Variant[];
   images: { url: string }[];
 }
+
 interface InventoryRow {
   uniqueKey: string;
   productId: string;
@@ -42,6 +43,7 @@ interface InventoryRow {
   variantSize: string | null;
   currentStock: number;
 }
+
 interface ApiResponse {
   data: Product[];
   pagination: {
@@ -58,6 +60,7 @@ interface ApiResponse {
 }
 
 export default function InventoryPage() {
+  
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
@@ -85,24 +88,21 @@ export default function InventoryPage() {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  // 1️⃣ MAIN TABLE QUERY
   const { data: tableData, isLoading: isTableLoading } = useQuery<ApiResponse>({
-    queryKey: ["inventory", page, debouncedSearch, isOutOfStockFilter],
+    queryKey: ["inventory", debouncedSearch, isOutOfStockFilter], // Fetch all data without pagination in query key
     queryFn: async () => {
       const res = await axiosInstance.get("/api/products/inventory/list", {
         params: {
           search: debouncedSearch,
-          page,
-          limit: 10,
+          limit: 20,
           stock_status: isOutOfStockFilter ? "out_of_stock" : undefined,
         },
       });
       return res.data;
     },
-    placeholderData: (prev) => prev,
+    placeholderData: (prev) => prev, //Keep the old page data while loading new pages 
   });
 
-  // 2️⃣ ALERTS QUERY
   const { data: alertsData, isLoading: isAlertsLoading } =
     useQuery<ApiResponse>({
       queryKey: ["inventory-alerts"],
@@ -114,13 +114,13 @@ export default function InventoryPage() {
       },
     });
 
-  // --- DATA FLATTENER ---
   const flattenData = (products: Product[]): InventoryRow[] => {
     return products.flatMap((product): InventoryRow[] => {
       const hasVariants = product.variants && product.variants.length > 0;
       const imgUrl = product.images?.[0]?.url || "";
 
       if (hasVariants) {
+        //Loop through the variants list of a speciific product and create a separate row for each of them
         return product.variants.map((v) => ({
           uniqueKey: `${product.sku}-${v.size}`,
           productId: product.id,
@@ -146,8 +146,9 @@ export default function InventoryPage() {
     });
   };
 
-  // 🧠 SMART FILTERING
-  const tableRows = useMemo(() => {
+  const ROWS_PER_PAGE = 10;
+
+  const { tableRows, totalRows } = useMemo(() => {
     let rows = flattenData(tableData?.data || []);
     if (isOutOfStockFilter) {
       rows = rows.filter((row) => row.currentStock === 0);
@@ -159,15 +160,20 @@ export default function InventoryPage() {
           row.variantSize === targetVariant.size,
       );
     }
-    return rows;
-  }, [tableData, isOutOfStockFilter, targetVariant]);
+    
+    const total = rows.length;
+    const start = (page - 1) * ROWS_PER_PAGE;
+    const end = start + ROWS_PER_PAGE;
+    const paginatedRows = rows.slice(start, end);
+    
+    return { tableRows: paginatedRows, totalRows: total };
+  }, [tableData, isOutOfStockFilter, targetVariant, page]);
 
   const lowStockItems = useMemo(() => {
     const allRows = flattenData(alertsData?.data || []);
     return allRows.filter((row) => row.currentStock < 10);
   }, [alertsData]);
 
-  // --- ACTIONS ---
   const handleAlertClick = (sku: string, size: string | null) => {
     setSearchTerm(sku);
     setTargetVariant({ sku, size });
@@ -200,7 +206,7 @@ export default function InventoryPage() {
         iconTheme: { primary: "#22c55e", secondary: "#FFFFFF" },
       });
       setPendingUpdates({});
-      queryClient.invalidateQueries({ queryKey: ["inventory"] });
+      queryClient.invalidateQueries({ queryKey: ["inventory"] }); //Data in the inventory list is too old fetch them again
       queryClient.invalidateQueries({ queryKey: ["inventory-alerts"] });
     },
     onError: () => {
@@ -239,7 +245,6 @@ export default function InventoryPage() {
     <div className="min-h-screen bg-[#F8F9FC] dark:bg-slate-950 p-4 sm:p-6 lg:p-8 pb-32 font-sans transition-colors duration-300">
       <Toaster position="top-center" reverseOrder={false} />
 
-      {/* --- ALERT MODAL (Responsive) --- */}
       {isAlertModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
           <div className="bg-white dark:bg-slate-900 w-full max-w-4xl h-[85vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-gray-100 dark:border-slate-800 animate-in zoom-in-95 duration-200">
@@ -271,7 +276,7 @@ export default function InventoryPage() {
                     <ArrowUpRight size={16} className="text-blue-500" />
                   </div>
 
-                  <div className="w-20 h-28 bg-gray-100 dark:bg-slate-800 rounded-xl overflow-hidden border border-gray-100 dark:border-slate-700 shrink-0 shadow-sm flex-shrink-0">
+                  <div className="w-20 h-28 bg-gray-100 dark:bg-slate-800 rounded-xl overflow-hidden border border-gray-100 dark:border-slate-700 shrink-0 shadow-sm">
                     {item.image && (
                       <img
                         src={item.image}
@@ -311,7 +316,6 @@ export default function InventoryPage() {
         </div>
       )}
 
-      {/* --- FLOATING SAVE BAR --- */}
       {totalUnsaved > 0 && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-[90%] max-w-md animate-in slide-in-from-bottom-6 duration-300">
           <div className="bg-gray-900/90 dark:bg-white/90 backdrop-blur-md text-white dark:text-gray-900 px-6 py-4 rounded-full shadow-2xl flex items-center justify-between border border-white/10 dark:border-gray-200/20">
@@ -348,7 +352,6 @@ export default function InventoryPage() {
         </div>
       )}
 
-      {/* --- HEADER --- */}
       <div className="max-w-7xl mx-auto space-y-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pt-4">
           <div>
@@ -374,11 +377,8 @@ export default function InventoryPage() {
           </div>
         </div>
 
-        {/* --- STATS & ALERTS GRID --- */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* LEFT: Stats Cards */}
           <div className="lg:col-span-5 grid grid-cols-2 gap-4 h-full content-start">
-            {/* Total Stock */}
             <div className="bg-white dark:bg-slate-900 p-5 rounded-[24px] border border-gray-100 dark:border-slate-800 shadow-sm flex flex-col justify-between h-30 relative overflow-hidden group">
               <div className="absolute top-4 right-4 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-full text-blue-600 dark:text-blue-400">
                 <Box size={20} />
@@ -391,7 +391,6 @@ export default function InventoryPage() {
               </div>
             </div>
 
-            {/* Out of Stock */}
             <button
               onClick={toggleOutOfStockFilter}
               className={`p-5 rounded-[24px] border flex flex-col justify-between h-32 text-left transition-all relative overflow-hidden
@@ -424,12 +423,9 @@ export default function InventoryPage() {
               </div>
             </button>
 
-            {/* Value Card */}
             <div className="col-span-2 bg-white dark:bg-gradient-to-br dark:from-slate-800 dark:to-slate-900 p-7 rounded-[24px] shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] dark:shadow-2xl border border-gray-100 dark:border-slate-800 flex flex-col justify-between h-40 relative overflow-hidden group transition-all hover:shadow-lg">
-              {/* Decorative Glow (Dark Mode) */}
               <div className="hidden dark:block absolute -right-10 -bottom-10 w-40 h-40 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none group-hover:bg-emerald-500/20 transition-all duration-500"></div>
 
-              {/* Header: Label & Icon */}
               <div className="flex justify-between items-start z-10">
                 <div className="flex flex-col">
                   <span className="text-gray-500 dark:text-slate-400 text-sm font-semibold tracking-wide uppercase">
@@ -440,13 +436,11 @@ export default function InventoryPage() {
                   </span>
                 </div>
 
-                {/* Icon with fixed size for better proportion */}
                 <div className="w-12 h-12 flex items-center justify-center bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-2xl border border-emerald-100 dark:border-emerald-500/20 shadow-sm">
                   <DollarSign size={24} strokeWidth={2.5} />
                 </div>
               </div>
 
-              {/* Footer: Big Value */}
               <div className="text-4xl font-bold text-gray-900 dark:text-white z-10 tracking-tight flex items-baseline">
                 <span className="text-xl text-gray-400 dark:text-slate-500 font-semibold mr-2 -ml-1">
                   Rs.
@@ -456,7 +450,6 @@ export default function InventoryPage() {
             </div>
           </div>
 
-          {/* RIGHT: Alerts Panel (Matching Height) */}
           <div className="lg:col-span-7 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-[24px] p-6 shadow-sm flex flex-col h-full min-h-[300px]">
             <div className="flex justify-between items-start mb-6">
               <div>
@@ -492,7 +485,6 @@ export default function InventoryPage() {
                     onClick={() => handleAlertClick(item.sku, item.variantSize)}
                     className="flex items-start gap-4 p-4 rounded-2xl border border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-md transition-all text-left w-full group"
                   >
-                    {/* 👇 Updated: w-20 h-25 (80px x 100px) */}
                     <div className="w-20 h-25 bg-gray-50 dark:bg-slate-800 rounded-xl overflow-hidden border border-gray-100 dark:border-slate-700 shrink-0">
                       {item.image && (
                         <img
@@ -503,7 +495,6 @@ export default function InventoryPage() {
                       )}
                     </div>
 
-                    {/* 👇 Updated: Flex column justify-between with h-25 to match image */}
                     <div className="flex-1 min-w-0 flex flex-col justify-between h-25 py-0.5">
                       <div>
                         <span className="bg-rose-100 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 text-[10px] font-bold px-2 py-0.5 rounded uppercase w-fit mb-1 block">
@@ -551,9 +542,7 @@ export default function InventoryPage() {
           </div>
         </div>
 
-        {/* --- MAIN TABLE --- */}
         <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-[24px] p-6 shadow-sm">
-          {/* Table Content - Same as before, logic preserved */}
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
             <div className="flex items-center gap-3">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">
@@ -716,16 +705,15 @@ export default function InventoryPage() {
             )}
           </div>
 
-          {/* PAGINATION */}
           <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 pt-2 border-t border-gray-100 dark:border-slate-800">
             <p className="text-sm text-gray-500 dark:text-slate-400 font-medium">
               Page{" "}
               <span className="text-gray-900 dark:text-white font-bold">
-                {tableData?.pagination?.page || 1}
+                {page}
               </span>{" "}
               of{" "}
               <span className="text-gray-900 dark:text-white font-bold">
-                {tableData?.pagination?.totalPages || 1}
+                {Math.ceil(totalRows / ROWS_PER_PAGE) || 1}
               </span>
             </p>
             <div className="flex gap-2">
@@ -738,9 +726,7 @@ export default function InventoryPage() {
               </button>
               <button
                 onClick={() => setPage((p) => p + 1)}
-                disabled={
-                  !tableData || page >= (tableData.pagination?.totalPages || 1)
-                }
+                disabled={page >= Math.ceil(totalRows / ROWS_PER_PAGE)}
                 className="p-2.5 border border-gray-200 dark:border-slate-700 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:hover:bg-transparent transition-colors text-gray-600 dark:text-slate-300"
               >
                 <ChevronRight size={18} />
