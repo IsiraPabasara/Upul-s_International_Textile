@@ -2,7 +2,7 @@
 
 import { X, Loader2, AlertCircle, ShieldAlert, User as UserIcon, ShieldCheck } from "lucide-react";
 import { useState, useEffect } from "react";
-import { createPortal } from "react-dom"; // ⭐ 1. Import createPortal
+import { createPortal } from "react-dom"; 
 
 interface RoleChangeModalProps {
   user: any;
@@ -25,9 +25,8 @@ export default function RoleChangeModal({
   onConfirm,
 }: RoleChangeModalProps) {
   const [selectedRole, setSelectedRole] = useState("user");
-  const [mounted, setMounted] = useState(false); // ⭐ 2. Track mounting
+  const [mounted, setMounted] = useState(false); 
 
-  // ⭐ 3. Handle mounting and scroll locking
   useEffect(() => {
     setMounted(true);
     if (isOpen) {
@@ -46,7 +45,6 @@ export default function RoleChangeModal({
     }
   }, [user?.role, isOpen]);
 
-  // ⭐ 4. Wait until mounted (client-side) to avoid Next.js hydration errors
   if (!isOpen || !mounted) return null;
 
   const handleConfirm = () => {
@@ -57,7 +55,6 @@ export default function RoleChangeModal({
 
   const isChanging = selectedRole !== user?.role;
 
-  // ⭐ 5. Wrap the return in createPortal
   return createPortal(
     <>
       {/* Sleek Overlay with Blur - Boosted z-index */}
@@ -232,6 +229,6 @@ export default function RoleChangeModal({
         </div>
       </div>
     </>,
-    document.body // ⭐ 6. Attach directly to the <body> tag
+    document.body 
   );
 }

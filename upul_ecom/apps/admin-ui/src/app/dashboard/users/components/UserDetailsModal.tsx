@@ -1,9 +1,9 @@
 "use client";
 
-import { X, Loader2, Mail, Phone, MapPin, ShoppingBag, DollarSign, TrendingUp, Calendar, ChevronDown, ChevronUp } from "lucide-react";
+import { X, Loader2, Mail, Phone, MapPin, ShoppingBag, DollarSign, TrendingUp, Calendar } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
-import { createPortal } from "react-dom"; // ⭐ 1. Import createPortal
+import { createPortal } from "react-dom"; // 
 import axiosInstance from "@/app/utils/axiosInstance";
 
 interface UserDetailsModalProps {
@@ -19,7 +19,7 @@ export default function UserDetailsModal({
   isLoading,
   onClose,
 }: UserDetailsModalProps) {
-  const [mounted, setMounted] = useState(false); // ⭐ 2. Track mounting for Next.js SSR
+  const [mounted, setMounted] = useState(false); // 
 
   // ⭐ 3. Handle mounting and lock background scrolling
   useEffect(() => {
@@ -45,10 +45,8 @@ export default function UserDetailsModal({
     enabled: !!user?.id && isOpen,
   });
 
-  // ⭐ 4. Prevent rendering until mounted (fixes hydration errors)
   if (!isOpen || !mounted) return null;
 
-  // ⭐ 5. Wrap the entire return inside createPortal
   return createPortal(
     <>
       {/* Sleek Overlay with Blur - Boosted z-index */}
@@ -305,6 +303,6 @@ export default function UserDetailsModal({
         </div>
       </div>
     </>,
-    document.body // ⭐ 6. Attach directly to the <body> tag
+    document.body 
   );
 }
