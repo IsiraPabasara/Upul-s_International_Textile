@@ -12,11 +12,12 @@ interface Brand {
 }
 
 interface BrandSelectorProps {
-  selectedBrand: string; // 🟢 We are using the Brand NAME string (e.g., "Deedat")
-  onChange: (brandName: string) => void; // 🟢 Send the NAME back to the form
+  selectedBrand: string; 
+  onChange: (brandName: string) => void; 
 }
 
 export default function BrandSelector({ selectedBrand, onChange }: BrandSelectorProps) {
+
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -38,7 +39,6 @@ export default function BrandSelector({ selectedBrand, onChange }: BrandSelector
     },
   });
 
-  // 🟢 Find the brand object by matching the exact brand NAME
   const selectedBrandObj = brands.find(b => b.name === selectedBrand);
 
   const baseInputStyles = "w-full h-[44px] sm:h-[46px] px-3 sm:px-4 bg-slate-50 dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-900 focus:border-blue-500 outline-none transition-all text-sm sm:text-base font-medium";
@@ -56,7 +56,6 @@ export default function BrandSelector({ selectedBrand, onChange }: BrandSelector
             {isLoading ? (
               <Loader2 size={16} className="animate-spin text-gray-400" />
             ) : selectedBrandObj?.logoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
               <img 
                 src={selectedBrandObj.logoUrl} 
                 alt={selectedBrandObj.name} 
@@ -70,7 +69,6 @@ export default function BrandSelector({ selectedBrand, onChange }: BrandSelector
             ) : null}
             
             <span className={`block truncate ${selectedBrand ? 'text-gray-900 dark:text-white font-bold' : 'text-gray-400'}`}>
-              {/* 🟢 Show the selected brand name */}
               {isLoading ? 'Loading brands...' : (selectedBrand || 'Select a Brand')}
             </span>
           </div>
@@ -98,18 +96,17 @@ export default function BrandSelector({ selectedBrand, onChange }: BrandSelector
                     key={brand.id}
                     type="button"
                     onClick={() => {
-                      onChange(brand.name); // 🟢 Send the string NAME back to React Hook Form
+                      onChange(brand.name); 
                       setIsOpen(false);
                     }}
                     className={`w-full flex items-center justify-between px-3 sm:px-4 py-2.5 text-sm sm:text-base transition-colors ${
-                      selectedBrand === brand.name // 🟢 Highlight if the names match
+                      selectedBrand === brand.name 
                         ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 font-bold' 
                         : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-800 font-medium'
                     }`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       {brand.logoUrl ? (
-                         // eslint-disable-next-line @next/next/no-img-element
                          <img 
                            src={brand.logoUrl} 
                            alt={brand.name} 
