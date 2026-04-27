@@ -53,6 +53,35 @@ export const createCoupon = async (req: Request, res: Response, next: NextFuncti
   }
 };
 
+// --- UPDATE COUPON ---
+export const updateCoupon = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const { code, type, value, minOrderAmount, limitPerUser, maxUses, expiresAt, isPublic } = req.body;
+
+    const updated = await prisma.coupon.update({
+      where: { id },
+      data: {
+        code: code.toUpperCase(),
+        type,
+        value: parseFloat(value),
+        minOrderAmount: parseFloat(minOrderAmount),
+        limitPerUser: limitPerUser ? parseInt(limitPerUser) : null,
+        maxUses: maxUses ? parseInt(maxUses) : null,
+        expiresAt: expiresAt ? new Date(expiresAt) : null,
+        isPublic
+      },
+    });
+
+    return res.json(updated);
+  } catch (error) {
+    if ((error as any).code === "P2002") {
+      return res.status(400).json({ message: "This coupon code is already in use." });
+    }
+    return next(error);
+  }
+};
+
 // --- DELETE COUPON ---
 export const deleteCoupon = async (req: Request, res: Response, next: NextFunction) => {
   try {

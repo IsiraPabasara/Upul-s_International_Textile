@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosInstance from '@/app/utils/axiosInstance';
 import { toast } from 'react-hot-toast';
 import { usePageTitle } from '@/app/hooks/usePageTitle';
+import { useState, useEffect } from 'react';
 import {
   Package,
   CheckCircle,
@@ -23,6 +24,17 @@ export default function UserOrderDetailsPage() {
   const { id } = useParams();
   const queryClient = useQueryClient();
 
+  // Custom Cancel Modal State
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+
+  // Disable background scrolling when cancel modal is open
+  useEffect(() => {
+    document.documentElement.style.overflow = showCancelConfirm ? 'hidden' : '';
+    return () => {
+      document.documentElement.style.overflow = '';
+    };
+  }, [showCancelConfirm]);
+
   // Set page title based on order ID
   usePageTitle(`Order #${id}`, `View details for order #${id}`);
 
@@ -32,31 +44,24 @@ export default function UserOrderDetailsPage() {
     enabled: !!id,
   });
 
-  // 🟢 Calculate subtotal and shipping fee
+  // Calculate subtotal and shipping fee
   const subtotal = order ? order.items.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0) : 0;
   const shippingFee = order ? (order.shippingFee || 450) : 0;
 
-  // ✅ Cancel order mutation
+  // Cancel order mutation
   const cancelMutation = useMutation({
     mutationFn: async () => {
       return await axiosInstance.patch(`/api/orders/my-orders/${id}/cancel`);
     },
     onSuccess: () => {
       toast.success('Order cancelled successfully');
+      setShowCancelConfirm(false); // Close modal on success
       queryClient.invalidateQueries({ queryKey: ['my-order', id] });
     },
     onError: (err: any) => {
       toast.error(err?.response?.data?.message || 'Failed to cancel');
     },
   });
-
-  const handleCancel = () => {
-    if (
-      confirm('Are you sure you want to cancel this order? This action cannot be undone.')
-    ) {
-      cancelMutation.mutate();
-    }
-  };
 
   if (isLoading)
     return (
@@ -131,6 +136,33 @@ export default function UserOrderDetailsPage() {
 
   return (
     <div className="w-full min-h-screen bg-white font-outfit pb-32">
+      
+      {/* Cancel Order Modal */}
+      {showCancelConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => !cancelMutation.isPending && setShowCancelConfirm(false)} />
+          
+          <div className="relative bg-white text-black p-12 max-w-md w-full shadow-2xl text-center border border-gray-100">
+            <h3 className="text-sm tracking-[0.2em] uppercase font-bold mb-4">Cancel Order</h3>
+            <p className="text-sm text-gray-600 mb-10 leading-relaxed">Are you sure you want to cancel this order? This action cannot be undone.</p>
+            <div className="flex flex-col gap-4">
+              <button 
+                onClick={() => cancelMutation.mutate()} 
+                disabled={cancelMutation.isPending}
+                className="w-full py-4 text-xs tracking-[0.3em] uppercase font-bold bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50">
+                {cancelMutation.isPending ? "Cancelling..." : "Confirm Cancel"}
+              </button>
+              <button 
+                onClick={() => setShowCancelConfirm(false)} 
+                disabled={cancelMutation.isPending}
+                className="w-full py-4 text-xs tracking-[0.3em] uppercase font-bold text-gray-500 hover:text-black transition-colors">
+                Keep Order
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-5xl mx-auto px-6 pt-20">
         <Link
           href="/profile/orders"
@@ -169,10 +201,10 @@ export default function UserOrderDetailsPage() {
               {order.status}
             </span>
 
-            {/* ✅ Cancel button (only when PENDING) */}
+            {/* Cancel button triggers modal instead of native confirm */}
             {order.status === 'PENDING' && (
               <button
-                onClick={handleCancel}
+                onClick={() => setShowCancelConfirm(true)}
                 disabled={cancelMutation.isPending}
                 className="mt-2 text-xs font-bold text-red-600 hover:text-white hover:bg-red-600 border border-red-200 px-4 py-2 rounded transition-colors uppercase tracking-widest disabled:opacity-60 disabled:cursor-not-allowed"
               >

@@ -4,7 +4,8 @@ import {
   deleteCoupon, 
   getAllCoupons, 
   toggleCouponStatus,
-  generateCouponReport
+  generateCouponReport,
+  updateCoupon
 } from './admin.coupen';
 import isAuthenticated from '../../../../packages/middleware/isAuthenticated';
 import { isAdmin } from '../../../../packages/middleware/authorizedRoles';
@@ -21,6 +22,7 @@ router.get('/report', isAdmin, generateCouponReport);
 
 router.get('/', isAdmin, getAllCoupons);
 router.post('/', isAdmin, createCoupon);
+router.put('/:id', isAdmin, updateCoupon);
 router.delete('/:id', isAdmin, deleteCoupon);
 router.patch('/:id', isAdmin, toggleCouponStatus);
 

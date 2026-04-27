@@ -25,7 +25,7 @@ const checkoutSchema = z.object({
   apartment: z.string().optional(),
   city: z.string().min(2, 'City is required'),
   postalCode: z.string().min(3, 'Postal code is required'),
-  phoneNumber: z.string().min(9, 'Phone number is required'),
+  phoneNumber: z.string().length(10, 'Phone number must be exactly 10 characters'),
   saveAddress: z.boolean().default(false).optional(),
 
   billingFirstname: z.string().optional(),
@@ -72,6 +72,7 @@ export default function CheckoutPage() {
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [isAddingNewAddress, setIsAddingNewAddress] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isSavingAddress, setIsSavingAddress] = useState(false);
 
   const [shippingCost, setShippingCost] = useState(450); // Default fallback
   const [citySearch, setCitySearch] = useState('');
@@ -230,6 +231,37 @@ export default function CheckoutPage() {
     }
   }, [dbCities, selectedAddressId, user]);
 
+  const onSaveAddress = async (data: CheckoutFormValues) => {
+    if (!isValidCity) {
+      toast.error('Please select a valid city from the dropdown');
+      return;
+    }
+
+    setIsSavingAddress(true);
+    try {
+      const res = await axiosInstance.post('/api/auth/add-address', {
+        ...data,
+        isDefault: !!data.saveAddress,
+      });
+
+      if (res.data.success) {
+        await queryClient.invalidateQueries({ queryKey: ['user'] });
+        const newAddressId = res.data.addresses[res.data.addresses.length - 1].id;
+        setSelectedAddressId(newAddressId);
+        setIsAddingNewAddress(false);
+        setCitySearch('');
+        setIsValidCity(false);
+        toast.success('Address saved to profile!');
+      } else {
+        toast.error('Failed to save address');
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to save address');
+    } finally {
+      setIsSavingAddress(false);
+    }
+  };
+
   const onPlaceOrder = async (data: CheckoutFormValues) => {
     if (!paymentMethod) {
       setPaymentError(true);
@@ -261,7 +293,7 @@ export default function CheckoutPage() {
         if (!isAddingNewAddress && !finalAddressId) {
           setAddressError(true);
           toast.error('Please select a shipping address');
-          // setIsProcessing(false);
+          setIsProcessing(false);
           return;
         }
 
@@ -286,8 +318,8 @@ export default function CheckoutPage() {
             setCitySearch('');
             setIsValidCity(false);
           } else {
-            // setIsProcessing(false);
-            return;
+             setIsProcessing(false);
+             return;
           }
         }
 
@@ -364,9 +396,6 @@ export default function CheckoutPage() {
         toast.error(errorMsg);
       }
     } finally {
-      // if (paymentMethod === 'COD') {
-      //   setIsProcessing(false);
-      // }
       setIsProcessing(false);
     }
   };
@@ -497,25 +526,35 @@ export default function CheckoutPage() {
                       placeholder="Email Address"
                       className={errors.email ? inputErrorClass : inputFieldClass}
                     />
+                    {errors.email && <p className="text-red-500 text-[10px] mt-1">{errors.email.message}</p>}
                   </div>
                 )}
-                <input
-                  {...register('firstname')}
-                  placeholder="First name"
-                  className={errors.firstname ? inputErrorClass : inputFieldClass}
-                />
-                <input
-                  {...register('lastname')}
-                  placeholder="Last name"
-                  className={errors.lastname ? inputErrorClass : inputFieldClass}
-                />
+                <div>
+                  <input
+                    {...register('firstname')}
+                    placeholder="First name"
+                    className={errors.firstname ? inputErrorClass : inputFieldClass}
+                  />
+                  {errors.firstname && <p className="text-red-500 text-[10px] mt-1">{errors.firstname.message}</p>}
+                </div>
+                <div>
+                  <input
+                    {...register('lastname')}
+                    placeholder="Last name"
+                    className={errors.lastname ? inputErrorClass : inputFieldClass}
+                  />
+                  {errors.lastname && <p className="text-red-500 text-[10px] mt-1">{errors.lastname.message}</p>}
+                </div>
+                
                 <div className="md:col-span-2">
                   <input
                     {...register('addressLine')}
                     placeholder="Address"
                     className={errors.addressLine ? inputErrorClass : inputFieldClass}
                   />
+                  {errors.addressLine && <p className="text-red-500 text-[10px] mt-1">{errors.addressLine.message}</p>}
                 </div>
+                
                 <div className="md:col-span-2">
                   <input
                     {...register('apartment')}
@@ -523,6 +562,7 @@ export default function CheckoutPage() {
                     className={inputFieldClass}
                   />
                 </div>
+                
                 {/* Searchable City Dropdown */}
                 <div className="relative md:col-span-1">
                   <input
@@ -544,6 +584,7 @@ export default function CheckoutPage() {
                     // Optional: delay blur so click event registers
                     onBlur={() => setTimeout(() => setIsDropdownOpen(false), 200)}
                   />
+                  {errors.city && <p className="text-red-500 text-[10px] mt-1">{errors.city.message}</p>}
                   
                   {/* Dropdown Menu */}
                   {isDropdownOpen && filteredCities.length > 0 && (
@@ -577,21 +618,27 @@ export default function CheckoutPage() {
                     </p>
                   )}
                 </div>
-                <input
-                  {...register('postalCode')}
-                  placeholder="Postal code"
-                  className={errors.postalCode ? inputErrorClass : inputFieldClass}
-                />
+                
+                <div>
+                  <input
+                    {...register('postalCode')}
+                    placeholder="Postal code"
+                    className={errors.postalCode ? inputErrorClass : inputFieldClass}
+                  />
+                  {errors.postalCode && <p className="text-red-500 text-[10px] mt-1">{errors.postalCode.message}</p>}
+                </div>
+                
                 <div className="md:col-span-2">
                   <input
                     {...register('phoneNumber')}
-                    placeholder="Phone"
+                    placeholder="Phone (10 digits)"
                     className={errors.phoneNumber ? inputErrorClass : inputFieldClass}
                   />
+                  {errors.phoneNumber && <p className="text-red-500 text-[10px] mt-1">{errors.phoneNumber.message}</p>}
                 </div>
 
                 {user && (
-                  <div className="md:col-span-2 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mt-2">
+                  <div className="md:col-span-2 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mt-2 pt-2 border-t border-gray-100">
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="checkbox"
@@ -600,17 +647,27 @@ export default function CheckoutPage() {
                       />
                       <span className="text-xs md:text-sm">Save address to profile</span>
                     </label>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsAddingNewAddress(false);
-                        setCitySearch('');
-                        setIsValidCity(false);
-                      }}
-                      className="text-xs md:text-sm text-red-500 font-bold uppercase"
-                    >
-                      Cancel
-                    </button>
+                    <div className="flex items-center gap-4">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsAddingNewAddress(false);
+                          setCitySearch('');
+                          setIsValidCity(false);
+                        }}
+                        className="text-xs md:text-sm text-gray-500 hover:text-red-500 font-bold uppercase transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        disabled={isSavingAddress}
+                        onClick={handleSubmit(onSaveAddress)}
+                        className="text-xs md:text-sm bg-black text-white px-4 py-2 rounded font-bold uppercase tracking-wider disabled:opacity-50 min-w-[140px] flex justify-center"
+                      >
+                        {isSavingAddress ? <Loader2 className="animate-spin" size={16} /> : 'Save Address'}
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>

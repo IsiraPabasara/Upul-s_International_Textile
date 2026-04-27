@@ -13,6 +13,7 @@ import {
 export default function AdminCouponsPage() {
   const queryClient = useQueryClient();
   const [isCreating, setIsCreating] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   // 🟢 Validation State
   const [codeError, setCodeError] = useState("");
@@ -30,6 +31,23 @@ export default function AdminCouponsPage() {
     isPublic: true
   });
 
+  // Helper to reset form
+  const resetForm = () => {
+    setFormData({
+      code: '',
+      type: 'PERCENTAGE',
+      value: '',
+      minOrderAmount: '0',
+      limitPerUser: '1',
+      maxUses: '',
+      expiresAt: '',
+      isPublic: true
+    });
+    setCodeError("");
+    setValueError("");
+    setEditingId(null);
+  };
+
   // Fetch Coupons
   const { data: coupons, isLoading, isError } = useQuery({
     queryKey: ['admin-coupons'],
@@ -42,12 +60,23 @@ export default function AdminCouponsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-coupons'] });
       setIsCreating(false);
-      setFormData({ ...formData, code: '', value: '' }); 
-      setCodeError("");
-      setValueError("");
+      resetForm();
       toast.success("Coupon created successfully!");
     },
     onError: (err: any) => toast.error(err.response?.data?.message || "Failed to create coupon")
+  });
+
+  // Update Mutation
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => 
+      await axiosInstance.put(`/api/coupons/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-coupons'] });
+      setIsCreating(false);
+      resetForm();
+      toast.success("Coupon updated successfully!");
+    },
+    onError: (err: any) => toast.error(err.response?.data?.message || "Failed to update coupon")
   });
 
   // Delete Mutation
@@ -83,7 +112,27 @@ export default function AdminCouponsPage() {
 
     if (!isValid) return;
 
-    createMutation.mutate(formData);
+    if (editingId) {
+      updateMutation.mutate({ id: editingId, data: formData });
+    } else {
+      createMutation.mutate(formData);
+    }
+  };
+
+  // Logic to Trigger Edit Mode
+  const handleEdit = (coupon: any) => {
+    setEditingId(coupon.id);
+    setIsCreating(true); // Open the form section
+    setFormData({
+      code: coupon.code,
+      type: coupon.type,
+      value: coupon.value.toString(),
+      minOrderAmount: coupon.minOrderAmount?.toString() || '0',
+      limitPerUser: coupon.limitPerUser?.toString() || '1',
+      maxUses: coupon.maxUses?.toString() || '',
+      expiresAt: coupon.expiresAt ? new Date(coupon.expiresAt).toISOString().split('T')[0] : '',
+      isPublic: coupon.isPublic
+    });
   };
 
   // 🟢 Dynamic Input Style Generator for Consistency
@@ -111,9 +160,12 @@ export default function AdminCouponsPage() {
         </div>
         <button 
           onClick={() => {
-            setIsCreating(!isCreating);
-            setCodeError("");
-            setValueError("");
+            if (isCreating) {
+              setIsCreating(false);
+              resetForm();
+            } else {
+              setIsCreating(true);
+            }
           }}
           className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all active:scale-95 shadow-sm ${
             isCreating 
@@ -126,9 +178,12 @@ export default function AdminCouponsPage() {
         </button>
       </div>
 
-      {/* --- CREATE FORM --- */}
+      {/* --- CREATE / EDIT FORM --- */}
       {isCreating && (
         <div className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-[1.5rem] shadow-sm border border-gray-100 dark:border-slate-800 mb-8 transition-colors animate-in slide-in-from-top-4 duration-300">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
+            {editingId ? 'Edit Coupon' : 'Create New Coupon'}
+          </h2>
           <form onSubmit={handleSubmit} className="flex flex-col gap-6">
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -281,12 +336,12 @@ export default function AdminCouponsPage() {
 
             <div className="flex justify-end pt-4 border-t border-gray-100 dark:border-slate-800">
               <button 
-                disabled={createMutation.isPending || !formData.code.trim() || !formData.value}
+                disabled={createMutation.isPending || updateMutation.isPending || !formData.code.trim() || !formData.value}
                 type="submit" 
                 className="w-full sm:w-auto flex items-center justify-center gap-2 h-[52px] px-8 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-all shadow-md hover:shadow-lg disabled:opacity-50 active:scale-95 shrink-0"
               >
-                {createMutation.isPending ? <Loader2 size={18} strokeWidth={2.5} className="animate-spin" /> : <Plus size={18} strokeWidth={2.5} />}
-                Create Coupon
+                {createMutation.isPending || updateMutation.isPending ? <Loader2 size={18} strokeWidth={2.5} className="animate-spin" /> : <Plus size={18} strokeWidth={2.5} />}
+                {editingId ? 'Update Coupon' : 'Create Coupon'}
               </button>
             </div>
           </form>
@@ -358,7 +413,7 @@ export default function AdminCouponsPage() {
                   </div>
                 </div>
 
-                {/* Footer section with usage and delete */}
+                {/* Footer section with usage, edit, and delete */}
                 <div className="flex items-end justify-between pt-4 border-t border-gray-100 dark:border-slate-800">
                   <div className="flex flex-col">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-slate-500 mb-0.5">Total Usage</span>
@@ -368,14 +423,24 @@ export default function AdminCouponsPage() {
                     </div>
                   </div>
 
-                  <button 
-                    onClick={() => { if(confirm(`Delete coupon ${coupon.code}?`)) deleteMutation.mutate(coupon.id) }}
-                    disabled={deleteMutation.isPending}
-                    className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all active:scale-95 disabled:opacity-50"
-                    title="Delete Coupon"
-                  >
-                    <Trash2 size={18} strokeWidth={2.5} />
-                  </button>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => handleEdit(coupon)}
+                      className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl transition-all active:scale-95"
+                      title="Edit Coupon"
+                    >
+                      <Ticket size={18} strokeWidth={2.5} />
+                    </button>
+                    
+                    <button 
+                      onClick={() => { if(confirm(`Delete coupon ${coupon.code}?`)) deleteMutation.mutate(coupon.id) }}
+                      disabled={deleteMutation.isPending}
+                      className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all active:scale-95 disabled:opacity-50"
+                      title="Delete Coupon"
+                    >
+                      <Trash2 size={18} strokeWidth={2.5} />
+                    </button>
+                  </div>
                 </div>
 
               </div>

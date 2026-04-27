@@ -101,7 +101,18 @@ export const verifyUser = async(req: Request, res: Response, next: NextFunction)
           where: { email },
           data: { userId: newUser.id }
         });
-       }
+       };
+
+       // Find all orders with this email that don't have a userId yet, and link them
+       await prisma.order.updateMany({
+           where: {
+               email: email,
+               userId: null // Ensures we only touch guest orders
+           },
+           data: {
+               userId: newUser.id
+           }
+       });
 
        res.status(200).json({
         success: true,
