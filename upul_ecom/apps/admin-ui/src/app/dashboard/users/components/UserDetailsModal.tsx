@@ -19,7 +19,6 @@ export default function UserDetailsModal({
   isLoading,
   onClose,
 }: UserDetailsModalProps) {
-  const [showAllOrders, setShowAllOrders] = useState(false);
   const [mounted, setMounted] = useState(false); // ⭐ 2. Track mounting for Next.js SSR
 
   // ⭐ 3. Handle mounting and lock background scrolling
@@ -251,22 +250,12 @@ export default function UserDetailsModal({
                   <section>
                     <div className="flex items-center justify-between mb-3 px-1">
                       <h3 className="text-sm font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest">
-                        {showAllOrders ? "All Orders" : "Recent Orders"}
+                        Recent Orders
                       </h3>
-                      <button
-                        onClick={() => setShowAllOrders(!showAllOrders)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors shadow-sm"
-                      >
-                        {showAllOrders ? (
-                          <>Show Less <ChevronUp size={14} /></>
-                        ) : (
-                          <>View All ({ordersData.length}) <ChevronDown size={14} /></>
-                        )}
-                      </button>
                     </div>
                     
-                    <div className={`space-y-3 ${showAllOrders ? "max-h-96" : "max-h-[300px]"} overflow-y-auto custom-scrollbar pr-1`}>
-                      {(showAllOrders ? ordersData : ordersData.slice(0, 5)).map((order: any) => (
+                    <div className="space-y-3 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
+                      {ordersData.slice(0, 5).map((order: any) => (
                         <div
                           key={order.id}
                           className="bg-white dark:bg-slate-900 rounded-[16px] p-4 border border-gray-100 dark:border-slate-800 shadow-sm flex justify-between items-center group hover:border-blue-200 dark:hover:border-blue-800/50 transition-colors"
