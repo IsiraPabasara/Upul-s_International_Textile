@@ -162,7 +162,7 @@ function TrackOrderContent() {
           </div>
 
           {/* Tracking + Cancel button area */}
-          <div className="text-right flex flex-col items-end gap-2">
+          <div className="flex flex-col md:text-right md:items-end gap-2 md:flex-col w-full md:w-auto">
             {order.trackingNumber && (
               <div className="bg-white px-5 py-3 rounded-lg border border-gray-200 shadow-sm">
                 <p className="text-[10px] uppercase text-gray-400 font-bold mb-1">Domex Tracking ID</p>
