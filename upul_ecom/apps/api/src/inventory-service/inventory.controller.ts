@@ -3,7 +3,6 @@ import prisma from "../../../../packages/libs/prisma";
 import ExcelJS from "exceljs";
 import PDFDocument from "pdfkit";
 
-// 1. GET INVENTORY LIST (Optimized with Variant-Aware Filters) ⚡
 export const getInventory = async (
   req: Request,
   res: Response,
@@ -25,7 +24,6 @@ export const getInventory = async (
       AND: [],
     };
 
-    // 🔍 Search Logic
     if (search) {
       where.AND.push({
         OR: [
@@ -35,16 +33,12 @@ export const getInventory = async (
       });
     }
 
-    // 📉 Filter Logic: Out of Stock
-    // Fix: Check if Parent is 0 OR if ANY variant is 0
     if (stock_status === "out_of_stock") {
       where.AND.push({
         OR: [{ stock: 0 }, { variants: { some: { stock: 0 } } }],
       });
     }
 
-    // ⚡ Filter Logic: Low Stock
-    // Fix: Check if Parent is < 10 OR if ANY variant is < 10
     if (filter_type === "low_stock") {
       where.AND.push({
         OR: [
@@ -61,13 +55,11 @@ export const getInventory = async (
       });
     }
 
-    // 🔥 RUN PARALLEL QUERIES
     const [total, rawProducts, globalStats, allProductsValue] =
       await prisma.$transaction([
-        // 1. Count
+
         prisma.product.count({ where }),
 
-        // 2. List Data
         prisma.product.findMany({
           where,
           skip,
@@ -85,23 +77,20 @@ export const getInventory = async (
           },
         }),
 
-        // 3. Global Stats
         prisma.product.aggregate({
           _sum: { stock: true },
           _count: { id: true },
         }),
 
-        // 4. Fetch ALL data for accurate "Out of Stock" calculation
-        // We fetch everything to calculate the precise row-level stats
         prisma.product.findMany({
           select: { stock: true, price: true, variants: true },
         }),
+
       ]);
 
-    // 🧮 CALCULATE REAL STATS (Drill into Variants!)
     const outOfStockCount = allProductsValue.reduce((count: number, p: any) => {
       if (Array.isArray(p.variants) && p.variants.length > 0) {
-        // Count specific variants that are 0
+        //Find out how many variants are out of stock and add to count
         const emptyVariants = (p.variants as any[]).filter(
           (v: any) => v.stock === 0,
         ).length;
@@ -120,9 +109,8 @@ export const getInventory = async (
       0,
     );
 
-    // Optimize Images
     const products = rawProducts.map((p: any) => ({
-      ...p,
+      ...p, //Save every single property it has and modify only the image
       images:
         Array.isArray(p.images) && p.images.length > 0 ? [p.images[0]] : [],
     }));
@@ -146,49 +134,49 @@ export const getInventory = async (
   }
 };
 
-// ... (bulkUpdateInventory remains the same)
-// inventoryController.ts
-
 export const bulkUpdateInventory = async (
   req: Request,
   res: Response,
   next: NextFunction,
 ) => {
   try {
+    
     const { updates } = req.body;
+
     if (!updates || !Array.isArray(updates)) {
       return res.status(400).json({ message: "Invalid updates array" });
     }
 
-    // 1️⃣ CRITICAL FIX: Group updates by SKU first!
-    // This prevents overwriting data if multiple variants of the same product are updated.
     const updatesBySku: Record<string, any[]> = {};
+
     updates.forEach((update) => {
-      if (!updatesBySku[update.sku]) {
-        updatesBySku[update.sku] = [];
+      if (!updatesBySku[update.sku]) { // Check if the SKU key already exists in the updatesBySku object
+        updatesBySku[update.sku] = []; // If it doesn't exist, initialize it with an empty array
       }
-      updatesBySku[update.sku].push(update);
+      updatesBySku[update.sku].push(update); 
     });
 
     const results = await prisma.$transaction(async (tx: any) => {
-      const skuKeys = Object.keys(updatesBySku);
+
+      const skuKeys = Object.keys(updatesBySku); // Get unique SKUs that need to be updated
 
       return Promise.all(
+
         skuKeys.map(async (sku) => {
+
           const productUpdates = updatesBySku[sku]; // All updates for this SKU
 
-          // Fetch product once
           const product = await tx.product.findUnique({ where: { sku } });
           if (!product) throw new Error(`Product ${sku} not found`);
 
           let currentVariants = Array.isArray(product.variants)
-            ? [...product.variants]
+            ? [...product.variants] // Clone the variants array without modifying the original database object directly
             : [];
           let currentStock = Number(product.stock);
           let updatedData: any = {};
 
-          // Apply ALL updates for this SKU in memory first
           for (const update of productUpdates) {
+
             const stockVal = Number(update.newStock);
 
             if (update.variantSize && currentVariants.length > 0) {
@@ -196,19 +184,16 @@ export const bulkUpdateInventory = async (
                 (v: any) => v.size === update.variantSize,
               );
               if (vIndex > -1) {
-                // Update specific variant stock
                 currentVariants[vIndex] = {
                   ...currentVariants[vIndex],
                   stock: stockVal,
                 };
               }
             } else {
-              // Update main stock (simple product)
               currentStock = stockVal;
             }
           }
 
-          // Calculate final totals
           if (currentVariants.length > 0) {
             const totalStock = currentVariants.reduce(
               (sum, v: any) => sum + Number(v.stock),
@@ -226,7 +211,6 @@ export const bulkUpdateInventory = async (
             };
           }
 
-          // Write to DB once per SKU
           return tx.product.update({
             where: { sku },
             data: updatedData,
@@ -241,17 +225,15 @@ export const bulkUpdateInventory = async (
   }
 };
 
-// 📦 GENERATE INVENTORY REPORT (PDF/Excel)
 export const generateInventoryReport = async (
   req: Request,
   res: Response,
   next: NextFunction,
 ) => {
   try {
+    
     const { status, format } = req.query;
 
-    // 1. Build the Prisma WHERE clause
-    // We need to check BOTH the main stock AND the stock inside the variants array
     const whereClause: any = {};
 
     if (status === "LOW_STOCK") {
@@ -263,27 +245,22 @@ export const generateInventoryReport = async (
       whereClause.OR = [{ stock: 0 }, { variants: { some: { stock: 0 } } }];
     }
 
-    // 2. Fetch inventory data from DB
     const dbInventory = await prisma.product.findMany({
       where: whereClause,
-      // Removed the stock orderBy here because we have multiple stocks per product now.
-      // We will sort it in memory later if needed.
     });
 
-    // 3. Format the data for the reports
-    // We use a flat array because one product might become 3 different rows (for XS, S, M)
     const formattedInventory: any[] = [];
 
     dbInventory.forEach((product: any) => {
+
       const price = Number(product.price) || 0;
 
-      // SCENARIO A: The product has specific size variants
       if (product.variants && product.variants.length > 0) {
-        product.variants.forEach((variant: any) => {
-          const stock = Number(variant.stock) || 0;
 
-          // CRITICAL: If the user filtered by "LOW_STOCK", we only want to add the
-          // specific variant sizes that are actually low, not the healthy ones!
+        product.variants.forEach((variant: any) => {
+
+          const stock = Number(variant.stock) || 0;
+          
           if (status === "LOW_STOCK" && (stock >= 10 || stock === 0)) return;
           if (status === "OUT_OF_STOCK" && stock > 0) return;
 
@@ -295,7 +272,7 @@ export const generateInventoryReport = async (
           formattedInventory.push({
             sku: product.sku || "N/A",
             productName: product.name,
-            variant: variant.size || "-", // "XS", "S", "M"
+            variant: variant.size || "-",
             status: stockStatus,
             stockLevel: stock,
             unitPrice: price,
@@ -303,11 +280,10 @@ export const generateInventoryReport = async (
           });
         });
       }
-      // SCENARIO B: The product has NO variants, use the root stock
       else {
+
         const stock = Number(product.stock) || 0;
 
-        // Apply filters to root stock
         if (status === "LOW_STOCK" && (stock >= 10 || stock === 0)) return;
         if (status === "OUT_OF_STOCK" && stock > 0) return;
 
@@ -328,20 +304,15 @@ export const generateInventoryReport = async (
       }
     });
 
-    // (Optional) Sort the final list so the lowest stock items are at the top of the report
     formattedInventory.sort((a, b) => a.stockLevel - b.stockLevel);
 
-    // ==========================================
-    // 4. GENERATE EXCEL
-    // ==========================================
     if (format === "EXCEL") {
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet("Inventory");
 
-      // Define your columns
       worksheet.columns = [
         { header: "SKU", key: "sku", width: 15 },
-        { header: "Product Name", key: "productName", width: 40 },
+        { header: "Product Name", key: "productName", width: 60 },
         { header: "Variant", key: "variant", width: 15 },
         { header: "Status", key: "status", width: 18 },
         { header: "Stock Level", key: "stockLevel", width: 15 },
@@ -349,21 +320,16 @@ export const generateInventoryReport = async (
         { header: "Asset Value", key: "assetValue", width: 25 },
       ];
 
-      // Make the header row bold
       worksheet.getRow(1).font = { bold: true };
 
-      // Add all inventory data
       worksheet.addRows(formattedInventory);
 
-      // --- GRAND TOTAL LOGIC ---
       const grandTotalAssetValue = formattedInventory.reduce((sum, item) => {
         return sum + item.assetValue;
       }, 0);
 
-      // Add a blank row for breathing room
       worksheet.addRow({});
 
-      // Add the final row at the bottom
       const totalRow = worksheet.addRow({
         unitPrice: "Total Asset Value:",
         assetValue: grandTotalAssetValue,
@@ -372,7 +338,6 @@ export const generateInventoryReport = async (
       totalRow.font = { bold: true };
       totalRow.getCell("unitPrice").alignment = { horizontal: "right" };
 
-      // Format currency columns
       worksheet.getColumn("unitPrice").numFmt = '"Rs." #,##0.00';
       worksheet.getColumn("assetValue").numFmt = '"Rs." #,##0.00';
 
@@ -386,9 +351,6 @@ export const generateInventoryReport = async (
       return res.end();
     }
 
-    // ==========================================
-    // 5. GENERATE PDF
-    // ==========================================
     if (format === "PDF") {
       const doc = new PDFDocument({ margin: 50 });
 
@@ -397,7 +359,6 @@ export const generateInventoryReport = async (
 
       doc.pipe(res);
 
-      // --- CUSTOM LOGO DRAWING (Top Left) ---
       const logoX = 50;
       const logoY = 40;
 
@@ -431,9 +392,8 @@ export const generateInventoryReport = async (
         .fillColor("#6b7280")
         .text("I N T E R N A T I O N A L", logoX, logoY + 40);
 
-      doc.fillColor("black").lineWidth(1); // Reset
+      doc.fillColor("black").lineWidth(1); 
 
-      // --- PDF Header Titles (Top Right) ---
       doc.y = 50;
       doc
         .fontSize(16)
@@ -441,7 +401,6 @@ export const generateInventoryReport = async (
         .text("Inventory & Asset Report", { align: "right" });
       doc.moveDown(1.5);
 
-      // --- Filter Meta Data ---
       const displayStatus =
         status === "LOW_STOCK"
           ? "Low Stock (< 10)"
@@ -452,7 +411,6 @@ export const generateInventoryReport = async (
       doc.text(`Total Items Listed: ${formattedInventory.length}`);
       doc.moveDown();
 
-      // --- Column Setup ---
       const colX = {
         sku: 50,
         product: 100,
@@ -481,7 +439,6 @@ export const generateInventoryReport = async (
 
       drawHeaders();
 
-      // --- Table Rows ---
       let grandTotalAsset = 0;
 
       formattedInventory.forEach((item: any) => {
@@ -502,13 +459,12 @@ export const generateInventoryReport = async (
 
         doc.text(item.variant, colX.variant, y);
 
-        // Highlight low/out of stock in PDF
         if (item.stockLevel === 0)
-          doc.fillColor("#dc2626"); // Red
-        else if (item.stockLevel < 10) doc.fillColor("#d97706"); // Orange
+          doc.fillColor("#dc2626");
+        else if (item.stockLevel < 10) doc.fillColor("#d97706");
 
         doc.text(item.stockLevel.toString(), colX.stock, y);
-        doc.fillColor("black"); // Reset to black
+        doc.fillColor("black"); 
 
         doc.text(`Rs. ${item.unitPrice.toLocaleString()}`, colX.price, y);
 
@@ -518,7 +474,6 @@ export const generateInventoryReport = async (
         doc.y = y + 20;
       });
 
-      // --- RIGHT-ALIGNED GRAND TOTAL FOOTER ---
       if (doc.y > 680) {
         doc.addPage();
       } else {

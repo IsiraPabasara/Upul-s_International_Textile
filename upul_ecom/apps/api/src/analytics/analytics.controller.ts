@@ -1,9 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import prisma from "../../../../packages/libs/prisma";
 
-// ===========================================================================
-// 1️⃣ MAIN DASHBOARD OVERVIEW (Cards, Main Chart, Categories, Recent Txns)
-// ===========================================================================
 export const getDashboardStats = async (
   req: Request,
   res: Response,
@@ -13,7 +10,6 @@ export const getDashboardStats = async (
     const { range = "weekly", startYear, endYear } = req.query;
     const today = new Date();
 
-    // 📅 DATE LOGIC
     let currentStartDate = new Date();
     let currentEndDate = new Date();
     let prevStartDate = new Date();
@@ -63,7 +59,6 @@ export const getDashboardStats = async (
       groupByType = "day";
     }
 
-    // ⚡ RUN STANDARD QUERIES
     const [
       totalRevenue,
       totalOrders,
@@ -145,7 +140,6 @@ export const getDashboardStats = async (
         select: { createdAt: true },
       }),
 
-      // Recent Transactions (Limit 5)
       prisma.order.findMany({
         take: 5,
         orderBy: { createdAt: "desc" },
@@ -155,7 +149,7 @@ export const getDashboardStats = async (
       }),
     ]);
 
-    // 🚀 CATEGORY AGGREGATION (Optimized)
+    // Get Top Seling 5 Categories with the Total
     const rawCategoryStats = await prisma.order.aggregateRaw({
       pipeline: [
         {
@@ -198,7 +192,7 @@ export const getDashboardStats = async (
             totalSales: { $sum: "$lineTotal" },
           },
         },
-        { $sort: { totalSales: -1 } },
+        { $sort: { totalSales: -1 } }, //Descending
         { $limit: 5 },
       ],
     });
@@ -210,7 +204,6 @@ export const getDashboardStats = async (
       }),
     );
 
-    // 🔢 CALCULATIONS (Trend & History)
     const calcTrend = (curr: number, prev: number) => {
       if (prev === 0) return curr > 0 ? 99 : 0;
       const rawTrend = ((curr - prev) / prev) * 100;
@@ -229,7 +222,6 @@ export const getDashboardStats = async (
       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     };
 
-    // History Logic
     const historyMap = new Map<
       string,
       { revenue: number; orders: number; products: number; label: string }
@@ -294,7 +286,6 @@ export const getDashboardStats = async (
       customers: Math.ceil(data.orders * 0.8),
     }));
 
-    // FINAL RESPONSE (Removed topSellingProducts from here)
     res.json({
       periodTotal,
       periodTrend,
@@ -339,9 +330,6 @@ export const getDashboardStats = async (
   }
 };
 
-// ===========================================================================
-// 2️⃣ TOP SELLING PRODUCTS (Independent, supports 'All Time' filter)
-// ===========================================================================
 export const getTopProducts = async (
   req: Request,
   res: Response,
@@ -356,7 +344,7 @@ export const getTopProducts = async (
     else if (range === "monthly") startDate.setMonth(endDate.getMonth() - 1);
     else if (range === "yearly")
       startDate.setFullYear(endDate.getFullYear() - 1);
-    else startDate = new Date("2020-01-01"); // All Time
+    else startDate = new Date("2020-01-01"); 
 
     const topProductsRaw = await prisma.order.aggregateRaw({
       pipeline: [
@@ -378,22 +366,19 @@ export const getTopProducts = async (
         },
         { $sort: { totalSold: -1 } },
         { $limit: 10 },
-        // Convert string ID to ObjectId so MongoDB can match it
         {
           $addFields: {
             productObjId: { $toObjectId: "$_id" },
           },
         },
-        // Fetch the exact product details directly inside the database
         {
           $lookup: {
-            from: "Product", // Must match your MongoDB collection name
+            from: "Product",
             localField: "productObjId",
             foreignField: "_id",
             as: "productDetails",
           },
         },
-        // Flatten the array MongoDB returns into a single object
         {
           $unwind: {
             path: "$productDetails",
@@ -405,7 +390,7 @@ export const getTopProducts = async (
 
     const formattedProducts = (topProductsRaw as unknown as any[])
       .map((item) => {
-        if (!item.productDetails) return null; // Skip if product was deleted from DB
+        if (!item.productDetails) return null;
 
         return {
           id: item._id,
@@ -435,7 +420,6 @@ export const getTopCustomers = async (
     let startDate = new Date();
     const endDate = new Date();
 
-    // 1. Date Logic
     if (range === "weekly") {
       startDate.setDate(endDate.getDate() - 7);
     } else if (range === "monthly") {
@@ -443,33 +427,30 @@ export const getTopCustomers = async (
     } else if (range === "yearly") {
       startDate.setFullYear(endDate.getFullYear() - 1);
     } else {
-      startDate = new Date("2020-01-01"); // All Time
+      startDate = new Date("2020-01-01"); 
     }
 
-    // 2. Aggregate Sales by User
-    // We use groupBy because totalAmount is on the order itself (simpler than products)
     const topUsersRaw = await prisma.order.groupBy({
       by: ["userId"],
       _sum: {
         totalAmount: true,
       },
       _count: {
-        id: true, // Count number of orders
+        id: true, 
       },
       where: {
         createdAt: { gte: startDate, lte: endDate },
         status: { not: "CANCELLED" },
-        userId: { not: null }, // Only registered users
+        userId: { not: null }, 
       },
       orderBy: {
         _sum: {
           totalAmount: "desc",
         },
       },
-      take: 5, // Top 5 Customers
+      take: 5,
     });
 
-    // 3. Fetch User Details (Name, Email, Image)
     const userIds = topUsersRaw
       .map((u: any) => u.userId)
       .filter((id: any): id is string => id !== null);
@@ -481,11 +462,9 @@ export const getTopCustomers = async (
         firstname: true,
         lastname: true,
         email: true,
-        // image: true, // Uncomment if your schema has an image field
       },
     });
 
-    // 4. Merge Data
     const formattedCustomers = topUsersRaw
       .map((item: any) => {
         const user = userDetails.find((u: any) => u.id === item.userId);
@@ -495,7 +474,7 @@ export const getTopCustomers = async (
           id: user.id,
           name: `${user.firstname} ${user.lastname}`.trim(),
           email: user.email,
-          image: "", // user.image || "",
+          image: "", 
           totalSpent: item._sum.totalAmount || 0,
           ordersCount: item._count.id || 0,
         };

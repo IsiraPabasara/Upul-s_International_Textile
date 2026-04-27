@@ -10,7 +10,7 @@ interface Country {
 }
 
 interface CountrySelectorProps {
-  selectedCountry?: string; // 🟢 Renamed for clarity (it holds the string now)
+  selectedCountry?: string; 
   onChange: (name: string) => void;
 }
 
@@ -36,14 +36,12 @@ export default function CountrySelector({ selectedCountry, onChange }: CountrySe
         >
           <option value="">Select Country</option>
           {countries.map((country) => (
-            // 🟢 CRITICAL FIX: Set value to country.name so it saves "Sri Lanka" to the DB
             <option key={country.id} value={country.name}>
               {country.name}
             </option>
           ))}
         </select>
 
-        {/* Icons Overlay */}
         <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none flex items-center gap-2">
           {isLoading ? (
             <Loader2 size={16} className="animate-spin text-gray-400" />
