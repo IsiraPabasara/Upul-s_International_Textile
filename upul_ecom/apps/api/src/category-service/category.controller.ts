@@ -24,7 +24,7 @@ export const createCategory = async (
     const safeParentId =
       parentId === "null" || parentId === "" ? null : parentId;
 
-    // 🛑 1. CHECK FOR DUPLICATE NAME AT THE SAME LEVEL
+    //  1. CHECK FOR DUPLICATE NAME AT THE SAME LEVEL
     const existingCategory = await prisma.category.findFirst({
       where: {
         name: { equals: name, mode: "insensitive" }, // Case-insensitive check
@@ -39,8 +39,8 @@ export const createCategory = async (
         .status(400)
         .json({ error: "A category with this name already exists at this level." });
     }
-
-    // 🐌 2. SLUG GENERATION (Prevent global @unique slug collisions)
+    
+    //slug createe validation
     let slug = generateSlug(name);
     if (safeParentId) {
       // Append a chunk of the parentId so "Shirts" under "Men" and "Women" have different slugs
@@ -54,15 +54,15 @@ export const createCategory = async (
     const category = await prisma.category.create({
       data: {
         name,
-        slug,
+        slug, //valdation
         sortOrder: Number(sortOrder),
         parent: safeParentId ? { connect: { id: safeParentId } } : undefined,
       },
     });
-
+    // error pass
     return res.status(201).json(category);
   } catch (error) {
-    if ((error as any).code === "P2002") {
+    if ((error as any).code === "P2002") {  
       return res
         .status(400)
         .json({ error: "A category with this slug or name globally exists." });
@@ -158,7 +158,7 @@ export const updateCategory = async (
     const data: any = {};
     
     if (name && name !== currentCategory.name) {
-      // 🛑 1. CHECK FOR DUPLICATE NAME AT THE SAME LEVEL
+      //  1. CHECK FOR DUPLICATE NAME AT THE SAME LEVEL
       const existingCategory = await prisma.category.findFirst({
         where: {
           id: { not: id }, // Exclude the one we are updating
@@ -177,7 +177,7 @@ export const updateCategory = async (
 
       data.name = name;
       
-      // 🐌 2. Update Slug safely
+      //  2. Update Slug safely
       let slug = slugify(name, { lower: true, strict: true });
       if (currentCategory.parentId) {
         slug = `${slug}-${currentCategory.parentId.slice(-6)}`;
@@ -258,7 +258,7 @@ export const getCategoryPath = async (req: Request, res: Response, next: NextFun
   }
 };
 
-// 📋 GENERATE CATEGORY ANALYTICS REPORT (PDF/Excel)
+//  GENERATE CATEGORY ANALYTICS REPORT (PDF/Excel)
 export const generateCategoryReport = async (
   req: Request,
   res: Response,
