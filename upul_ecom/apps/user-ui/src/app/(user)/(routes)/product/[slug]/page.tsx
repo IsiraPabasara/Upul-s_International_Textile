@@ -326,7 +326,7 @@ export default function ProductPage() {
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
   // Note: ensure your addItem function accepts a second 'openCart' boolean argument
-  const { items, addItem } = useCart(); 
+  const { items, addItem, toggleCart, setValidationErrors: setCartValidationErrors, clearValidationErrors } = useCart(); 
   const { toggleItem, isInWishlist } = useWishlist();
 
   const { data: product, isLoading } = useQuery<Product>({
@@ -468,6 +468,7 @@ export default function ProductPage() {
     if (hasVariants && !selectedSize) { toast.error('Please select a size first'); return; }
     if (quantity > remainingStock) { toast.error(`Limit reached for this item.`); return; }
 
+    clearValidationErrors();
     setValidationErrors([]);
     setIsBuyingNow(true);
     const newItem = createCartItem();
@@ -493,14 +494,55 @@ export default function ProductPage() {
         if (data.isValid) {
             router.push('/checkout');
         } else {
-            const errors = data.errors || ['Stock or price mismatch detected. Please review your cart.'];
-            setValidationErrors(Array.isArray(errors) ? errors : [errors]);
+            // 👇 NEW: Convert error array to object format expected by cart state
+            const cartErrors: Record<string, string> = {};
+            if (data.errors && typeof data.errors === 'object' && !Array.isArray(data.errors)) {
+                Object.assign(cartErrors, data.errors);
+            } else if (Array.isArray(data.errors)) {
+                // If it's an array, assign to the cart item
+                cartErrors[newItem.sku] = data.errors.join(', ') || 'Stock or price mismatch detected.';
+            } else {
+                cartErrors[newItem.sku] = 'Stock or price mismatch detected. Please review your cart.';
+            }
+            
+            // Set errors in cart state
+            setCartValidationErrors(cartErrors);
+            
+            // Also keep local state for product page display
+            setValidationErrors(
+                Object.entries(cartErrors).map(([_, message]) => message)
+            );
+            
+            // 👇 NEW: Open cart drawer so user can see the errors
+            if (!toggleCart) return; // safety check
+            toggleCart();
+            
             setIsBuyingNow(false);
+            toast.error('Unable to proceed. Please check your cart for details.');
         }
     } catch (error: any) {
-        const errorMessage = error?.response?.data?.errors || ['Something went wrong. Try again.'];
-        setValidationErrors(Array.isArray(errorMessage) ? errorMessage : [errorMessage]);
+        const errorMessage = error?.response?.data?.errors || 'Something went wrong. Try again.';
+        
+        // Convert to cart error format
+        const cartErrors: Record<string, string> = {};
+        if (typeof errorMessage === 'object' && !Array.isArray(errorMessage)) {
+            Object.assign(cartErrors, errorMessage);
+        } else if (Array.isArray(errorMessage)) {
+            cartErrors[newItem.sku] = errorMessage.join(', ');
+        } else {
+            cartErrors[newItem.sku] = String(errorMessage);
+        }
+        
+        setCartValidationErrors(cartErrors);
+        setValidationErrors(
+            Object.entries(cartErrors).map(([_, message]) => message)
+        );
+        
+        // 👇 NEW: Open cart drawer to show errors
+        if (toggleCart) toggleCart();
+        
         setIsBuyingNow(false);
+        toast.error('Unable to proceed. Please check your cart for details.');
     }
   };
 
@@ -693,7 +735,7 @@ export default function ProductPage() {
             </button>
 
             {/* Validation Error Display */}
-            {validationErrors.length > 0 && (
+            {/* {validationErrors.length > 0 && (
                 <div className="mt-3 p-4 bg-red-50 border border-red-200 rounded-lg space-y-2">
                     <div className="flex items-start gap-3">
                         <AlertCircle size={18} className="text-red-500 flex-shrink-0 mt-0.5" />
@@ -707,7 +749,7 @@ export default function ProductPage() {
                         </div>
                     </div>
                 </div>
-            )}
+            )} */}
           </div>
 
           {/* Details Accordion */}
