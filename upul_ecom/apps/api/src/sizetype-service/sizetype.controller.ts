@@ -12,6 +12,7 @@ export const getSizeTypes = async (req: Request, res: Response, next: NextFuncti
 
 export const createSizeType = async (req: Request, res: Response, next: NextFunction) => {
   try {
+
     const { name, values } = req.body; 
     
     if (!name || !values || !Array.isArray(values) || values.length === 0) {
@@ -30,26 +31,26 @@ export const createSizeType = async (req: Request, res: Response, next: NextFunc
 
 export const deleteSizeType = async (req: Request, res: Response, next: NextFunction) => {
   try {
+
     const { id } = req.params;
     await prisma.sizeType.delete({ where: { id } });
     return res.json({ message: "Deleted successfully" });
+    
   } catch (error) {
     return next(error);
   }
 };
 
-// 🟢 NEW: Update Size Type Function
 export const updateSizeType = async (req: Request, res: Response, next: NextFunction) => {
   try {
+
     const { id } = req.params;
     const { name, values } = req.body;
 
-    // 1. Validate the incoming data
     if (!name || !values || !Array.isArray(values) || values.length === 0) {
       return res.status(400).json({ message: "Invalid data. Provide name and array of values." });
     }
 
-    // 2. Update the record in MongoDB
     const updatedType = await prisma.sizeType.update({
       where: { id },
       data: { name, values }
@@ -57,7 +58,6 @@ export const updateSizeType = async (req: Request, res: Response, next: NextFunc
 
     return res.status(200).json(updatedType);
   } catch (error: any) {
-    // If Prisma can't find the ID, it throws a P2025 error
     if (error.code === 'P2025') {
       return res.status(404).json({ message: "Size standard not found" });
     }

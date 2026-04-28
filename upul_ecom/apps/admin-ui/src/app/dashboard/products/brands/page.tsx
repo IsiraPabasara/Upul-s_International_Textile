@@ -155,7 +155,13 @@ export default function BrandManager() {
       toast.success("Brand removed");
     },
     onError: (err: any) => {
-      toast.error(err.response?.data?.message || "Failed to delete brand");
+      const errorMessage = err.response?.data?.message || "Failed to delete brand";
+      
+      if (errorMessage.toLowerCase().includes("product") || errorMessage.toLowerCase().includes("linked")) {
+        alert(`Cannot Delete Brand\n\n${errorMessage}`);
+      } else {
+        toast.error(errorMessage);
+      }
     },
   });
 
