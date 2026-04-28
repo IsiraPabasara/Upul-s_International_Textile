@@ -6,22 +6,18 @@ interface ImageUploaderProps {
 }
 
 export default function ImageUploader({ onFilesSelected }: ImageUploaderProps) {
-  // We keep track of files locally just to reset input if needed, 
-  // but the main display is now handled by the Parent Form.
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const newFiles = Array.from(e.target.files);
       onFilesSelected(newFiles);
       
-      // Reset input so same file can be selected again if needed
       e.target.value = ""; 
     }
   };
 
   return (
     <div className="w-full">
-      {/* Tall Professional Dropzone */}
       <div className="relative group">
         <div className="border-2 border-dashed border-gray-300 dark:border-slate-700 rounded-2xl h-32 text-center bg-gray-50 dark:bg-slate-800/30 hover:bg-blue-50 dark:hover:bg-blue-900/10 hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-300 cursor-pointer flex flex-col items-center justify-center gap-3">
           

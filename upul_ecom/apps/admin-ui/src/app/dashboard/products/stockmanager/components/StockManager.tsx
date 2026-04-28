@@ -35,11 +35,9 @@ interface StockManagerProps {
   initialSizeType?: string;
 }
 
-// --- SHARED SCROLLBAR STYLES ---
 const customScrollbar =
   "[&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-200 dark:[&::-webkit-scrollbar-thumb]:bg-slate-700 [&::-webkit-scrollbar-thumb]:rounded-full";
 
-// --- SUB-COMPONENT: Custom Table Row Dropdown ---
 function CustomTableRowDropdown({
   value,
   options,
@@ -53,6 +51,7 @@ function CustomTableRowDropdown({
   rows: VariantRow[];
   rowId: number;
 }) {
+
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -129,20 +128,19 @@ function CustomTableRowDropdown({
   );
 }
 
-// --- MAIN COMPONENT ---
 export default function StockManager({
   onUpdate,
   initialVariants,
   initialSizeType,
 }: StockManagerProps) {
-  // 1. FETCH SIZE STANDARDS
+
   const { data: sizeTypes = [], isLoading } = useQuery<SizeType[]>({
     queryKey: ["size-types"],
     queryFn: async () => {
       const res = await axiosInstance.get("/api/size-types");
       return res.data;
     },
-    staleTime: 1000 * 60 * 5,
+    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
   });
 
   const hasHydrated = useRef(false);
@@ -151,7 +149,6 @@ export default function StockManager({
     { id: Date.now(), size: "", stock: 0 },
   ]);
 
-  // Main Dropdown State
   const [isMainDropdownOpen, setIsMainDropdownOpen] = useState(false);
   const mainDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -168,25 +165,27 @@ export default function StockManager({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Helper: Get options
-  const selectedTypeObj = sizeTypes.find((t) => t.name === sizeType);
+  const selectedTypeObj = sizeTypes.find((t) => t.name === sizeType); 
   const currentOptions = selectedTypeObj ? selectedTypeObj.values : [];
   const isDropdown = currentOptions.length > 0;
 
-  // 2. HYDRATION
   useEffect(() => {
-    if (hasHydrated.current) return;
+
+    if (hasHydrated.current) return; //Check whether the component is booted up or not
 
     if (initialVariants && initialVariants.length > 0) {
+
       setRows(
-        initialVariants.map((v, i) => ({
+        initialVariants.map((v, i) => ({ //i means index
           id: Date.now() + i,
           size: v.size,
           stock: v.stock,
         })),
       );
       hasHydrated.current = true;
+
     } else if (!isLoading && sizeTypes.length > 0) {
+
       const defaultType = initialSizeType || sizeTypes[0].name;
       setSizeType(defaultType);
 
@@ -199,17 +198,15 @@ export default function StockManager({
     }
   }, [initialVariants, initialSizeType, sizeTypes, sizeType, isLoading]);
 
-  // 3. SYNC
+  // keep the main form up to date
   useEffect(() => {
-    const cleanVariants = rows.map(({ size, stock }) => ({ size, stock }));
+    const cleanVariants = rows.map(({ size, stock }) => ({ size, stock })); // A new clean list without row id
     onUpdate({ sizeType, variants: cleanVariants });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rows, sizeType]);
 
-  // --- ACTIONS ---
   const getNextAvailableSize = (currentRows: VariantRow[]) => {
     const usedSizes = currentRows.map((r) => r.size);
-    return currentOptions.find((opt) => !usedSizes.includes(opt));
+    return currentOptions.find((opt) => !usedSizes.includes(opt)); //1st size that is not used in current rows
   };
 
   const handleTypeChange = (newType: string) => {
@@ -237,7 +234,7 @@ export default function StockManager({
       setRows([{ id: Date.now(), size: resetSize, stock: 0 }]);
       return;
     }
-    setRows((prev) => prev.filter((row) => row.id !== id));
+    setRows((prev) => prev.filter((row) => row.id !== id)); // IF the id is doesn't match the trash row keep it 
   };
 
   const updateRow = (
@@ -257,12 +254,11 @@ export default function StockManager({
 
   // --- SHOW/HIDE LOGIC ---
   const hasOptionsLeft = !isDropdown || rows.length < currentOptions.length;
-  const allRowsValid = rows.every((row) => row.size && row.stock > 0);
+  const allRowsValid = rows.every((row) => row.size && row.stock > 0); //Does this row have a size selected AND is the stock greater than 0
   const canAddMore = hasOptionsLeft && allRowsValid;
 
   return (
     <div className="bg-white dark:bg-slate-900/50 p-4 sm:p-6 rounded-[2rem] border border-gray-200 dark:border-slate-800 shadow-sm animate-in fade-in slide-in-from-top-2">
-      {/* --- HEADER --- */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 border-b border-gray-100 dark:border-slate-800 pb-5">
         <div>
           <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
@@ -277,7 +273,6 @@ export default function StockManager({
           </p>
         </div>
 
-        {/* --- CUSTOM MAIN DROPDOWN --- */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
           <label className="text-[10px] sm:text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-widest whitespace-nowrap ml-1 sm:ml-0">
             Size Type
@@ -329,17 +324,13 @@ export default function StockManager({
         </div>
       </div>
 
-      {/* --- RESPONSIVE "TABLE" (Cards on Mobile, Row on Desktop) --- */}
-      {/* 🟢 overflow-hidden here guarantees corners never get clipped by row backgrounds */}
       <div className="border border-gray-200 dark:border-slate-700 rounded-2xl shadow-sm bg-white dark:bg-slate-900 overflow-visible">
         {" "}
-        {/* Table Header (Hidden on Mobile) */}
         <div className="hidden sm:flex items-center bg-gray-50/80 dark:bg-slate-800/80 backdrop-blur-sm text-gray-500 dark:text-slate-400 font-bold text-xs uppercase tracking-widest border-b border-gray-200 dark:border-slate-700 px-4 py-3 rounded-t-2xl">
           <div className="w-1/2 pl-2">Size ({sizeType})</div>
           <div className="w-1/3">Stock Qty</div>
           <div className="flex-1 text-right pr-2">Action</div>
         </div>
-        {/* Rows Container */}
         <div className="divide-y divide-gray-100 dark:divide-slate-800/50">
           {rows.map((row) => {
             const isZeroStock = row.stock === 0;
@@ -352,12 +343,10 @@ export default function StockManager({
                     : "hover:bg-blue-50/30 dark:hover:bg-slate-800/30"
                 }`}
               >
-                {/* 📱 Mobile Label: Size */}
                 <div className="sm:hidden text-[10px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-widest mb-[-8px] ml-1">
                   Size ({sizeType})
                 </div>
 
-                {/* Size Input */}
                 <div className="w-full sm:w-1/2 sm:pr-6">
                   {isDropdown ? (
                     <CustomTableRowDropdown
@@ -380,7 +369,6 @@ export default function StockManager({
                   )}
                 </div>
 
-                {/* 📱 Mobile Label: Stock */}
                 <div className="sm:hidden text-[10px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-widest mt-1 mb-[-8px] ml-1 flex justify-between">
                   <span>Stock Quantity</span>
                   {isZeroStock && (
@@ -390,7 +378,6 @@ export default function StockManager({
                   )}
                 </div>
 
-                {/* Stock Input */}
                 <div className="w-full sm:w-1/3 sm:pr-6 relative">
                   <input
                     type="number"
@@ -399,7 +386,6 @@ export default function StockManager({
                     min="0"
                     className="w-full h-[44px] px-4 bg-white dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all text-sm sm:text-base font-black text-gray-900 dark:text-white font-mono [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
-                  {/* Desktop Required Warning */}
                   {isZeroStock && (
                     <div
                       className="hidden sm:block absolute right-10 top-1/2 -translate-y-1/2 text-red-500 animate-pulse pointer-events-none"
@@ -410,7 +396,6 @@ export default function StockManager({
                   )}
                 </div>
 
-                {/* Action / Delete Button */}
                 <div className="w-full sm:flex-1 flex sm:justify-end mt-2 sm:mt-0 pt-4 sm:pt-0 border-t border-gray-100 dark:border-slate-800 sm:border-none">
                   <button
                     type="button"
@@ -429,9 +414,7 @@ export default function StockManager({
         </div>
       </div>
 
-      {/* --- FOOTER ACTIONS --- */}
       <div className="mt-6 flex flex-col sm:flex-row justify-between items-center gap-4">
-        {/* Dynamic Stock Badge */}
         {(() => {
           const totalStock = rows.reduce(
             (acc, r) => acc + (Number(r.stock) || 0),
@@ -458,7 +441,6 @@ export default function StockManager({
           );
         })()}
 
-        {/* Add Variant Button */}
         {canAddMore ? (
           <button
             type="button"
