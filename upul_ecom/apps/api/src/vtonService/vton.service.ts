@@ -4,7 +4,6 @@ const replicate = new Replicate({
   auth: process.env.REPLICATE_API_TOKEN,
 });
 
-// 🛠️ THE CORE AI SERVICE (Used by both B2C and Admin routes)
 export const generateTryOn = async (
   humanImageUrl: string,
   garmentImageUrl: string,
@@ -12,6 +11,7 @@ export const generateTryOn = async (
   garmentDescription: string = "A professional photo of a garment"
 ): Promise<string> => {
   try {
+    
     console.log(`Processing images (~15-20 seconds)... Category: ${category}`);
 
     const output: any = await replicate.run(

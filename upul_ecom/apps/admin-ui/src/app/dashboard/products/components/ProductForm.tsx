@@ -415,7 +415,7 @@ export default function ProductForm({
             <div className="space-y-6 sm:space-y-8">
               <div>
                 <label className="label mb-1.5 sm:mb-2 ml-1 text-sm sm:text-base font-semibold text-gray-900 dark:text-white flex items-center gap-1">
-                  Primary Color <span className="text-red-500">*</span>
+                  Primary Color 
                 </label>
                 <Controller
                   name="colors"
