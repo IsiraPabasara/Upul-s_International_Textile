@@ -735,7 +735,7 @@ export default function ProductPage() {
             </button>
 
             {/* Validation Error Display */}
-            {/* {validationErrors.length > 0 && (
+            {validationErrors.length > 0 && (
                 <div className="mt-3 p-4 bg-red-50 border border-red-200 rounded-lg space-y-2">
                     <div className="flex items-start gap-3">
                         <AlertCircle size={18} className="text-red-500 flex-shrink-0 mt-0.5" />
@@ -749,7 +749,7 @@ export default function ProductPage() {
                         </div>
                     </div>
                 </div>
-            )} */}
+            )}
           </div>
 
           {/* Details Accordion */}
