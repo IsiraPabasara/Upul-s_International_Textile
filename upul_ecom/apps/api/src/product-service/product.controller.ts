@@ -408,7 +408,7 @@ export const generateProductReport = async (
 
       worksheet.columns = [
         { header: "SKU", key: "sku", width: 15 },
-        { header: "Product Name", key: "productName", width: 40 },
+        { header: "Product Name", key: "productName", width: 60 },
         { header: "Category", key: "category", width: 20 },
         { header: "Brand", key: "brand", width: 15 },
         { header: "Base Price", key: "basePrice", width: 15 },

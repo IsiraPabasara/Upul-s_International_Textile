@@ -225,7 +225,7 @@ export default function ProductForm({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // If there is no images uploaded this will came and when the user added the images it it immediatly vanishes
+  // If there is no images uploaded this will came and when the user added the images it will immediatly vanishes
   useEffect(() => {
     const totalImages = currentImages.length + selectedRawFiles.length;
     if (totalImages > 0 && totalImages <= MAX_IMAGES && errors.images) {
@@ -415,7 +415,7 @@ export default function ProductForm({
             <div className="space-y-6 sm:space-y-8">
               <div>
                 <label className="label mb-1.5 sm:mb-2 ml-1 text-sm sm:text-base font-semibold text-gray-900 dark:text-white flex items-center gap-1">
-                  Primary Color <span className="text-red-500">*</span>
+                  Primary Color 
                 </label>
                 <Controller
                   name="colors"
@@ -490,14 +490,12 @@ export default function ProductForm({
                     />
                   </>
                 ) : (
-                  /* Single Stock Counter Card */
                   <div className="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 sm:gap-6">
                     <div className="flex flex-col gap-1.5 sm:gap-2 w-full sm:w-auto">
                       <label className="label mb-0 text-sm sm:text-base font-bold text-gray-900 dark:text-white">
                         Total Available Quantity
                       </label>
 
-                      {/* 🟢 3-TIER DYNAMIC BADGE LOGIC */}
                       {(() => {
                         const currentStock = Number(watch("stock")) || 0;
                         return (
@@ -520,7 +518,6 @@ export default function ProductForm({
                       })()}
                     </div>
 
-                    {/* Stepper Input */}
                     <div className="flex items-center bg-gray-50 dark:bg-slate-800/50 rounded-xl p-1.5 border border-gray-200 dark:border-slate-700 w-full sm:w-auto justify-between sm:justify-center shadow-inner">
                       <button
                         type="button"
@@ -566,9 +563,8 @@ export default function ProductForm({
             </div>
           </div>
 
-          {/* 3. PRICING */}
           <div className="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-[2rem] shadow-sm border border-gray-100 dark:border-slate-800 transition-colors">
-            {/* Header */}
+
             <div className="flex items-center gap-3 sm:gap-4 mb-6 sm:mb-8 pb-4 border-b border-gray-100 dark:border-slate-800">
               <div className="p-2 sm:p-2.5 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl text-emerald-600 dark:text-emerald-400 shrink-0">
                 <DollarSign
@@ -588,7 +584,6 @@ export default function ProductForm({
             </div>
 
             <div className="flex flex-col gap-6 sm:gap-8">
-              {/* Base Price Input */}
               <div>
                 <label className="label mb-1.5 sm:mb-2 ml-1 text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
                   Base Selling Price{" "}
@@ -628,9 +623,7 @@ export default function ProductForm({
                 )}
               </div>
 
-              {/* Discount Rules */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 sm:gap-6">
-                {/* CUSTOM PREMIUM DROPDOWN */}
                 <div className="sm:col-span-2">
                   <label className="label mb-1.5 sm:mb-2 ml-1 text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
                     Discount Type
@@ -681,7 +674,6 @@ export default function ProductForm({
                                 "discountType",
                                 opt.val as "NONE" | "PERCENTAGE" | "FIXED",
                               );
-                              // Reset discount value if switching to NONE to avoid lingering validation errors
                               if (opt.val === "NONE")
                                 setValue("discountValue", 0);
                               setIsDiscountDropdownOpen(false);
@@ -700,7 +692,6 @@ export default function ProductForm({
                   </div>
                 </div>
 
-                {/* Discount Value Input */}
                 <div
                   className={`sm:col-span-1 transition-all duration-300 ${watchedDiscountType === "NONE" ? "opacity-40 pointer-events-none grayscale blur-[1px]" : "opacity-100"}`}
                 >
@@ -769,12 +760,9 @@ export default function ProductForm({
                 </div>
               </div>
 
-              {/* Final Calculation Card */}
               <div className="bg-gradient-to-br from-gray-50 to-white dark:from-slate-800/80 dark:to-slate-900 p-5 sm:p-6 rounded-2xl border border-gray-100 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-5 sm:gap-6 relative overflow-hidden shadow-inner mt-2">
-                {/* Decorative Glow */}
                 <div className="absolute top-0 right-0 w-48 sm:w-64 h-48 sm:h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/3"></div>
 
-                {/* Calculation Breakdown */}
                 <div className="flex items-center justify-between sm:justify-start w-full sm:w-auto gap-4 sm:gap-8 text-sm relative z-10">
                   <div className="flex flex-col gap-0.5 sm:gap-1">
                     <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest">
@@ -807,7 +795,6 @@ export default function ProductForm({
                   </div>
                 </div>
 
-                {/* Final Price Highlight */}
                 <div
                   className={`flex items-center justify-center sm:justify-end w-full sm:w-auto gap-4 bg-white dark:bg-slate-950 px-5 sm:px-6 py-4 rounded-[1rem] border shadow-md relative z-10 group transition-colors ${getDiscountedPrice() < 0 ? "border-red-200 dark:border-red-800/50" : "border-gray-100 dark:border-slate-800 hover:border-emerald-200 dark:hover:border-emerald-800/50"}`}
                 >
@@ -835,9 +822,7 @@ export default function ProductForm({
           </div>
         </div>
 
-        {/* === RIGHT COLUMN === */}
         <div className="xl:col-span-2 space-y-8 sticky top-6">
-          {/* 4. MEDIA GALLERY */}
           <div
             className={`bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border transition-all duration-300 ${errors.images ? "dark:border-slate-800 ring-red-500/10" : "border-gray-100 dark:border-slate-800"}`}
           >
@@ -863,7 +848,6 @@ export default function ProductForm({
               </span>
             </div>
 
-            {/* 🟢 Hidden Bridge Input for RHF Validation */}
             <input
               type="hidden"
               {...register("images", {
@@ -878,7 +862,6 @@ export default function ProductForm({
               })}
             />
 
-            {/* 🟢 Beautiful Error Alert */}
             {errors.images && (
               <div className="mb-5 text-sm font-bold text-red-500 bg-red-50 dark:bg-red-900/10 p-3 rounded-xl border border-red-100 dark:border-red-800/30 flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
                 <X size={16} strokeWidth={3} /> {errors.images.message}
@@ -942,7 +925,7 @@ export default function ProductForm({
                 if (idx === 0) return null;
                 const src =
                   fileOrUrl instanceof File
-                    ? URL.createObjectURL(fileOrUrl)
+                    ? URL.createObjectURL(fileOrUrl) // If the image is uploaded by the user 
                     : (fileOrUrl as ProductImage).url;
                 return (
                   <div
@@ -980,6 +963,7 @@ export default function ProductForm({
             {currentImages.length + selectedRawFiles.length < MAX_IMAGES ? (
               <ImageUploader
                 onFilesSelected={(incoming) => {
+                  //How many remaining slots are there?
                   const left =
                     MAX_IMAGES -
                     (currentImages.length + selectedRawFiles.length);
@@ -999,7 +983,6 @@ export default function ProductForm({
             )}
           </div>
 
-          {/* 5. ORGANIZATION & STATUS */}
           <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-800">
             <div className="flex items-center gap-3 mb-6">
               <div className="p-2.5 bg-pink-50 dark:bg-pink-900/20 rounded-xl text-pink-500">
@@ -1016,7 +999,6 @@ export default function ProductForm({
             </div>
 
             <div className="space-y-4">
-              {/* Category Selector with Validation Container */}
               <div className={`p-4 rounded-2xl border transition-all duration-300 ${errors.categoryId ? 'bg-red-50 dark:bg-red-900/10 border-red-300 dark:border-red-800/50  ring-red-500/10' : 'bg-gray-50 dark:bg-slate-800/40 border-gray-100 dark:border-slate-700/50'}`}>
                 <Controller
                   name="categoryId"
@@ -1029,7 +1011,7 @@ export default function ProductForm({
                         initialCategoryId={initialData?.categoryId}
                         onSelectionChange={(id) => {
                           field.onChange(id || "");
-                          if (id) clearErrors("categoryId"); // Instantly clear error on selection
+                          if (id) clearErrors("categoryId"); 
                         }}
                       />
                       {errors.categoryId && (
@@ -1042,9 +1024,7 @@ export default function ProductForm({
                 />
               </div>
 
-              {/* Status Toggles */}
               <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                {/* Visibility Toggle Card */}
                 <div className="flex items-center justify-between p-3 sm:p-4 bg-white dark:bg-slate-800/50 rounded-2xl border border-gray-100 dark:border-slate-700 hover:border-blue-200 dark:hover:border-blue-800/50 transition-all group shadow-sm">
                   <div className="flex items-center gap-2 sm:gap-3">
                     <Eye
@@ -1078,7 +1058,6 @@ export default function ProductForm({
                   />
                 </div>
 
-                {/* New Arrival Toggle Card */}
                 <div className="flex items-center justify-between p-3 sm:p-4 bg-white dark:bg-slate-800/50 rounded-2xl border border-gray-100 dark:border-slate-700 hover:border-orange-200 dark:hover:border-orange-800/50 transition-all group shadow-sm">
                   <div className="flex items-center gap-2 sm:gap-3">
                     <Zap
@@ -1115,7 +1094,6 @@ export default function ProductForm({
             </div>
           </div>
 
-          {/* ACTIONS */}
           <div className="space-y-3 pt-4">
             <button
               type="submit"

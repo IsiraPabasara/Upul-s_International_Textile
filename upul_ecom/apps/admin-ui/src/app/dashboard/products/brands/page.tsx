@@ -25,7 +25,6 @@ interface Brand {
   logoFileId?: string | null;
 }
 
-// --- IMAGEKIT UPLOAD UTILITY ---
 export const uploadImageToKit = async (file: File) => {
   try {
     const { data: auth } = await axiosInstance.get("/api/imagekit/auth");
@@ -56,6 +55,7 @@ export const uploadImageToKit = async (file: File) => {
 };
 
 export default function BrandManager() {
+
   const queryClient = useQueryClient();
 
   const [name, setName] = useState("");
@@ -114,13 +114,13 @@ export default function BrandManager() {
     if (brand.logoUrl) {
       setLogoUrl(brand.logoUrl);
       setPreview(brand.logoUrl);
-      setUploadMode("url"); // Default to URL mode to show existing image string
+      setUploadMode("url"); 
     } else {
       clearImage();
       setUploadMode("upload");
     }
     setNameError("");
-    window.scrollTo({ top: 0, behavior: "smooth" }); // Smoothly scroll up to the form!
+    window.scrollTo({ top: 0, behavior: "smooth" }); 
   };
 
   const handleCancelEdit = () => {
@@ -155,11 +155,16 @@ export default function BrandManager() {
       toast.success("Brand removed");
     },
     onError: (err: any) => {
-      toast.error(err.response?.data?.message || "Failed to delete brand");
+      const errorMessage = err.response?.data?.message || "Failed to delete brand";
+      
+      if (errorMessage.toLowerCase().includes("product") || errorMessage.toLowerCase().includes("linked")) {
+        alert(`Cannot Delete Brand\n\n${errorMessage}`);
+      } else {
+        toast.error(errorMessage);
+      }
     },
   });
 
-  // 🟢 NEW: Handles the update API call and gives visible Toast feedback
   const updateMutation = useMutation({
     mutationFn: (updatedBrand: {
       id: string;
@@ -169,15 +174,14 @@ export default function BrandManager() {
     }) => axiosInstance.put(`/api/brands/${updatedBrand.id}`, updatedBrand),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["brands"] });
-      handleCancelEdit(); // Clears form
-      toast.success("Brand updated successfully!"); // 🟢 Success Feedback
+      handleCancelEdit(); 
+      toast.success("Brand updated successfully!"); 
     },
     onError: (err: any) => {
-      toast.error(err.response?.data?.message || "Failed to update brand"); // 🔴 Error Feedback
+      toast.error(err.response?.data?.message || "Failed to update brand"); 
     },
   });
 
-  // --- SUBMIT HANDLER ---
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanName = name.trim();
@@ -187,7 +191,6 @@ export default function BrandManager() {
       return toast.error("Brand name is required");
     }
 
-    // 🟢 Prevent duplicates, but ignore the current brand if we are editing it
     const isDuplicate = brands.some(
       (brand) =>
         brand.name.toLowerCase() === cleanName.toLowerCase() &&
@@ -200,7 +203,7 @@ export default function BrandManager() {
     }
 
     let finalLogoUrl = logoUrl.trim();
-    let finalLogoFileId = editingBrand?.logoFileId || ""; // Keep existing file ID if not replaced
+    let finalLogoFileId = editingBrand?.logoFileId || ""; 
 
     try {
       if (uploadMode === "upload" && selectedFile) {
@@ -239,7 +242,6 @@ export default function BrandManager() {
 
   return (
     <div className="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8 animate-in fade-in duration-500">
-      {/* --- HEADER --- */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight flex items-center gap-3">
@@ -256,7 +258,6 @@ export default function BrandManager() {
         </div>
       </div>
 
-      {/* --- CREATE FORM CARD --- */}
       <div className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-[1.5rem] shadow-sm border border-gray-100 dark:border-slate-800 mb-8 transition-colors">
         {editingBrand && (
           <div className="mb-6 flex items-center justify-between bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 px-4 py-3 rounded-xl text-sm font-bold">
@@ -277,7 +278,6 @@ export default function BrandManager() {
           onSubmit={handleSubmit}
           className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12"
         >
-          {/* LEFT COLUMN: Brand Name & Submit */}
           <div className="lg:col-span-5 flex flex-col  gap-6">
             <div>
               <label
@@ -296,7 +296,7 @@ export default function BrandManager() {
                   value={name}
                   onChange={(e) => {
                     setName(e.target.value);
-                    if (nameError) setNameError(""); // 🟢 Instantly clear error when they type
+                    if (nameError) setNameError(""); 
                   }}
                   className={`w-full h-[54px] pl-12 pr-4 bg-gray-50 dark:bg-slate-800/50 border rounded-xl outline-none transition-all text-base font-bold shadow-sm placeholder:text-gray-400 dark:placeholder:text-slate-500
                     ${
@@ -309,7 +309,6 @@ export default function BrandManager() {
                 />
               </div>
 
-              {/* 🟢 CONSISTENT INLINE ERROR MESSAGE */}
               {nameError && (
                 <p className="text-red-500 text-xs  mt-1.5 ml-1 animate-in fade-in">
                   {nameError}
@@ -331,7 +330,6 @@ export default function BrandManager() {
                     strokeWidth={2.5}
                     className="animate-spin"
                   />
-                  {/* Loading states */}
                   {isUploading
                     ? "Uploading Logo..."
                     : editingBrand
@@ -345,7 +343,6 @@ export default function BrandManager() {
                 </>
               ) : (
                 <>
-                  {/* Add Mode Button */}
                   <Plus size={20} strokeWidth={2.5} />
                   Add New Brand
                 </>
@@ -353,7 +350,6 @@ export default function BrandManager() {
             </button>
           </div>
 
-          {/* RIGHT COLUMN: Dual-Mode Image Input */}
           <div className="lg:col-span-7 flex flex-col">
             <div className="flex items-center justify-between mb-3 ml-1">
               <label className="label text-sm sm:text-base font-bold text-gray-900 dark:text-white">
@@ -363,7 +359,6 @@ export default function BrandManager() {
                 </span>
               </label>
 
-              {/* Mode Switcher Tabs */}
               <div className="flex items-center bg-gray-100 dark:bg-slate-800 p-1 rounded-lg">
                 <button
                   type="button"
@@ -383,18 +378,15 @@ export default function BrandManager() {
             </div>
 
             {uploadMode === "upload" ? (
-              // 🟢 REFINED: Massive, beautiful Dropzone
               <div className="relative w-full h-40 sm:h-48 bg-gray-50 dark:bg-slate-800/30 border-2 border-dashed border-gray-300 dark:border-slate-600 hover:border-blue-400 dark:hover:border-blue-500 rounded-2xl flex items-center justify-center overflow-hidden transition-all group">
                 {preview ? (
                   <>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={preview}
                       alt="Preview"
                       className="w-full h-full object-contain p-4 animate-in zoom-in-95 duration-300"
                     />
 
-                    {/* Sleek Little Cross Button */}
                     <button
                       type="button"
                       onClick={(e) => {
@@ -429,7 +421,6 @@ export default function BrandManager() {
                 )}
               </div>
             ) : (
-              // 🟢 REFINED: URL Mode Layout
               <div className="flex flex-col gap-4">
                 <div className="relative group">
                   <LinkIcon
@@ -447,7 +438,6 @@ export default function BrandManager() {
                 </div>
                 {preview && (
                   <div className="relative w-32 h-32 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl flex items-center justify-center overflow-hidden shadow-inner group/preview">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={preview}
                       alt="Preview"
@@ -473,7 +463,6 @@ export default function BrandManager() {
         </form>
       </div>
 
-      {/* --- GRID VIEW --- */}
       {isFetching ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6 animate-pulse">
           {[1, 2, 3, 4, 5].map((i) => (
@@ -522,10 +511,8 @@ export default function BrandManager() {
                 </button>
               </div>
 
-              {/* 🟢 Brand Logo Wrapper */}
               <div className="w-16 h-16 sm:w-20 sm:h-20 mb-3 sm:mb-4 rounded-full bg-gray-50 dark:bg-slate-800 border border-gray-100 dark:border-slate-700 flex items-center justify-center overflow-hidden transition-transform group-hover:scale-105 shadow-inner">
                 {brand.logoUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={brand.logoUrl}
                     alt={brand.name}
@@ -548,7 +535,6 @@ export default function BrandManager() {
                 )}
               </div>
 
-              {/* 🟢 Brand Name */}
               <h3 className="font-bold text-sm sm:text-base text-gray-900 dark:text-white w-full truncate px-2">
                 {brand.name}
               </h3>

@@ -15,7 +15,6 @@ interface ParentSelectorProps {
   initialCategoryId?: string;
 }
 
-// --- SUB-COMPONENT: Custom Category Dropdown ---
 function CustomCategoryDropdown({
   value,
   options,
@@ -27,6 +26,7 @@ function CustomCategoryDropdown({
   onChange: (id: string) => void;
   placeholder: string;
 }) {
+
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -43,7 +43,6 @@ function CustomCategoryDropdown({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Find the selected category name to display
   const selectedName = options.find((opt) => opt.id === value)?.name;
 
   return (
@@ -71,9 +70,7 @@ function CustomCategoryDropdown({
 
       {isOpen && (
         <div className="absolute z-[100] w-full mt-1.5 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl shadow-xl py-2 animate-in fade-in zoom-in-95 duration-200 max-h-[250px] overflow-y-auto custom-scrollbar">
-          {/* 🟢 "Select..." Reset Option completely removed from here! */}
 
-          {/* Category Options Only */}
           {options.map((cat) => (
             <button
               key={cat.id}
@@ -104,17 +101,16 @@ function CustomCategoryDropdown({
   );
 }
 
-// --- MAIN COMPONENT ---
 export default function ParentSelector({
   onSelectionChange,
   refreshTrigger,
   initialCategoryId,
 }: ParentSelectorProps) {
+
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [levelOptions, setLevelOptions] = useState<Category[][]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Helper to fetch data
   const fetchCategories = async (parentId: string | null) => {
     const url = parentId
       ? `/api/categories?parentId=${parentId}`
@@ -128,7 +124,6 @@ export default function ParentSelector({
     }
   };
 
-  // Hydration Logic
   useEffect(() => {
     const hydrate = async () => {
       setIsLoading(true);
@@ -164,7 +159,6 @@ export default function ParentSelector({
       }
     };
     hydrate();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialCategoryId, refreshTrigger]);
 
   const handleSelect = async (levelIndex: number, selectedId: string) => {
@@ -204,7 +198,6 @@ export default function ParentSelector({
 
   return (
     <div className="space-y-4">
-      {/* Label with icon for context */}
       <div className="flex items-center gap-2 mb-2">
         <Network size={14} className="text-blue-500" />
         <span className="text-xs font-bold text-gray-700 dark:text-slate-300 uppercase tracking-widest">
@@ -212,23 +205,19 @@ export default function ParentSelector({
         </span>
       </div>
 
-      {/* 1. COMPACT VERTICAL STEPPER WITH CUSTOM DROPDOWNS */}
       <div className="flex flex-col gap-3">
         {levelOptions.map((options, index) => (
-          // Added dynamic z-index so top dropdowns open OVER bottom dropdowns
           <div
             key={index}
             style={{ zIndex: 50 - index }}
             className="relative flex items-center gap-3 animate-in fade-in zoom-in-95 duration-300"
           >
-            {/* Inline Label */}
             <div className="w-16 sm:w-20 shrink-0 text-right">
               <span className="text-[9px] sm:text-[10px] font-extrabold text-blue-500 uppercase tracking-widest">
                 {index === 0 ? "Main Dept" : `Level ${index}`}
               </span>
             </div>
 
-            {/* Premium Custom Dropdown */}
             <div className="flex-1">
               <CustomCategoryDropdown
                 value={selectedIds[index] || ""}
@@ -241,7 +230,6 @@ export default function ParentSelector({
         ))}
       </div>
 
-      {/* 2. INLINE BREADCRUMB SUMMARY */}
       {selectedIds.length > 0 && (
         <div className="flex flex-wrap items-center gap-1.5 px-1 mt-1 animate-in fade-in">
           <span className="text-[9px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-widest mr-1">

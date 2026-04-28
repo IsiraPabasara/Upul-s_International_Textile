@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import axiosInstance from "@/app/utils/axiosInstance";
-import toast from "react-hot-toast"; // 🟢 Added Toast for premium feel
+import toast from "react-hot-toast";
 import {
   FileText,
   Download,
@@ -21,7 +21,6 @@ import {
 export default function ReportsPage() {
   const [activeSection, setActiveSection] = useState("ORDERS");
 
-  // --- States (Only keeping the data filters!) ---
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [orderStatus, setOrderStatus] = useState("ALL");
@@ -78,9 +77,6 @@ export default function ReportsPage() {
     },
   });
 
-  // ==========================================
-  // 2. INVENTORY REPORT MUTATION
-  // ==========================================
   const inventoryMutation = useMutation({
     mutationFn: async () => {
       const response = await axiosInstance.get("/api/products/inventory/report", {

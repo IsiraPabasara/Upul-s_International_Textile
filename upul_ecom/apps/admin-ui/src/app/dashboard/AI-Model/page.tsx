@@ -7,6 +7,7 @@ import axiosInstance from "@/app/utils/axiosInstance";
 import { User, Sparkles, Image as ImageIcon, Loader2, UploadCloud, X } from "lucide-react";
 
 export default function VirtualTryOnPage() {
+
   const [activeTab, setActiveTab] = useState<"customer" | "admin">("customer");
 
   const [userFile, setUserFile] = useState<File | null>(null);
@@ -49,14 +50,12 @@ export default function VirtualTryOnPage() {
   const displayedImage = activeTab === "admin" ? studioMutation.data : vtonMutation.data;
   const isPending = vtonMutation.isPending || studioMutation.isPending;
 
-  // 🔥 Reused your exact input styles for perfect consistency
-  const inputStyles = "w-full h-[52px] px-4 bg-gray-50 dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-900 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 outline-none transition-all text-sm font-medium text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-500 shadow-sm";
+  const inputStyles = `w-full h-[52px] px-4 bg-gray-50 dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-900 ${activeTab === "customer" ? "focus:border-blue-500 focus:ring-blue-500/10" : "focus:border-purple-500 focus:ring-purple-500/10"} focus:ring-4 outline-none transition-all text-sm font-medium text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-500`;
 
   return (
     <>
       <div className="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8 animate-in fade-in duration-500">
         
-        {/* --- HEADER --- */}
         <div className="mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight flex items-center gap-3">
             <Sparkles className="text-purple-500 hidden sm:block" size={28} strokeWidth={2.5} />
@@ -69,10 +68,8 @@ export default function VirtualTryOnPage() {
 
         <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
           
-          {/* LEFT COLUMN: Controls & Inputs */}
           <div className="w-full lg:w-1/2 bg-white dark:bg-slate-900 rounded-[1.5rem] shadow-sm border border-gray-100 dark:border-slate-800 overflow-hidden flex flex-col">
             
-            {/* Custom Tabs */}
             <div className="flex border-b border-gray-100 dark:border-slate-800">
               <button
                 onClick={() => setActiveTab("customer")}
@@ -99,15 +96,13 @@ export default function VirtualTryOnPage() {
             </div>
 
             <div className="p-6 space-y-6 flex-1">
-              
-              {/* Customer Photo Upload */}
+
               {activeTab === "customer" && (
                 <div>
                   <label className="block text-sm font-bold text-gray-900 dark:text-white mb-2 ml-1">1. Upload Customer Photo</label>
                   
                   {userFile ? (
                     <div className="relative border border-gray-200 dark:border-slate-700 rounded-xl bg-gray-50 dark:bg-slate-800/50 p-2 flex items-center justify-center h-48 group">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={URL.createObjectURL(userFile!)} alt="Preview" className="max-h-full max-w-full rounded-lg shadow-sm object-contain" />
                       <button 
                         onClick={() => setUserFile(null)} 
@@ -131,7 +126,6 @@ export default function VirtualTryOnPage() {
                 </div>
               )}
 
-              {/* Garment Photo Upload */}
               <div>
                 <label className="block text-sm font-bold text-gray-900 dark:text-white mb-2 ml-1">
                   {activeTab === "customer" ? "2. Upload Garment" : "1. Upload Garment (Flat-lay or Ghost Mannequin)"}
@@ -139,7 +133,6 @@ export default function VirtualTryOnPage() {
 
                 {garmentFile ? (
                   <div className="relative border border-gray-200 dark:border-slate-700 rounded-xl bg-gray-50 dark:bg-slate-800/50 p-2 flex items-center justify-center h-48 group">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={URL.createObjectURL(garmentFile!)} alt="Preview" className="max-h-full max-w-full rounded-lg shadow-sm object-contain" />
                     <button 
                       onClick={() => setGarmentFile(null)} 
@@ -186,7 +179,6 @@ export default function VirtualTryOnPage() {
                 />
               </div>
 
-              {/* Action Button */}
               <button
                 onClick={() => activeTab === "customer" ? vtonMutation.mutate() : studioMutation.mutate()}
                 disabled={isPending || !garmentFile || (activeTab === "customer" && !userFile)}
@@ -219,7 +211,6 @@ export default function VirtualTryOnPage() {
             </div>
           </div>
 
-          {/* RIGHT COLUMN: Result Preview */}
           <div className="w-full lg:w-1/2 flex flex-col">
             <div className="bg-white dark:bg-slate-900 rounded-[1.5rem] shadow-sm border border-gray-100 dark:border-slate-800 overflow-hidden flex-1 flex flex-col">
               <div className="px-6 py-4 border-b border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/20 flex items-center gap-2">
@@ -235,7 +226,6 @@ export default function VirtualTryOnPage() {
                     <p className="text-xs sm:text-sm text-gray-500 dark:text-slate-400 mt-1 font-medium">This usually takes 15-20 seconds</p>
                   </div>
                 ) : displayedImage ? (
-                  // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={displayedImage}
                     alt="Generated AI Result"

@@ -13,20 +13,14 @@ interface SizeType {
 }
 
 export default function SizeTypeManager() {
+
   const queryClient = useQueryClient();
-  
-  // Form States
   const [newName, setNewName] = useState('');
   const [newValueString, setNewValueString] = useState('');
-  
-  // Error States
   const [nameError, setNameError] = useState('');
   const [valuesError, setValuesError] = useState('');
-  
-  // App States
   const [editingSizeType, setEditingSizeType] = useState<SizeType | null>(null);
 
-  // 1. Fetching data with TanStack Query
   const { data: types = [], isLoading } = useQuery<SizeType[]>({
     queryKey: ['size-types'],
     queryFn: async () => {
@@ -35,7 +29,6 @@ export default function SizeTypeManager() {
     },
   });
 
-  // 2. Mutation for Creating Size Types
   const createMutation = useMutation({
     mutationFn: (newType: { name: string; values: string[] }) =>
       axiosInstance.post('/api/size-types', newType),
@@ -49,7 +42,6 @@ export default function SizeTypeManager() {
     },
   });
 
-  // 🟢 NEW: Mutation for Updating Size Types
   const updateMutation = useMutation({
     mutationFn: (updatedType: { id: string; name: string; values: string[] }) =>
       axiosInstance.put(`/api/size-types/${updatedType.id}`, { name: updatedType.name, values: updatedType.values }),
@@ -63,7 +55,6 @@ export default function SizeTypeManager() {
     },
   });
 
-  // 3. Mutation for Deleting
   const deleteMutation = useMutation({
     mutationFn: (id: string) => axiosInstance.delete(`/api/size-types/${id}`),
     onSuccess: () => {
@@ -72,18 +63,15 @@ export default function SizeTypeManager() {
     },
   });
 
-  // 🟢 NEW: Handle triggering edit mode
   const handleEditClick = (type: SizeType) => {
     setEditingSizeType(type);
     setNewName(type.name);
-    // Convert the array back to a comma-separated string for the input
     setNewValueString(type.values.join(', '));
     setNameError('');
     setValuesError('');
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // 🟢 NEW: Cancel edit mode
   const handleCancelEdit = () => {
     setEditingSizeType(null);
     setNewName('');
@@ -92,30 +80,26 @@ export default function SizeTypeManager() {
     setValuesError('');
   };
 
-  // --- SUBMIT HANDLER ---
   const handleSubmit = (e: React.FormEvent): void => {
+
     e.preventDefault();
     const cleanName = newName.trim();
     
-    // Reset errors
     setNameError('');
     setValuesError('');
 
-    // Validation 1: Name is required
     if (!cleanName) {
       setNameError('Standard Name is required');
       toast.error('Standard Name is required');
       return;
     }
 
-    // Validation 2: Minimum name length
     if (cleanName.length < 2) {
       setNameError('Standard Name must be at least 2 characters');
       toast.error('Standard Name must be at least 2 characters');
       return;
     }
 
-    // Validation 3: Maximum name length
     if (cleanName.length > 50) {
       setNameError('Standard Name must not exceed 50 characters');
       toast.error('Standard Name must not exceed 50 characters');
@@ -125,16 +109,14 @@ export default function SizeTypeManager() {
     const valuesArray = newValueString
       .split(',')
       .map((v) => v.trim())
-      .filter(Boolean); // Filters out empty strings automatically
+      .filter(Boolean); 
 
-    // Validation 4: At least one value
     if (valuesArray.length === 0) {
       setValuesError('Please add at least one valid measurement');
       toast.error('Please add at least one valid measurement');
       return;
     }
 
-    // Validation 5: Check for duplicate values within the sizetype
     const uniqueValues = new Set(valuesArray.map((v) => v.toLowerCase()));
     if (uniqueValues.size !== valuesArray.length) {
       setValuesError('Values must be unique (no duplicates allowed)');
@@ -142,7 +124,6 @@ export default function SizeTypeManager() {
       return;
     }
 
-    // Validation 6: Duplicate name check (ignores current edit)
     const isDuplicate = types.some(
       (type) => type.name.toLowerCase() === cleanName.toLowerCase() && type.id !== editingSizeType?.id
     );
@@ -163,7 +144,7 @@ export default function SizeTypeManager() {
   const handleDelete = (id: string, typeName: string) => {
     if (confirm(`Are you sure you want to delete the ${typeName} standard?`)) {
       if (editingSizeType?.id === id) {
-        handleCancelEdit(); // Cancel edit if they delete the one they are editing
+        handleCancelEdit(); 
       }
       deleteMutation.mutate(id);
     }
@@ -171,8 +152,6 @@ export default function SizeTypeManager() {
 
   return (
     <div className="max-w-4xl mx-auto p-4 md:p-8 animate-in fade-in duration-500">
-      
-      {/* Header */}
       <div className="flex items-center gap-3 mb-8">
         <div className="p-3 bg-black dark:bg-white text-white dark:text-black rounded-xl shadow-sm">
           <Ruler size={24} />
@@ -183,10 +162,7 @@ export default function SizeTypeManager() {
         </div>
       </div>
 
-      {/* --- CREATE / EDIT FORM --- */}
       <div className={`bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border mb-10 transition-colors duration-300 ${editingSizeType ? 'border-amber-300 dark:border-amber-700/50 bg-amber-50/10 dark:bg-amber-900/10' : 'border-gray-100 dark:border-slate-800'}`}>
-        
-        {/* 🟢 NEW: Edit Mode Banner */}
         {editingSizeType && (
           <div className="mb-6 flex items-center justify-between bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 px-4 py-3 rounded-xl text-sm font-bold">
             <div className="flex items-center gap-2">
@@ -209,7 +185,7 @@ export default function SizeTypeManager() {
                 value={newName}
                 onChange={(e) => {
                   setNewName(e.target.value);
-                  if (nameError) setNameError(''); // Clear error on type
+                  if (nameError) setNameError(''); 
                 }}
                 className={`w-full p-3 bg-transparent dark:bg-slate-800 border rounded-xl focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-500/20 focus:border-blue-500 outline-none transition text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-500 font-medium shadow-sm ${
                   nameError
@@ -232,7 +208,7 @@ export default function SizeTypeManager() {
                 value={newValueString}
                 onChange={(e) => {
                   setNewValueString(e.target.value);
-                  if (valuesError) setValuesError(''); // Clear error on type
+                  if (valuesError) setValuesError(''); 
                 }}
                 className={`w-full p-3 bg-transparent dark:bg-slate-800 border rounded-xl focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-500/20 focus:border-blue-500 outline-none transition text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-500 font-medium shadow-sm ${
                   valuesError
@@ -286,7 +262,6 @@ export default function SizeTypeManager() {
         </form>
       </div>
 
-      {/* --- List View --- */}
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-pulse">
            {[1, 2, 3, 4].map(i => <div key={i} className="h-32 bg-gray-100 dark:bg-slate-800/50 rounded-2xl" />)}
@@ -308,7 +283,6 @@ export default function SizeTypeManager() {
                   <h3 className="font-bold text-lg text-gray-800 dark:text-white">{type.name}</h3>
                 </div>
                 
-                {/* 🟢 NEW: Grouped Edit and Delete Buttons */}
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => handleEditClick(type)}
