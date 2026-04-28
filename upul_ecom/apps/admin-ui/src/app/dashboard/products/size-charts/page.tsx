@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import axiosInstance from "@/app/utils/axiosInstance";
-// 🟢 Update this path to your actual upload service
 import { uploadImageToKit } from "@/app/dashboard/products/imagekit/utils/uploadService";
 import {
   Loader2,
@@ -16,15 +15,15 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 
-// 🟢 Updated interface to include fileId
 interface SizeChart {
   id: string;
   name: string;
   imageUrl: string;
-  fileId: string; // 🟢 Required for handling deletions
+  fileId: string; 
 }
 
 export default function SizeChartUploadPage() {
+
   const [name, setName] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -32,7 +31,6 @@ export default function SizeChartUploadPage() {
   const [charts, setCharts] = useState<SizeChart[]>([]);
   const [isLoadingCharts, setIsLoadingCharts] = useState(true);
 
-  // 🟢 Editing State
   const [editingChart, setEditingChart] = useState<SizeChart | null>(null);
 
   const [nameError, setNameError] = useState("");
@@ -61,15 +59,13 @@ export default function SizeChartUploadPage() {
     }
   };
 
-  // 🟢 Function to populate form for editing
   const startEdit = (chart: SizeChart) => {
     setEditingChart(chart);
     setName(chart.name);
-    setSelectedFile(null); // Reset any new file selection
-    window.scrollTo({ top: 0, behavior: "smooth" }); // Scroll to form
+    setSelectedFile(null); 
+    window.scrollTo({ top: 0, behavior: "smooth" }); 
   };
 
-  // 🟢 Function to clear edit state
   const cancelEdit = () => {
     setEditingChart(null);
     setName("");
@@ -82,7 +78,6 @@ export default function SizeChartUploadPage() {
     let isValid = true;
     const trimmedName = name.trim();
 
-    // 🟢 1. Validate Name (Empty or Duplicate)
     if (!trimmedName) {
       setNameError("Please enter a chart name");
       isValid = false;
@@ -90,7 +85,7 @@ export default function SizeChartUploadPage() {
       const isDuplicate = charts.some(
         (chart) =>
           chart.name.toLowerCase() === trimmedName.toLowerCase() &&
-          chart.id !== editingChart?.id, // Ignore if we are updating the current chart
+          chart.id !== editingChart?.id, 
       );
 
       if (isDuplicate) {
@@ -99,13 +94,11 @@ export default function SizeChartUploadPage() {
       }
     }
 
-    // 🟢 2. Validate Image
     if (!editingChart && !selectedFile && !previewImage) {
       setImageError("Please upload a size chart image");
       isValid = false;
     }
 
-    // Stop execution if anything failed
     if (!isValid) return;
 
     try {
@@ -167,7 +160,7 @@ export default function SizeChartUploadPage() {
     try {
       await axiosInstance.delete(`/api/size-charts/${id}`);
       toast.success("Size chart deleted!");
-      if (editingChart?.id === id) cancelEdit(); // Cancel edit if deleted chart was being edited
+      if (editingChart?.id === id) cancelEdit(); 
       fetchCharts();
     } catch (error: any) {
       console.error("Delete error:", error);
@@ -175,22 +168,20 @@ export default function SizeChartUploadPage() {
     }
   };
 
-  // Determine what image to show in preview slot
   const getPreviewImage = () => {
     if (selectedFile) {
-      return URL.createObjectURL(selectedFile); // Newly selected file
+      return URL.createObjectURL(selectedFile); 
     }
     if (editingChart) {
-      return editingChart.imageUrl; // Existing image in edit mode
+      return editingChart.imageUrl; 
     }
-    return null; // Create mode, no file selected
+    return null; 
   };
 
   const previewImage = getPreviewImage();
 
   return (
     <div className="max-w-5xl mx-auto pb-20 space-y-12">
-      {/* --- TOP SECTION: FORM --- */}
       <div>
         <div className="mb-8 flex items-center justify-between gap-4">
           <div>
@@ -213,13 +204,11 @@ export default function SizeChartUploadPage() {
           )}
         </div>
 
-        {/* Main Card Wrapper */}
         <div className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-[1.5rem] shadow-sm border border-gray-100 dark:border-slate-800 mb-8 transition-colors">
           <form
             onSubmit={handleSubmit}
             className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12"
           >
-            {/* LEFT COLUMN: Chart Name & Submit */}
             <div className="lg:col-span-5 flex flex-col gap-6">
               <div>
                 <label
@@ -238,7 +227,7 @@ export default function SizeChartUploadPage() {
                     value={name}
                     onChange={(e) => {
                       setName(e.target.value);
-                      if (nameError) setNameError(""); // 🟢 Instantly clear error
+                      if (nameError) setNameError(""); 
                     }}
                     className={`w-full h-[54px] pl-12 pr-4 bg-gray-50 dark:bg-slate-800/50 border rounded-xl outline-none transition-all text-base font-bold shadow-sm placeholder:text-gray-400 dark:placeholder:text-slate-500 disabled:opacity-60
                       ${
@@ -251,7 +240,6 @@ export default function SizeChartUploadPage() {
                     disabled={isUploading}
                   />
                 </div>
-                {/* 🟢 INLINE NAME ERROR */}
                 {nameError && (
                   <p className="text-red-500 text-xs  mt-1.5 ml-1 animate-in fade-in">
                     {nameError}
@@ -285,8 +273,6 @@ export default function SizeChartUploadPage() {
               </button>
             </div>
 
-            {/* RIGHT COLUMN: Image Upload Zone */}
-            {/* RIGHT COLUMN: Image Upload Zone */}
             <div className="lg:col-span-7 flex flex-col">
               <div className="flex items-center justify-between mb-3 ml-1">
                 <label
@@ -301,20 +287,17 @@ export default function SizeChartUploadPage() {
                 )}
               </div>
 
-              {/* Massive, beautiful Dropzone with Validation */}
               <div
                 className={`relative w-full h-40 sm:h-48 border-2 border-dashed rounded-2xl flex items-center justify-center overflow-hidden transition-all group ${imageError ? "bg-red-50 dark:bg-red-900/10 border-red-300 dark:border-red-800/50" : "bg-gray-50 dark:bg-slate-800/30 border-gray-300 dark:border-slate-600 hover:border-blue-400 dark:hover:border-blue-500"}`}
               >
                 {previewImage ? (
                   <>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={previewImage}
                       alt="Preview"
                       className="w-full h-full object-contain p-4 animate-in zoom-in-95 duration-300"
                     />
 
-                    {/* Badge indicating source */}
                     <div className="absolute bottom-3 left-3 px-3 py-1 bg-black/60 backdrop-blur-sm text-white rounded-full text-[10px] font-bold uppercase tracking-wider z-10">
                       {selectedFile ? "New File" : "Current Image"}
                     </div>
@@ -333,7 +316,6 @@ export default function SizeChartUploadPage() {
                       </button>
                     )}
 
-                    {/* If in edit mode and showing current image, allow replacing it smoothly */}
                     {!isUploading && editingChart && !selectedFile && (
                       <label className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer backdrop-blur-sm z-20">
                         <span className="bg-white text-gray-900 px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-2">
@@ -345,7 +327,7 @@ export default function SizeChartUploadPage() {
                           accept="image/*"
                           onChange={(e) => {
                             handleFileChange(e);
-                            if (imageError) setImageError(""); // 🟢 Instantly clear error
+                            if (imageError) setImageError(""); 
                           }}
                         />
                       </label>
@@ -372,7 +354,7 @@ export default function SizeChartUploadPage() {
                       className="hidden"
                       onChange={(e) => {
                         handleFileChange(e);
-                        if (imageError) setImageError(""); // 🟢 Instantly clear error
+                        if (imageError) setImageError(""); 
                       }}
                       disabled={isUploading}
                     />
@@ -380,7 +362,6 @@ export default function SizeChartUploadPage() {
                 )}
               </div>
 
-              {/* 🟢 INLINE IMAGE ERROR */}
               {imageError && (
                 <p className="text-red-500 text-xs font-bold mt-1.5 ml-1 animate-in fade-in">
                   {imageError}
@@ -393,7 +374,6 @@ export default function SizeChartUploadPage() {
 
       <div className="border-t border-gray-200 dark:border-slate-800 transition-colors"></div>
 
-      {/* --- BOTTOM SECTION: GALLERY --- */}
       <div>
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2 leading-tight">
@@ -428,7 +408,6 @@ export default function SizeChartUploadPage() {
                         : "border-gray-100 dark:border-slate-800 shadow-sm hover:border-gray-200 dark:hover:border-slate-700"
                     }`}
                 >
-                  {/* Image Container */}
                   <div className="aspect-square w-full bg-gray-50 dark:bg-slate-800 p-3 flex items-center justify-center relative transition-colors">
                     <img
                       src={chart.imageUrl}
@@ -436,14 +415,12 @@ export default function SizeChartUploadPage() {
                       className="max-w-full max-h-full object-contain mix-blend-multiply dark:mix-blend-normal"
                     />
 
-                    {/* Status Badge */}
                     {isBeingEdited && (
                       <div className="absolute top-2 left-2 px-2 py-0.5 bg-emerald-500 text-white rounded font-bold text-[9px] uppercase tracking-wider shadow z-10">
                         Editing
                       </div>
                     )}
 
-                    {/* Hover Actions Overlay 🟢 */}
                     <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity p-2">
                       <button
                         onClick={() => startEdit(chart)}
@@ -463,7 +440,6 @@ export default function SizeChartUploadPage() {
                       </button>
                     </div>
                   </div>
-                  {/* Info Container */}
                   <div
                     className={`p-3 border-t transition-colors ${isBeingEdited ? "border-emerald-100 dark:border-emerald-800/50 bg-emerald-50/50 dark:bg-emerald-950/20" : "border-gray-50 dark:border-slate-800"}`}
                   >
