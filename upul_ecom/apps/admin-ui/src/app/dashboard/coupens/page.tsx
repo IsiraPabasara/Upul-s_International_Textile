@@ -18,6 +18,7 @@ export default function AdminCouponsPage() {
   // 🟢 Validation State
   const [codeError, setCodeError] = useState("");
   const [valueError, setValueError] = useState("");
+  const [dateError, setDateError] = useState("");
 
   // Form State
   const [formData, setFormData] = useState({
@@ -45,6 +46,7 @@ export default function AdminCouponsPage() {
     });
     setCodeError("");
     setValueError("");
+    setDateError("");
     setEditingId(null);
   };
 
@@ -108,6 +110,19 @@ export default function AdminCouponsPage() {
     } else if (formData.type === 'PERCENTAGE' && val > 100) {
       setValueError("Percentage cannot exceed 100%");
       isValid = false;
+    }
+
+    // 🟢 Date Validation
+    if (formData.expiresAt) {
+      // Append time to force local timezone parsing instead of UTC
+      const selectedDate = new Date(formData.expiresAt + 'T00:00:00');
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Strip time from today for a strict date-to-date comparison
+
+      if (selectedDate < today) {
+        setDateError("Expiration date cannot be in the past");
+        isValid = false;
+      }
     }
 
     if (!isValid) return;
@@ -300,16 +315,24 @@ export default function AdminCouponsPage() {
 
               {/* Expiration Date */}
               <div className="lg:col-span-2">
-                <label className="label mb-2 ml-1 text-sm font-bold text-gray-900 dark:text-white">Expiration Date</label>
+                <label className={`label mb-2 ml-1 text-sm font-bold transition-colors ${dateError ? "text-red-500" : "text-gray-900 dark:text-white"}`}>
+                  Expiration Date
+                </label>
                 <div className="relative group">
-                  <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors" size={18} strokeWidth={2.5} />
+                  <Calendar className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${dateError ? "text-red-500" : "text-gray-400 group-focus-within:text-blue-500"}`} size={18} strokeWidth={2.5} />
                   <input 
                     type="date" 
-                    className={getInputClass(false, "dark:[color-scheme:dark] pl-11")}
+                    // To prevent picking past dates natively in the UI (optional but highly recommended)
+                    min={new Date().toISOString().split('T')[0]} 
+                    className={getInputClass(!!dateError, "dark:[color-scheme:dark] pl-11")}
                     value={formData.expiresAt}
-                    onChange={e => setFormData({...formData, expiresAt: e.target.value})}
+                    onChange={e => {
+                      setFormData({...formData, expiresAt: e.target.value});
+                      if (dateError) setDateError(""); // 🟢 Instant clear
+                    }}
                   />
                 </div>
+                {dateError && <p className="text-red-500 text-xs font-bold mt-1.5 ml-1 animate-in fade-in">{dateError}</p>}
               </div>
 
               {/* Public/Private Checkbox */}
