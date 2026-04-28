@@ -197,7 +197,7 @@ export default function Header() {
           !isVisible && !isAtTop ? "-translate-y-full" : "translate-y-0"
         }`}
       >
-        <div className={`overflow-visible transition-all duration-300 ease-in-out ${isAtTop ? "max-h-[200px] opacity-100" : "max-h-0 opacity-0"}`}>
+        <div className={`overflow-visible transition-all duration-300 ease-in-out ${isAtTop ? "max-h-[200px] opacity-100 pointer-events-auto" : "max-h-0 opacity-0 pointer-events-none"}`}>
           <div className="w-full bg-black text-white py-2 text-center text-[10px] md:text-[11px] font-bold tracking-[0.1em] uppercase">
             {announcements[announcementIndex] || announcements[0]}
           </div>
@@ -305,7 +305,7 @@ export default function Header() {
         </div>
 
         {/* Categories Nav */}
-        <nav className="bg-white border-b overflow-x-auto scrollbar-hide shadow-sm w-full">
+        <nav className="relative z-10 bg-white border-b overflow-x-auto scrollbar-hide shadow-sm w-full">
           <div className="max-w-8xl mx-auto px-5 flex gap-6 md:gap-10 h-11 items-center text-[12px] md:text-[13px] font-bold uppercase tracking-tight whitespace-nowrap">
             <Link href="/shop" className="shrink-0 hover:opacity-70 transition-opacity">All Products</Link>
             <Link href="/shop?isNewArrival=true" className="shrink-0 hover:opacity-70 transition-opacity">New Arrivals</Link>
